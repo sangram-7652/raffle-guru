@@ -1,26 +1,204 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ============================================================
+   RAFFLE GURU — DESIGN SYSTEM  (light theme)
+   All brand colours are declared once here as CSS variables.
+   Components consume them via Tailwind utilities (bg-paper,
+   text-heading, border-line ...) — never hardcode hex in a
+   component. To re-skin the brand later, edit only this block.
+   ============================================================ */
+
+@theme {
+  /* Surfaces */
+  --color-paper: #ffffff; /* page background */
+  --color-card: #ffffff; /* raised cards */
+  --color-panel: #f4f4f7; /* chips / hovers */
+  --color-mist: #f7f7f9; /* tinted alternating sections */
+  --color-track: #ececf1; /* progress track */
+  --color-line: #e7e7ee; /* hairline borders */
+
+  /* Text */
+  --color-heading: #0e0e14; /* near-black headings + strong text */
+  --color-muted: #5f5f6b; /* secondary body text */
+
+  /* Dark accent — kept for scrims, image chips and the final CTA */
+  --color-ink: #0b0b11;
+
+  /* Brand palette (from the RaffleGuru logo) */
+  --color-pink: #ff2d87; /* hot pink / magenta */
+  --color-pink-600: #d81b6f; /* accessible pink on white */
+  --color-pink-700: #b3145a;
+  --color-pink-300: #ff8dc0;
+
+  --color-orange: #ff7a1a; /* brand orange */
+  --color-orange-500: #ef6a00;
+
+  --color-success: #12a150;
+
+  /* Typography */
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Radii */
+  --radius-card: 1.25rem;
+
+  /* Motion tokens */
+  --animate-rise: rise 0.7s cubic-bezier(0.22, 0.68, 0.28, 1) both;
+  --animate-fade: fade 0.6s ease both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-shimmer: shimmer 2.4s linear infinite;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes shimmer {
+  from {
+    background-position: -200% 0;
+  }
+  to {
+    background-position: 200% 0;
+  }
+}
+
+/* ------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-heading);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-pink);
+  color: #fff;
+}
+
+/* Utility helpers ------------------------------------------------ */
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Brand gradient — used sparingly for emphasis only */
+.brand-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-pink) 0%,
+    var(--color-pink-600) 42%,
+    var(--color-orange) 100%
+  );
+}
+
+.text-gradient {
+  background-image: linear-gradient(
+    100deg,
+    var(--color-pink-600) 0%,
+    var(--color-pink) 42%,
+    var(--color-orange-500) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Soft brand wash behind the hero / dark sections */
+.brand-glow::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      44rem 32rem at 82% 6%,
+      color-mix(in srgb, var(--color-pink) 16%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      38rem 30rem at 4% 96%,
+      color-mix(in srgb, var(--color-orange) 13%, transparent),
+      transparent 70%
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Fine grid texture for large surfaces */
+.grid-texture {
+  background-image:
+    linear-gradient(var(--color-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(60% 60% at 50% 40%, #000, transparent 100%);
+}
+
+/* Soft resting elevation for cards on the light canvas */
+.card-shadow {
+  box-shadow:
+    0 1px 2px rgba(15, 15, 28, 0.04),
+    0 14px 34px -16px rgba(15, 15, 28, 0.14);
+}
+.card-shadow-lg {
+  box-shadow:
+    0 2px 4px rgba(15, 15, 28, 0.05),
+    0 30px 60px -22px rgba(15, 15, 28, 0.22);
+}
+
+.shimmer-line {
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-pink) 55%, transparent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: var(--animate-shimmer);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
