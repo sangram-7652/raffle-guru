@@ -5,6 +5,7 @@ import Section from "../layout/Section";
 import SectionHeading from "../layout/SectionHeading";
 import WinnerCard from "./WinnerCard";
 import { winners } from "@/data/homepageMockData";
+import { routes } from "@/lib/routes";
 
 export default function WinnerSection() {
   return (
@@ -20,7 +21,7 @@ export default function WinnerSection() {
           title="Real people. Real wins."
           subtitle="Every week we hand over the keys, transfer the cash and post the photos. Here are some of the most recent."
         />
-        <Button href="#winners" variant="secondary" className="shrink-0">
+        <Button href={routes.winners} variant="secondary" className="shrink-0">
           <Icon name="trophy" className="h-4 w-4" />
           VIEW ALL WINNERS
         </Button>

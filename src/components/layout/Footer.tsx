@@ -1,9 +1,11 @@
+import Link from "next/link";
 import Logo from "../media/Logo";
 import Icon from "../ui/Icon";
 import Container from "./Container";
 import FooterColumn from "./footer/FooterColumn";
 import SocialLinks from "./footer/SocialLinks";
-import { footerLinks } from "@/data/homepageMockData";
+import { footerColumns } from "@/data/site";
+import { routes } from "@/lib/routes";
 
 export default function Footer() {
   return (
@@ -11,7 +13,9 @@ export default function Footer() {
       <Container className="py-16">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
           <div>
-            <Logo className="h-16 w-auto" />
+            <Link href={routes.home} aria-label="RaffleGuru home">
+              <Logo className="h-16 w-auto" />
+            </Link>
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
               A premium UK competition platform. Incredible prizes, transparent
               draws and real winners — every single week.
@@ -19,11 +23,18 @@ export default function Footer() {
             <SocialLinks className="mt-6" />
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3">
-            {Object.entries(footerLinks).map(([heading, links]) => (
-              <FooterColumn key={heading} heading={heading} links={links} />
+          <nav
+            aria-label="Footer"
+            className="grid grid-cols-2 gap-8 sm:grid-cols-3"
+          >
+            {footerColumns.map((col) => (
+              <FooterColumn
+                key={col.heading}
+                heading={col.heading}
+                links={col.links}
+              />
             ))}
-          </div>
+          </nav>
         </div>
 
         <div className="mt-14 flex flex-col gap-4 border-t border-line pt-8 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
@@ -35,8 +46,9 @@ export default function Footer() {
         </div>
 
         <p className="mt-6 rounded-xl border border-line bg-card p-3 text-center text-[11px] leading-relaxed text-muted">
-          Design concept only — this is a non-functional homepage prototype
-          created for client review. No purchases, accounts or draws are live.
+          Prototype only — this is a non-functional UI concept created for
+          review. No purchases, accounts, payments or prize draws are live, and
+          all competition, winner and company details shown are sample content.
         </p>
       </Container>
     </footer>

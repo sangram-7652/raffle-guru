@@ -7,6 +7,7 @@ import Container from "../layout/Container";
 import ImageFrame from "../media/ImageFrame";
 import HeroBanner from "./HeroBanner";
 import { heroFeatured, stats } from "@/data/homepageMockData";
+import { routes } from "@/lib/routes";
 
 export default function Hero() {
   return (
@@ -40,11 +41,11 @@ export default function Hero() {
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button href="#featured" size="lg">
+            <Button href={routes.competitions} size="lg">
               EXPLORE COMPETITIONS
               <Icon name="arrow" className="h-4 w-4" />
             </Button>
-            <Button href="#how-it-works" size="lg" variant="secondary">
+            <Button href={routes.howItWorks} size="lg" variant="secondary">
               HOW IT WORKS
             </Button>
           </div>
@@ -101,7 +102,7 @@ export default function Hero() {
 
             <ProgressBar value={heroFeatured.soldPct} className="mt-4" />
 
-            <Button href="#featured" block className="mt-4">
+            <Button href={routes.competitions} block className="mt-4">
               ENTER NOW
               <Icon name="arrow" className="h-4 w-4" />
             </Button>

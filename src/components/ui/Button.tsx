@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ComponentPropsWithoutRef, ReactNode } from "react";
 
 export type ButtonVariant =
@@ -99,6 +100,19 @@ export default function Button({
 
   if ("href" in props && props.href !== undefined) {
     const { href, ...rest } = props;
+    const internal = href.startsWith("/") || href.startsWith("#");
+    if (internal) {
+      return (
+        <Link
+          href={href}
+          className={classes}
+          aria-disabled={loading || undefined}
+          {...rest}
+        >
+          {content}
+        </Link>
+      );
+    }
     return (
       <a
         href={href}

@@ -1,11 +1,5 @@
 import Icon from "../../ui/Icon";
-
-const socials = [
-  { name: "instagram", label: "RaffleGuru on Instagram" },
-  { name: "facebook", label: "RaffleGuru on Facebook" },
-  { name: "tiktok", label: "RaffleGuru on TikTok" },
-  { name: "youtube", label: "RaffleGuru on YouTube" },
-] as const;
+import { socials } from "@/data/site";
 
 export default function SocialLinks({ className = "" }: { className?: string }) {
   return (
@@ -13,7 +7,7 @@ export default function SocialLinks({ className = "" }: { className?: string }) 
       {socials.map((s) => (
         <li key={s.name}>
           <a
-            href="#"
+            href={s.href}
             aria-label={s.label}
             className="grid h-10 w-10 place-items-center rounded-full border border-line bg-panel text-muted transition-colors hover:border-pink/50 hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50"
           >

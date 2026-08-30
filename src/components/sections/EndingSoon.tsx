@@ -3,6 +3,7 @@ import Section from "../layout/Section";
 import SectionHeading from "../layout/SectionHeading";
 import CompetitionGrid from "../competition/CompetitionGrid";
 import { endingSoon } from "@/data/homepageMockData";
+import { routes } from "@/lib/routes";
 
 export default function EndingSoon() {
   return (
@@ -13,7 +14,7 @@ export default function EndingSoon() {
           title="Closer than you think"
           subtitle="Your next chance could be closer than you think — these draws are almost here."
         />
-        <Button href="#featured" variant="secondary" className="shrink-0">
+        <Button href={routes.competitions} variant="secondary" className="shrink-0">
           View all competitions
         </Button>
       </div>

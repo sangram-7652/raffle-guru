@@ -1,5 +1,7 @@
+import Link from "next/link";
 import Icon from "../ui/Icon";
 import Reveal from "../ui/Reveal";
+import { routes } from "@/lib/routes";
 
 export default function FinalCTA() {
   return (
@@ -21,13 +23,13 @@ export default function FinalCTA() {
             Your chance is waiting.
           </p>
           <div className="mt-8 flex justify-center">
-            <a
-              href="#featured"
-              className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-9 font-display text-base font-bold tracking-tight text-white shadow-[var(--shadow-ink)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink/90 active:scale-[0.98]"
+            <Link
+              href={routes.competitions}
+              className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-ink px-9 font-display text-base font-bold tracking-tight text-white shadow-[var(--shadow-ink)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-ink/90 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               EXPLORE COMPETITIONS
               <Icon name="arrow" className="h-4 w-4" />
-            </a>
+            </Link>
           </div>
         </div>
       </Reveal>

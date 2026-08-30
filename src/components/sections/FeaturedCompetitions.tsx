@@ -4,6 +4,7 @@ import Section from "../layout/Section";
 import SectionHeading from "../layout/SectionHeading";
 import CompetitionGrid from "../competition/CompetitionGrid";
 import { featuredCompetitions } from "@/data/homepageMockData";
+import { routes } from "@/lib/routes";
 
 export default function FeaturedCompetitions() {
   return (
@@ -21,7 +22,7 @@ export default function FeaturedCompetitions() {
       </div>
 
       <div className="mt-12 flex justify-center">
-        <Button href="#categories" size="lg">
+        <Button href={routes.competitions} size="lg">
           BROWSE ALL COMPETITIONS
           <Icon name="arrow" className="h-4 w-4" />
         </Button>

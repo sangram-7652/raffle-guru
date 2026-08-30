@@ -1,4 +1,5 @@
-import { announcement } from "@/data/homepageMockData";
+import Link from "next/link";
+import { announcement } from "@/data/site";
 import Container from "../layout/Container";
 import Icon from "../ui/Icon";
 
@@ -10,13 +11,13 @@ export default function AnnouncementBar() {
           🔥
         </span>
         <span className="truncate">{announcement.text}</span>
-        <a
+        <Link
           href={announcement.ctaHref}
           className="hidden shrink-0 items-center gap-1 rounded-full bg-black/20 px-3 py-1 text-xs font-semibold transition-colors hover:bg-black/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 sm:inline-flex"
         >
           {announcement.ctaLabel}
           <Icon name="arrow" className="h-3.5 w-3.5" />
-        </a>
+        </Link>
       </Container>
     </div>
   );

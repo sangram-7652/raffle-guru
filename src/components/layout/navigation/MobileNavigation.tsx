@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import Button from "../../ui/Button";
+import Icon from "../../ui/Icon";
 import NavigationItem from "./NavigationItem";
-import type { NavLink } from "@/data/homepageMockData";
+import { routes } from "@/lib/routes";
+import type { NavLink } from "@/data/site";
 
 type MobileNavigationProps = {
   open: boolean;
@@ -21,6 +24,8 @@ export default function MobileNavigation({
   onClose,
   links,
 }: MobileNavigationProps) {
+  const pathname = usePathname();
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -53,6 +58,11 @@ export default function MobileNavigation({
               key={link.label}
               href={link.href}
               size="mobile"
+              active={
+                link.href === "/"
+                  ? pathname === "/"
+                  : pathname.startsWith(link.href)
+              }
               onClick={onClose}
               style={{
                 animation: "var(--animate-rise)",
@@ -63,14 +73,29 @@ export default function MobileNavigation({
             </NavigationItem>
           ))}
           <NavigationItem
-            href="#"
+            href={routes.login}
             size="mobile"
             onClick={onClose}
-            className="text-muted"
+            className="!text-muted"
           >
             Login
           </NavigationItem>
-          <Button href="#featured" size="lg" className="mt-4 w-full" onClick={onClose}>
+          <Button
+            href={routes.cart}
+            size="lg"
+            variant="secondary"
+            className="mt-4 w-full"
+            onClick={onClose}
+          >
+            <Icon name="ticket" className="h-4 w-4" />
+            View basket
+          </Button>
+          <Button
+            href={routes.competitions}
+            size="lg"
+            className="mt-2 w-full"
+            onClick={onClose}
+          >
             ENTER NOW
           </Button>
         </nav>

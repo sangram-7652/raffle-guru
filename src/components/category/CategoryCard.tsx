@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import type { Category } from "@/data/homepageMockData";
 import Icon from "../ui/Icon";
+import { routes } from "@/lib/routes";
 
 type CategoryCardProps = {
   category: Category;
@@ -8,11 +10,14 @@ type CategoryCardProps = {
   featured?: boolean;
 };
 
-export default function CategoryCard({ category, featured = false }: CategoryCardProps) {
+export default function CategoryCard({
+  category,
+  featured = false,
+}: CategoryCardProps) {
   return (
-    <a
-      href="#featured"
-      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow ${
+    <Link
+      href={`${routes.competitions}?category=${encodeURIComponent(category.name)}`}
+      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/60 ${
         featured ? "min-h-[16rem] lg:min-h-[22rem]" : "min-h-[14rem]"
       }`}
     >
@@ -20,7 +25,11 @@ export default function CategoryCard({ category, featured = false }: CategoryCar
         src={category.image}
         alt={category.name}
         fill
-        sizes={featured ? "(max-width: 1024px) 100vw, 40vw" : "(max-width: 1024px) 50vw, 20vw"}
+        sizes={
+          featured
+            ? "(max-width: 1024px) 100vw, 40vw"
+            : "(max-width: 1024px) 50vw, 20vw"
+        }
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
       />
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/50 to-ink/5 transition-opacity duration-300" />
@@ -41,6 +50,6 @@ export default function CategoryCard({ category, featured = false }: CategoryCar
           <Icon name="arrow" className="h-3.5 w-3.5" />
         </span>
       </div>
-    </a>
+    </Link>
   );
 }

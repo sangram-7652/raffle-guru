@@ -1,4 +1,5 @@
-import type { NavLink } from "@/data/homepageMockData";
+import Link from "next/link";
+import type { NavLink } from "@/data/site";
 
 type FooterColumnProps = {
   heading: string;
@@ -14,12 +15,12 @@ export default function FooterColumn({ heading, links }: FooterColumnProps) {
       <ul className="mt-4 space-y-2.5">
         {links.map((link) => (
           <li key={link.label}>
-            <a
+            <Link
               href={link.href}
               className="text-sm text-muted transition-colors hover:text-heading focus-visible:outline-none focus-visible:text-heading"
             >
               {link.label}
-            </a>
+            </Link>
           </li>
         ))}
       </ul>

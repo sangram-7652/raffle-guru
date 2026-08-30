@@ -1,5 +1,7 @@
+import Link from "next/link";
 import type { Competition } from "@/data/homepageMockData";
 import { gbp } from "@/lib/format";
+import { routes } from "@/lib/routes";
 import Badge from "../ui/Badge";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
@@ -30,30 +32,47 @@ export default function CompetitionCard({
     cashAlternative,
     soldPct,
     drawLabel,
+    slug,
   } = competition;
+
+  const href = slug ? routes.competition(slug) : routes.competitions;
+  const soldOut = soldPct >= 100;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-card border border-line bg-card card-shadow transition-all duration-300 hover:-translate-y-1 hover:border-pink/40 hover:shadow-[var(--shadow-glow)]">
       <div className="relative">
-        <ImageFrame
-          src={image}
-          alt={title}
-          ratio="4/3"
-          priority={priority}
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.06]"
-        />
+        <Link href={href} tabIndex={-1} aria-hidden className="block">
+          <ImageFrame
+            src={image}
+            alt={title}
+            ratio="4/3"
+            priority={priority}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+            imgClassName="transition-transform duration-500 ease-out group-hover:scale-[1.06]"
+          />
+        </Link>
         <Badge
-          tone="neutral"
+          tone={soldOut ? "sold-out" : "neutral"}
           className="absolute left-3 top-3"
-          icon={<Icon name="spark" className="h-3 w-3 text-pink-600" />}
+          icon={
+            soldOut ? undefined : (
+              <Icon name="spark" className="h-3 w-3 text-pink-600" />
+            )
+          }
         >
-          {category}
+          {soldOut ? "Sold out" : category}
         </Badge>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
-        <h3 className="t-h4 text-heading">{title}</h3>
+        <h3 className="t-h4 text-heading">
+          <Link
+            href={href}
+            className="rounded outline-none transition-colors hover:text-pink-700 focus-visible:ring-2 focus-visible:ring-pink/50"
+          >
+            {title}
+          </Link>
+        </h3>
         <p className="mt-1.5 line-clamp-2 text-sm text-muted">{blurb}</p>
 
         <div className="mt-3 flex items-baseline gap-2">
@@ -75,8 +94,13 @@ export default function CompetitionCard({
           Draw <span className="font-semibold text-heading">{drawLabel}</span>
         </div>
 
-        <Button href="#featured" block className="mt-4">
-          ENTER NOW
+        <Button
+          href={href}
+          block
+          variant={soldOut ? "secondary" : "primary"}
+          className="mt-4"
+        >
+          {soldOut ? "VIEW DRAW" : "ENTER NOW"}
           <Icon name="arrow" className="h-4 w-4" />
         </Button>
       </div>

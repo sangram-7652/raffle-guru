@@ -8,6 +8,8 @@
 
 export type Competition = {
   id: string;
+  /** links the homepage card to its detail page in `@/data/competitions` */
+  slug?: string;
   title: string;
   blurb: string;
   image: string;
@@ -52,22 +54,6 @@ export type Winner = {
 const U = (id: string, w = 1200) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;
 
-export type NavLink = { label: string; href: string };
-
-export const announcement = {
-  text: "New competitions. Bigger prizes. More chances to win.",
-  ctaLabel: "See what's live",
-  ctaHref: "#ending-soon",
-};
-
-export const navLinks: NavLink[] = [
-  { label: "Competitions", href: "#featured" },
-  { label: "Winners", href: "#winners" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "About", href: "#why" },
-  { label: "FAQ", href: "#faq" },
-];
-
 export type HeroBannerSlide = {
   id: string;
   eyebrow: string;
@@ -85,7 +71,7 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     title: "Win a 718 Cayman GTS 4.0",
     subtitle: "Or take £62,000 tax-free cash. Entries from £0.99 — draw live Sunday 9PM.",
     ctaLabel: "Enter the car draw",
-    ctaHref: "#featured",
+    ctaHref: "/competitions",
     image: U("1503376780353-7e6692767b70", 1600),
   },
   {
@@ -94,7 +80,7 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     title: "£25,000 straight to your bank",
     subtitle: "No strings, paid within 48 hours of the live draw. Entries from £0.79.",
     ctaLabel: "Enter the cash draw",
-    ctaHref: "#featured",
+    ctaHref: "/competitions",
     image: U("1554224155-6726b3ff858f", 1600),
   },
   {
@@ -103,7 +89,7 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     title: "Rolex Submariner Date",
     subtitle: "Full set with box and papers, or £11,500 cash. Draw live Saturday 7PM.",
     ctaLabel: "See luxury competitions",
-    ctaHref: "#featured",
+    ctaHref: "/competitions",
     image: U("1523275335684-37898b6baf30", 1600),
   },
 ];
@@ -128,6 +114,7 @@ export const trustPoints = [
 export const endingSoon: Competition[] = [
   {
     id: "bmw-m4",
+    slug: "bmw-m4",
     title: "Win a BMW M4 Competition",
     blurb: "510bhp twin-turbo coupé in Isle of Man Green. Fully road legal, delivered to your door.",
     image: U("1555215695-3004980ad54e"),
@@ -140,6 +127,7 @@ export const endingSoon: Competition[] = [
   },
   {
     id: "cash-25k",
+    slug: "cash-25k",
     title: "£25,000 Tax-Free Cash",
     blurb: "No strings. Straight to your bank account within 48 hours of the live draw.",
     image: U("1554224155-6726b3ff858f"),
@@ -151,6 +139,7 @@ export const endingSoon: Competition[] = [
   },
   {
     id: "rolex-sub",
+    slug: "rolex-submariner",
     title: "Rolex Submariner Date",
     blurb: "Oystersteel, 41mm, black Cerachrom bezel. Full set with box and papers.",
     image: U("1523275335684-37898b6baf30"),
@@ -204,6 +193,7 @@ export const categories: Category[] = [
 export const featuredCompetitions: Competition[] = [
   {
     id: "f-bmw-m4",
+    slug: "bmw-m4",
     title: "BMW M4 Competition",
     blurb: "510bhp coupé, road legal and ready to drive away.",
     image: U("1555215695-3004980ad54e"),
@@ -216,6 +206,7 @@ export const featuredCompetitions: Competition[] = [
   },
   {
     id: "f-cash-25k",
+    slug: "cash-25k",
     title: "£25,000 Cash",
     blurb: "Life-changing money, paid within 48 hours.",
     image: U("1554224155-6726b3ff858f"),
@@ -227,6 +218,7 @@ export const featuredCompetitions: Competition[] = [
   },
   {
     id: "f-rolex",
+    slug: "rolex-datejust",
     title: "Rolex Datejust 41",
     blurb: "Fluted bezel, jubilee bracelet, full set.",
     image: U("1524805444758-089113d48a6d"),
@@ -239,6 +231,7 @@ export const featuredCompetitions: Competition[] = [
   },
   {
     id: "f-tech",
+    slug: "tech-bundle",
     title: "Luxury Tech Bundle",
     blurb: "MacBook Pro, iPhone, iPad, AirPods Max & more.",
     image: U("1517336714731-489689fd1ca8"),
@@ -342,24 +335,6 @@ export const reviewSummary = {
   source: "verified player reviews",
 };
 
-export const footerLinks = {
-  Explore: [
-    { label: "Competitions", href: "#featured" },
-    { label: "Winners", href: "#winners" },
-    { label: "How It Works", href: "#how-it-works" },
-    { label: "Categories", href: "#categories" },
-  ],
-  Support: [
-    { label: "FAQ", href: "#faq" },
-    { label: "Contact", href: "#" },
-    { label: "Responsible Play", href: "#" },
-  ],
-  Legal: [
-    { label: "Terms & Conditions", href: "#" },
-    { label: "Privacy Policy", href: "#" },
-    { label: "Cookie Policy", href: "#" },
-  ],
-};
 
 export const stats = [
   { value: "£4.2M+", label: "Prizes paid out" },
