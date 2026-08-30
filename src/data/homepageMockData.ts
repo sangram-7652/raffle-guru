@@ -52,13 +52,15 @@ export type Winner = {
 const U = (id: string, w = 1200) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;
 
+export type NavLink = { label: string; href: string };
+
 export const announcement = {
   text: "New competitions. Bigger prizes. More chances to win.",
   ctaLabel: "See what's live",
   ctaHref: "#ending-soon",
 };
 
-export const navLinks = [
+export const navLinks: NavLink[] = [
   { label: "Competitions", href: "#featured" },
   { label: "Winners", href: "#winners" },
   { label: "How It Works", href: "#how-it-works" },

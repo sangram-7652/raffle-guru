@@ -1,53 +1,87 @@
 @import "tailwindcss";
 
 /* ============================================================
-   RAFFLE GURU — DESIGN SYSTEM  (light theme)
-   All brand colours are declared once here as CSS variables.
-   Components consume them via Tailwind utilities (bg-paper,
-   text-heading, border-line ...) — never hardcode hex in a
-   component. To re-skin the brand later, edit only this block.
+   RAFFLEGURU — DESIGN SYSTEM
+   ------------------------------------------------------------
+   Single source of truth for the RaffleGuru visual language.
+   Extracted from the approved homepage concept.
+
+   RULES
+   • Never hardcode a hex value in a component — consume a token.
+   • Never hand-pick a font size in a component — use a `.t-*` class.
+   • Spacing uses Tailwind's 4px scale (space-1 = 4px … space-24 = 96px).
+   • To re-skin the brand, edit ONLY the @theme block below.
    ============================================================ */
 
 @theme {
-  /* Surfaces */
+  /* ---- Surfaces ------------------------------------------- */
   --color-paper: #ffffff; /* page background */
   --color-card: #ffffff; /* raised cards */
-  --color-panel: #f4f4f7; /* chips / hovers */
+  --color-panel: #f4f4f7; /* chips / hovers / inset fields */
   --color-mist: #f7f7f9; /* tinted alternating sections */
-  --color-track: #ececf1; /* progress track */
+  --color-track: #ececf1; /* progress / slider track */
   --color-line: #e7e7ee; /* hairline borders */
 
-  /* Text */
-  --color-heading: #0e0e14; /* near-black headings + strong text */
+  /* ---- Text --------------------------------------------- */
+  --color-heading: #0e0e14; /* headings + strong text */
   --color-muted: #5f5f6b; /* secondary body text */
 
-  /* Dark accent — kept for scrims, image chips and the final CTA */
+  /* ---- Dark accent (scrims, image chips, final CTA) ----- */
   --color-ink: #0b0b11;
 
-  /* Brand palette (from the RaffleGuru logo) */
-  --color-pink: #ff2d87; /* hot pink / magenta */
+  /* ---- Brand palette (from the RaffleGuru logo) --------- */
+  --color-pink: #ff2d87; /* hot pink / magenta — primary */
   --color-pink-600: #d81b6f; /* accessible pink on white */
   --color-pink-700: #b3145a;
   --color-pink-300: #ff8dc0;
 
-  --color-orange: #ff7a1a; /* brand orange */
+  --color-orange: #ff7a1a; /* brand orange — secondary */
   --color-orange-500: #ef6a00;
 
+  /* ---- Status ------------------------------------------- */
   --color-success: #12a150;
+  --color-success-600: #0f8a44;
+  --color-warning: #c2410c;
+  --color-warning-600: #9a3412;
+  --color-error: #dc2626;
+  --color-error-600: #b91c1c;
+  --color-live: #e11d48; /* "draw is live" pulse */
 
-  /* Typography */
+  /* ---- Typography families ----------------------------- */
   --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 
-  /* Radii */
-  --radius-card: 1.25rem;
+  /* ---- Radius ------------------------------------------- */
+  /* Tailwind's default radius scale (rounded-sm … rounded-2xl,
+     rounded-full) is kept as-is. These are the two brand rungs: */
+  --radius-card: 1.25rem; /* standard card / grid tile */
+  --radius-panel: 1.75rem; /* large feature panels, hero visual */
+  --radius-hero: 2rem; /* full-bleed CTA block */
 
-  /* Motion tokens */
+  /* ---- Elevation --------------------------------------- */
+  --shadow-e1: 0 1px 2px rgba(15, 15, 28, 0.04),
+    0 14px 34px -16px rgba(15, 15, 28, 0.14);
+  --shadow-e2: 0 2px 4px rgba(15, 15, 28, 0.05),
+    0 30px 60px -22px rgba(15, 15, 28, 0.22);
+  --shadow-e3: 0 34px 80px -30px rgba(15, 15, 28, 0.30);
+  --shadow-glow: 0 30px 60px -22px rgba(255, 45, 135, 0.28);
+  --shadow-cta: 0 10px 30px -10px var(--color-pink);
+  --shadow-ink: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
+
+  /* ---- Motion tokens ---------------------------------- */
   --animate-rise: rise 0.7s cubic-bezier(0.22, 0.68, 0.28, 1) both;
   --animate-fade: fade 0.6s ease both;
   --animate-float: float 6s ease-in-out infinite;
   --animate-shimmer: shimmer 2.4s linear infinite;
+  --ease-brand: cubic-bezier(0.22, 0.68, 0.28, 1);
+
+  /* ---- Layout ----------------------------------------- */
+  --container-site: 80rem; /* max content width (max-w-7xl) */
 }
+
+/* ============================================================
+   KEYFRAMES
+   ============================================================ */
 
 @keyframes rise {
   from {
@@ -88,7 +122,19 @@
   }
 }
 
-/* ------------------------------------------------------------ */
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* ============================================================
+   BASE
+   ============================================================ */
 
 :root {
   color-scheme: light;
@@ -111,7 +157,146 @@ body {
   color: #fff;
 }
 
-/* Utility helpers ------------------------------------------------ */
+/* ============================================================
+   TYPOGRAPHY SCALE
+   ------------------------------------------------------------
+   Responsive rungs. Every heading / block of copy on the site
+   should use one of these — do not set font-size per component.
+   Colour is applied separately (text-heading / text-muted).
+   ============================================================ */
+
+.t-display,
+.t-h1,
+.t-h2,
+.t-h3,
+.t-h4 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+}
+
+/* display — hero headline */
+.t-display {
+  font-size: 2.75rem;
+  line-height: 0.98;
+}
+@media (width >= 40rem) {
+  .t-display {
+    font-size: 3.75rem;
+  }
+}
+@media (width >= 64rem) {
+  .t-display {
+    font-size: 4.2rem;
+  }
+}
+
+/* h1 — page / CTA headline */
+.t-h1 {
+  font-size: 2.25rem;
+  line-height: 1.02;
+}
+@media (width >= 40rem) {
+  .t-h1 {
+    font-size: 3rem;
+  }
+}
+@media (width >= 48rem) {
+  .t-h1 {
+    font-size: 3.75rem;
+  }
+}
+
+/* h2 — section heading */
+.t-h2 {
+  font-size: 1.875rem;
+  line-height: 1.05;
+}
+@media (width >= 40rem) {
+  .t-h2 {
+    font-size: 2.25rem;
+  }
+}
+@media (width >= 48rem) {
+  .t-h2 {
+    font-size: 3rem;
+  }
+}
+
+/* h3 — card / feature title */
+.t-h3 {
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+/* h4 — small card title */
+.t-h4 {
+  font-size: 1.125rem;
+  line-height: 1.3;
+}
+
+/* body copy */
+.t-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+.t-body {
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.t-body-sm {
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.t-caption {
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+/* eyebrow / kicker label */
+.t-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+}
+
+/* form / meta label */
+.t-label {
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+/* ============================================================
+   LAYOUT HELPERS
+   ============================================================ */
+
+/* vertical rhythm for full-width page sections */
+.section-y {
+  padding-block: 5rem;
+}
+@media (width >= 64rem) {
+  .section-y {
+    padding-block: 7rem;
+  }
+}
+.section-y-sm {
+  padding-block: 2.5rem;
+}
+@media (width >= 64rem) {
+  .section-y-sm {
+    padding-block: 4rem;
+  }
+}
+
+/* ============================================================
+   BRAND UTILITIES
+   ============================================================ */
 
 .font-display {
   font-family: var(--font-display);
@@ -169,16 +354,12 @@ body {
   mask-image: radial-gradient(60% 60% at 50% 40%, #000, transparent 100%);
 }
 
-/* Soft resting elevation for cards on the light canvas */
+/* Elevation aliases (kept for readability at call sites) */
 .card-shadow {
-  box-shadow:
-    0 1px 2px rgba(15, 15, 28, 0.04),
-    0 14px 34px -16px rgba(15, 15, 28, 0.14);
+  box-shadow: var(--shadow-e1);
 }
 .card-shadow-lg {
-  box-shadow:
-    0 2px 4px rgba(15, 15, 28, 0.05),
-    0 30px 60px -22px rgba(15, 15, 28, 0.22);
+  box-shadow: var(--shadow-e2);
 }
 
 .shimmer-line {
@@ -191,6 +372,14 @@ body {
   background-size: 200% 100%;
   animation: var(--animate-shimmer);
 }
+
+.live-dot {
+  animation: live-pulse 1.6s ease-in-out infinite;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
 
 @media (prefers-reduced-motion: reduce) {
   *,
