@@ -44,7 +44,7 @@ export default function HeroBanner() {
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="relative aspect-[16/7] w-full sm:aspect-[21/7]">
+      <div className="relative min-h-[26rem] w-full sm:min-h-0 sm:aspect-[21/7]">
         {heroBannerSlides.map((slide, i) => (
           <div
             key={slide.id}
@@ -62,7 +62,7 @@ export default function HeroBanner() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-ink/10" />
 
-            <div className="relative flex h-full flex-col justify-center gap-3 px-6 py-6 sm:px-10 lg:px-14">
+            <div className="relative flex h-full flex-col justify-center gap-3 px-6 pb-16 pt-8 sm:px-10 sm:py-6 lg:px-14">
               <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-pink-300">
                 {slide.eyebrow}
               </span>
