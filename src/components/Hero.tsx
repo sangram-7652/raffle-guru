@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Button from "./Button";
+import HeroBanner from "./HeroBanner";
 import Icon from "./Icon";
 import ProgressBar from "./ProgressBar";
 import { heroFeatured, stats } from "@/data/homepageMockData";
@@ -12,7 +13,13 @@ export default function Hero() {
     >
       <div className="grid-texture pointer-events-none absolute inset-0 opacity-[0.35]" />
 
-      <div className="relative z-10 mx-auto grid max-w-7xl gap-14 px-4 pb-20 pt-14 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-10 lg:pb-28 lg:pt-20 xl:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 pt-8 sm:px-6 lg:pt-10 xl:px-8">
+        <div style={{ animation: "var(--animate-rise)" }}>
+          <HeroBanner />
+        </div>
+      </div>
+
+      <div className="relative z-10 mx-auto grid max-w-7xl gap-14 px-4 pb-20 pt-12 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-10 lg:pb-28 lg:pt-14 xl:px-8">
         {/* Left */}
         <div
           className="flex flex-col items-start gap-7"

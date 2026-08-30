@@ -66,6 +66,46 @@ export const navLinks = [
   { label: "FAQ", href: "#faq" },
 ];
 
+export type HeroBannerSlide = {
+  id: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  ctaHref: string;
+  image: string;
+};
+
+export const heroBannerSlides: HeroBannerSlide[] = [
+  {
+    id: "b-car",
+    eyebrow: "This week's headline prize",
+    title: "Win a 718 Cayman GTS 4.0",
+    subtitle: "Or take £62,000 tax-free cash. Entries from £0.99 — draw live Sunday 9PM.",
+    ctaLabel: "Enter the car draw",
+    ctaHref: "#featured",
+    image: U("1503376780353-7e6692767b70", 1600),
+  },
+  {
+    id: "b-cash",
+    eyebrow: "Midweek cash",
+    title: "£25,000 straight to your bank",
+    subtitle: "No strings, paid within 48 hours of the live draw. Entries from £0.79.",
+    ctaLabel: "Enter the cash draw",
+    ctaHref: "#featured",
+    image: U("1554224155-6726b3ff858f", 1600),
+  },
+  {
+    id: "b-watch",
+    eyebrow: "Luxury line-up",
+    title: "Rolex Submariner Date",
+    subtitle: "Full set with box and papers, or £11,500 cash. Draw live Saturday 7PM.",
+    ctaLabel: "See luxury competitions",
+    ctaHref: "#featured",
+    image: U("1523275335684-37898b6baf30", 1600),
+  },
+];
+
 export const heroFeatured = {
   badge: "Featured Competition",
   title: "Win a Premium Performance Car",
@@ -230,6 +270,75 @@ export const winners: Winner[] = [
   { id: "w5", name: "Marcus", location: "London", prize: "Won £10,000 Cash", competition: "£10k Midweek Cash", ticket: "#65014", photo: "https://i.pravatar.cc/240?img=15" },
   { id: "w6", name: "Hannah", location: "Cardiff", prize: "Won a Ducati Panigale", competition: "Ducati Panigale V2", ticket: "#38845", photo: "https://i.pravatar.cc/240?img=44" },
 ];
+
+export type Review = {
+  id: string;
+  name: string;
+  location: string;
+  rating: number; // 1 - 5
+  quote: string;
+  prize: string;
+  photo: string;
+};
+
+export const reviews: Review[] = [
+  {
+    id: "r1",
+    name: "Danielle O.",
+    location: "Manchester",
+    rating: 5,
+    quote:
+      "Entered on a Friday, won £10,000 on the Sunday draw and the money was in my account by Tuesday. Watched it happen live — no doubt it's genuine.",
+    prize: "Won £10,000 Cash",
+    photo: "https://i.pravatar.cc/240?img=32",
+  },
+  {
+    id: "r2",
+    name: "Tom R.",
+    location: "Newcastle",
+    rating: 5,
+    quote:
+      "I've tried a few competition sites and RaffleGuru is the only one that feels properly transparent. Entry caps are clear and the live draws are actually live.",
+    prize: "Won a Tech Bundle",
+    photo: "https://i.pravatar.cc/240?img=14",
+  },
+  {
+    id: "r3",
+    name: "Aisha K.",
+    location: "London",
+    rating: 5,
+    quote:
+      "The car turned up on a trailer 11 days after the draw, fully valeted with all the paperwork. Customer support kept me updated the whole way through.",
+    prize: "Won a BMW M4",
+    photo: "https://i.pravatar.cc/240?img=41",
+  },
+  {
+    id: "r4",
+    name: "Greg M.",
+    location: "Cardiff",
+    rating: 4,
+    quote:
+      "Took the cash alternative on my watch win and it was sorted with one email. Site's quick, checkout took seconds. Would happily enter again.",
+    prize: "Won a Rolex (cash alt)",
+    photo: "https://i.pravatar.cc/240?img=51",
+  },
+  {
+    id: "r5",
+    name: "Chloe B.",
+    location: "Edinburgh",
+    rating: 5,
+    quote:
+      "Been playing for about six months. Small entry prices, real winners posted every week and you always know when the draw is. Feels fair.",
+    prize: "Won £2,500 Cash",
+    photo: "https://i.pravatar.cc/240?img=26",
+  },
+];
+
+export const reviewSummary = {
+  rating: "4.9",
+  count: "3,100+",
+  source: "verified player reviews",
+};
 
 export const footerLinks = {
   Explore: [

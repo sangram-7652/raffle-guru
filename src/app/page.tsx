@@ -8,6 +8,7 @@ import FeaturedCompetitions from "@/components/FeaturedCompetitions";
 import HowItWorks from "@/components/HowItWorks";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import WinnerSection from "@/components/WinnerSection";
+import ReviewsSection from "@/components/ReviewsSection";
 import Faq from "@/components/Faq";
 import FinalCTA from "@/components/FinalCTA";
 import Footer from "@/components/Footer";
@@ -26,6 +27,7 @@ export default function Home() {
         <HowItWorks />
         <WhyChooseUs />
         <WinnerSection />
+        <ReviewsSection />
         <Faq />
         <FinalCTA />
       </main>
