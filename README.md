@@ -1,36 +1,120 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RaffleGuru
 
-## Getting Started
+A UK competitions platform. This repo is a monorepo split into a Next.js
+frontend and a Laravel API, with Docker-based infrastructure for local
+development and production.
 
-First, run the development server:
+## Status: demo UI + production foundation
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **`apps/web`** — the approved customer-facing UI. Frontend-only demo:
+  cart/checkout/login are mocked client-side (`localStorage`/
+  `sessionStorage`), no real backend calls, no payments. See
+  [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) and
+  [`apps/web/DESIGN_SYSTEM.md`](apps/web/DESIGN_SYSTEM.md).
+- **`apps/api`** — a fresh Laravel application: infrastructure only (health
+  checks, DB/Redis/queue/scheduler wiring). No Competition/Ticket/Order/
+  Payment/Draw models or endpoints exist yet — see
+  [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next and
+  [`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md) for
+  how the pieces fit together.
+
+Nothing here is production-live yet — this is the foundation the real
+product gets built on.
+
+## Repository layout
+
+```
+apps/
+  web/            Next.js frontend (App Router)
+  api/            Laravel API
+infrastructure/
+  docker/         Dockerfiles (php, web)
+  nginx/          Reverse proxy configs (dev + prod)
+docs/             Architecture + roadmap docs
+.github/workflows/  CI
+docker-compose.yml       Local dev stack
+docker-compose.prod.yml  Production topology (reference/deploy target)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Local development
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Option A — Docker (recommended, matches production topology)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Requires Docker + Docker Compose.
 
-## Learn More
+```bash
+cp apps/web/.env.example apps/web/.env.local   # optional, has a working default
+cp apps/api/.env.example apps/api/.env
+docker compose up --build
+```
 
-To learn more about Next.js, take a look at the following resources:
+This starts: MySQL, Redis, the Laravel API (hot-reloading dev server),
+a queue worker, a scheduler, the Next.js dev server, and Nginx in front of
+everything.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Site: <http://localhost:8080>
+- API health: <http://localhost:8080/api/v1/health> and
+  `http://localhost:8080/api/v1/health/status` (reports MySQL/Redis
+  reachability)
+- Direct access (bypassing Nginx), for debugging: web on
+  `localhost:3100`, API on `localhost:8001`
+- MySQL: `localhost:3310`, Redis: `localhost:6390` (both loopback-only)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Stop everything: `docker compose down` (add `-v` to also wipe the database
+volume).
 
-## Deploy on Vercel
+Run migrations / tests inside the containers:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+docker compose exec api php artisan migrate
+docker compose exec api vendor/bin/phpunit
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Known rough edge:** if you rebuild/recreate the `api` container while
+`nginx` keeps running, Nginx may cache the old container's IP and return a
+502 until you `docker compose restart nginx`. See
+[`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md) for
+why, and the P1 report's Known Limitations for the proper fix.
+
+### Option B — run each app directly on the host
+
+Frontend:
+
+```bash
+cd apps/web
+npm install
+npm run dev        # http://localhost:3000
+npm run lint
+npm run test        # Vitest
+npm run build
+```
+
+Backend (needs PHP 8.5+, Composer; MySQL/Redis reachable — e.g. via
+`docker compose up mysql redis` and the published ports above):
+
+```bash
+cd apps/api
+composer install
+cp .env.example .env   # edit DB_*/REDIS_* to match wherever MySQL/Redis run
+php artisan key:generate
+php artisan migrate
+php artisan serve       # http://localhost:8000
+vendor/bin/phpunit      # or: composer test
+```
+
+## Production
+
+```bash
+cp .env.example .env    # fill in real DB credentials + NEXT_PUBLIC_API_URL
+cp apps/api/.env.example apps/api/.env   # fill in APP_KEY, APP_ENV=production, APP_DEBUG=false, ...
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+See [`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md)
+for the full topology, environment variables, and the AWS deployment
+direction (not provisioned yet).
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push/PR: frontend lint + test +
+build, backend Composer install + PHPUnit.

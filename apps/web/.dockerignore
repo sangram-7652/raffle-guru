@@ -1,0 +1,8 @@
+# Applies to the ./apps/web build context (infrastructure/docker/web/Dockerfile).
+.git
+node_modules
+.next
+.env
+.env.*
+!.env.example
+tsconfig.tsbuildinfo

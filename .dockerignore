@@ -1,0 +1,16 @@
+# Applies to the root build context (infrastructure/docker/php/Dockerfile).
+# Never bake local secrets or host-installed deps into the image.
+.git
+**/.env
+**/.env.*
+!**/.env.example
+apps/api/vendor
+apps/api/bootstrap/cache/*.php
+apps/api/storage/logs
+apps/api/storage/framework/cache/*
+apps/api/storage/framework/sessions/*
+apps/api/storage/framework/views/*
+apps/api/database/database.sqlite
+apps/web/node_modules
+apps/web/.next
+apps/web/tsconfig.tsbuildinfo

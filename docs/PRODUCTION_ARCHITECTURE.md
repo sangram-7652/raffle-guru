@@ -1,0 +1,134 @@
+# RaffleGuru — Production Architecture
+
+Status: **infrastructure foundation only** (P1). No competition, ticket, order,
+payment, or draw domain logic exists yet — see the P1 report for exactly
+what P1 did and did not build, and [ROADMAP.md](ROADMAP.md) for what comes
+next.
+
+## Topology
+
+```
+                              Internet
+                                 │
+                                 ▼
+                              Nginx
+                          /            \
+                         /              \
+                        ▼                ▼
+                   Next.js (web)     Laravel API (api)
+                        │                │  │
+                        │                │  └── Queue Worker (queue)
+                        │                │  └── Scheduler (scheduler)
+                        │                ▼
+                        │            MySQL + Redis
+                        │                │
+                        └──── (no direct access) ──┘
+```
+
+- **Nginx** is the only public entry point. It path-routes `/` to the
+  Next.js server and `/api` to the Laravel API — both origins are the same
+  from the browser's point of view, so no CORS configuration is needed for
+  the web frontend talking to its own API.
+- **Next.js** (`apps/web`) renders the customer-facing site. In production
+  it runs as a standalone Node server (`next build` with `output:
+  "standalone"`), not `next dev`.
+- **Laravel API** (`apps/api`) is a modular monolith — one codebase, one
+  deployable unit, internally organized by domain (see
+  [Module Map](#module-map) below) rather than split into services. In
+  production it runs behind `php-fpm`, not the built-in dev server.
+- **MySQL** and **Redis** are never reachable from outside the Docker
+  network — no published ports in `docker-compose.prod.yml`.
+- **Queue worker** and **scheduler** are separate long-running containers
+  built from the same PHP image as the API, so they can scale
+  independently of request-serving capacity.
+
+## Why a monolith, not microservices
+
+A single Laravel application can cleanly own Competition, Ticket, Order,
+Payment, Draw, and Winner at this scale. Splitting those into separate
+services now would add network calls, distributed-transaction problems,
+and deployment complexity with no corresponding benefit — there is no
+team-scaling or independent-scaling pressure yet that would justify it.
+Revisit only if a specific subsystem (e.g. the draw engine, or ticket
+allocation under very high concurrency) demonstrably needs to scale or
+deploy independently of the rest.
+
+## Local development vs. production
+
+Two compose files, deliberately not shared beyond the parts that are
+identical (see `docker-compose.yml` / `docker-compose.prod.yml`):
+
+| | Development (`docker-compose.yml`) | Production (`docker-compose.prod.yml`) |
+|---|---|---|
+| API server | `php -S` (built-in), source bind-mounted, edits apply instantly | `php-fpm`, code baked into the image, immutable |
+| Web server | `next dev`, source bind-mounted, hot reload | `next start` equivalent — standalone Node server, immutable image |
+| MySQL/Redis | Published to `127.0.0.1` on non-default ports, for local `mysql`/`redis-cli` access | No published ports at all |
+| Secrets | Safe defaults baked into `docker-compose.yml` | Must be supplied via a root `.env` (never committed) |
+
+## Environment variables
+
+- `apps/web/.env.example` — frontend config (`NEXT_PUBLIC_API_URL`). Never
+  put secrets in a `NEXT_PUBLIC_*` variable; it ends up in client-side JS.
+- `apps/api/.env.example` — backend config (`APP_KEY`, `DB_*`, `REDIS_*`,
+  etc.), standard Laravel.
+- `.env.example` (repo root) — variables `docker-compose.prod.yml` reads
+  directly (`DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD`/`DB_ROOT_PASSWORD`,
+  `NEXT_PUBLIC_API_URL`). These are the single source of truth for the
+  MySQL container's own credentials; the API container's `DB_*` values are
+  set from the same root variables so they can never drift out of sync
+  with what MySQL was actually initialized with.
+
+For a real deployment: generate a real `APP_KEY` (`php artisan key:generate
+--show`), set `APP_ENV=production`, `APP_DEBUG=false`, and use secrets
+supplied by your deployment platform (see AWS direction below) — never
+commit any of this.
+
+## Health checks
+
+- `GET /up` — Laravel's built-in liveness check.
+- `GET /api/v1/health` — minimal liveness check, safe to expose publicly.
+- `GET /api/v1/health/status` — reports `database`/`redis` reachability as
+  `up`/`down` booleans only (no credentials, no raw exception text; `503`
+  when degraded). Useful for container health checks / uptime monitors.
+
+## AWS direction (not provisioned — documentation only)
+
+A V1 production footprint, deliberately not Kubernetes/ECS at this stage:
+
+| Concern | Service |
+|---|---|
+| Compute | EC2 (running this same Docker Compose stack) or ECS Fargate once container orchestration is actually needed |
+| Database | RDS for MySQL |
+| Cache/Queue | ElastiCache for Redis |
+| Media/uploads | S3 |
+| CDN | CloudFront or Cloudflare in front of Nginx |
+| Container registry | ECR (or GitHub Container Registry) |
+| Secrets | AWS Secrets Manager / SSM Parameter Store, injected as container env vars — never baked into images |
+
+Move to ECS/Fargate (or Kubernetes) only when a real, specific need appears
+(e.g. independent autoscaling of the queue workers under ticket-purchase
+load, or multi-region requirements) — not preemptively.
+
+## Module map
+
+Domain boundaries the future Laravel app should organize around (not yet
+implemented — see [ROADMAP.md](ROADMAP.md)):
+
+- **Competition** — listing, lifecycle (draft/live/ending-soon/sold-out/drawn), owns one Prize
+- **Prize** — prize metadata, cash-alternative value
+- **Entry / Ticket** — allocation, reservation, release; the highest-concurrency, highest-risk domain
+- **Order / OrderItem** — purchase transaction grouping tickets
+- **Payment** — provider integration, webhook handling, idempotency
+- **Draw** — eligible-ticket snapshot, winner selection, audit log, idempotent execution
+- **Winner / PrizeClaim** — claim workflow, delivery tracking
+- **Notification** — email/SMS triggered by order/draw/winner events
+- **Promotion** — discount codes
+- **User** — accounts, auth (not yet implemented)
+
+## What P1 deliberately did not build
+
+No Competition/Ticket/Order/Payment/Draw/Winner models, migrations, or
+controllers. No authentication. No payment gateway. No CORS config beyond
+Laravel's default (not needed yet, given same-origin proxying — revisit if
+a separate-origin client, e.g. a mobile app, needs the API directly). See
+the P1 report's Known Limitations for specific rough edges to revisit.
