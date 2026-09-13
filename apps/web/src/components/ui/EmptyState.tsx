@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import Icon from "./Icon";
 
 type EmptyStateProps = {
-  icon?: "ticket" | "trophy" | "spark" | "gift" | "clock";
+  icon?: "ticket" | "trophy" | "spark" | "gift" | "clock" | "lock";
   title: string;
   description?: ReactNode;
   action?: ReactNode;

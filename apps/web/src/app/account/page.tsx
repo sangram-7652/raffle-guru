@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Container, PageHeader } from "@/components/layout";
 import Button from "@/components/ui/Button";
@@ -8,13 +8,67 @@ import Icon from "@/components/ui/Icon";
 import RequireAuth from "@/components/auth/RequireAuth";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { resendVerification } from "@/lib/auth/client";
+import { listOrders } from "@/lib/orders/client";
+import type { ApiOrder } from "@/lib/orders/types";
+import { gbp } from "@/lib/format";
 import { routes } from "@/lib/routes";
 
+const STATUS_LABEL: Record<ApiOrder["status"], string> = {
+  pending: "Payment pending",
+  payment_pending: "Payment pending",
+  paid: "Paid",
+  processing: "Processing",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  failed: "Failed",
+  refunded: "Refunded",
+};
+
 /**
- * Placeholder account landing page — P3 only establishes authentication
- * and route protection. Orders/entries/wins/etc. are separate future
+ * Account landing page (P3) plus a compact recent-orders section (P5) —
+ * full order history/filtering is out of scope here, this only surfaces
+ * the customer's most recent orders. Entries/wins are separate future
  * phases (see docs/ROADMAP.md) and intentionally don't exist yet.
  */
+function RecentOrders() {
+  const [orders, setOrders] = useState<ApiOrder[] | null>(null);
+
+  useEffect(() => {
+    listOrders(1)
+      .then((res) => setOrders(res.data))
+      .catch(() => setOrders([]));
+  }, []);
+
+  if (orders === null) {
+    return <div className="mt-6 h-24 rounded-card border border-line bg-mist" />;
+  }
+
+  if (orders.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mt-6 max-w-lg rounded-card border border-line bg-card p-6 card-shadow">
+      <h2 className="font-display text-sm font-extrabold tracking-tight text-heading">
+        Recent orders
+      </h2>
+      <ul className="mt-4 divide-y divide-line">
+        {orders.slice(0, 5).map((order) => (
+          <li key={order.id} className="flex items-center justify-between gap-3 py-3 text-sm">
+            <div className="min-w-0">
+              <p className="font-medium text-heading">{order.reference}</p>
+              <p className="text-xs text-muted">{STATUS_LABEL[order.status]}</p>
+            </div>
+            <span className="shrink-0 tabular-nums text-heading">
+              {gbp(order.total / 100)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function AccountContent() {
   const { user, logout } = useAuth();
   const router = useRouter();
@@ -101,6 +155,8 @@ function AccountContent() {
             Sign out
           </Button>
         </div>
+
+        <RecentOrders />
       </Container>
     </>
   );

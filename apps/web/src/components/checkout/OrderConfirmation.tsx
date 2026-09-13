@@ -1,70 +1,85 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import { gbp, dateMedium } from "@/lib/format";
-import { readMockOrder, type MockOrder } from "@/lib/order";
-import { useHydrated } from "@/lib/hydrated";
+import { getOrder } from "@/lib/orders/client";
+import type { ApiOrder } from "@/lib/orders/types";
 import { routes } from "@/lib/routes";
-
-const SAMPLE: MockOrder = {
-  reference: "RG-482915",
-  placedAt: "2026-08-30T12:00:00Z",
-  email: "you@example.com",
-  name: "Sample Entrant",
-  items: [
-    {
-      slug: "bmw-m4",
-      title: "BMW M4 Competition",
-      quantity: 10,
-      lineTotal: 9.9,
-      firstTicket: 12480,
-    },
-    {
-      slug: "cash-25k",
-      title: "£25,000 Tax-Free Cash",
-      quantity: 5,
-      lineTotal: 3.95,
-      firstTicket: 30211,
-    },
-  ],
-  entryCount: 15,
-  subtotal: 13.85,
-  discount: 0,
-  promoCode: null,
-  total: 13.85,
-};
 
 const nextSteps = [
   {
     icon: "check" as const,
-    title: "Confirmation email",
-    body: "We'd email your full list of ticket numbers to the address on your order.",
+    title: "Order created",
+    body: "We've created your order and it's waiting on payment — no payment has been taken yet.",
   },
   {
     icon: "clock" as const,
-    title: "Watch the live draw",
-    body: "Each competition draws on its published date, streamed live with a verified random draw.",
+    title: "Payment",
+    body: "Payment isn't connected yet in this phase. We'll follow up once checkout can take payment.",
   },
   {
     icon: "trophy" as const,
-    title: "If you win",
-    body: "We call and email you within 24 hours. Cash lands within 48 hours; prizes are arranged directly.",
+    title: "The draw",
+    body: "Once an order is paid, entries are allocated and the competition draws on its published date.",
   },
 ];
 
-export default function OrderConfirmation() {
-  const hydrated = useHydrated();
-  const { order, isSample } = useMemo(() => {
-    if (!hydrated) return { order: null as MockOrder | null, isSample: false };
-    const found = readMockOrder();
-    return { order: found ?? SAMPLE, isSample: !found };
-  }, [hydrated]);
+type State =
+  | { kind: "loading" }
+  | { kind: "not-found" }
+  | { kind: "ready"; order: ApiOrder };
 
-  if (!order) {
+export default function OrderConfirmation() {
+  const searchParams = useSearchParams();
+  const reference = searchParams.get("reference");
+  const [state, setState] = useState<State>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      if (!reference) {
+        setState({ kind: "not-found" });
+        return;
+      }
+      setState({ kind: "loading" });
+      const order = await getOrder(reference);
+      if (cancelled) return;
+      setState(order ? { kind: "ready", order } : { kind: "not-found" });
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [reference]);
+
+  if (state.kind === "loading") {
     return <div className="h-96 rounded-card border border-line bg-mist" />;
   }
+
+  if (state.kind === "not-found") {
+    return (
+      <div className="mx-auto max-w-lg text-center">
+        <h1 className="t-h1 text-heading">Order not found</h1>
+        <p className="mt-3 t-body-lg text-muted">
+          We couldn&apos;t find that order on your account.
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button href={routes.competitions} size="lg">
+            Continue browsing
+          </Button>
+          <Button href={routes.account} variant="secondary" size="lg">
+            Go to my account
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { order } = state;
+  const entryCount = order.items.reduce((n, i) => n + i.quantity, 0);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -72,17 +87,11 @@ export default function OrderConfirmation() {
         <span className="grid h-16 w-16 place-items-center rounded-full bg-success text-white">
           <Icon name="check" className="h-8 w-8" />
         </span>
-        <h1 className="mt-5 t-h1 text-heading">You&apos;re entered</h1>
+        <h1 className="mt-5 t-h1 text-heading">Order created — payment pending</h1>
         <p className="mt-3 t-body-lg text-muted">
-          Thanks {order.name.split(" ")[0]} — your {order.entryCount}{" "}
-          {order.entryCount === 1 ? "entry is" : "entries are"} confirmed. Good
-          luck in the draw.
+          Your order for {entryCount} {entryCount === 1 ? "entry" : "entries"}{" "}
+          has been created. No payment has been taken yet.
         </p>
-        {isSample && (
-          <p className="mt-3 rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs font-medium text-warning">
-            Sample confirmation — no order was placed
-          </p>
-        )}
       </div>
 
       <div className="mt-8 rounded-card border border-line bg-card card-shadow">
@@ -93,25 +102,24 @@ export default function OrderConfirmation() {
               {order.reference}
             </p>
           </div>
-          <p className="text-xs text-muted">
-            Placed {dateMedium(order.placedAt)} · {order.email}
-          </p>
+          {order.created_at && (
+            <p className="text-xs text-muted">Placed {dateMedium(order.created_at)}</p>
+          )}
         </div>
 
         <ul className="divide-y divide-line px-5 sm:px-6">
           {order.items.map((i) => (
-            <li key={i.slug} className="flex items-center justify-between gap-4 py-4">
+            <li key={i.id} className="flex items-center justify-between gap-4 py-4">
               <div className="min-w-0">
                 <p className="truncate font-display text-sm font-extrabold tracking-tight text-heading">
-                  {i.title}
+                  {i.competition_title}
                 </p>
                 <p className="mt-0.5 text-xs text-muted">
-                  {i.quantity} {i.quantity === 1 ? "entry" : "entries"} · tickets{" "}
-                  #{i.firstTicket}–#{i.firstTicket + i.quantity - 1}
+                  {i.quantity} {i.quantity === 1 ? "entry" : "entries"}
                 </p>
               </div>
               <span className="shrink-0 font-display text-sm font-extrabold tabular-nums text-heading">
-                {gbp(i.lineTotal)}
+                {gbp(i.line_total / 100)}
               </span>
             </li>
           ))}
@@ -120,17 +128,11 @@ export default function OrderConfirmation() {
         <dl className="space-y-2 border-t border-line px-5 py-4 text-sm sm:px-6">
           <div className="flex justify-between">
             <dt className="text-muted">Subtotal</dt>
-            <dd className="tabular-nums text-heading">{gbp(order.subtotal)}</dd>
+            <dd className="tabular-nums text-heading">{gbp(order.subtotal / 100)}</dd>
           </div>
-          {order.discount > 0 && (
-            <div className="flex justify-between text-success-600">
-              <dt>Discount{order.promoCode ? ` (${order.promoCode})` : ""}</dt>
-              <dd className="tabular-nums">−{gbp(order.discount)}</dd>
-            </div>
-          )}
           <div className="flex justify-between border-t border-line pt-2 font-display text-base font-extrabold text-heading">
-            <dt>Total paid</dt>
-            <dd className="tabular-nums">{gbp(order.total)}</dd>
+            <dt>Total (payment pending)</dt>
+            <dd className="tabular-nums">{gbp(order.total / 100)}</dd>
           </div>
         </dl>
       </div>
@@ -160,12 +162,12 @@ export default function OrderConfirmation() {
           Continue browsing
         </Button>
         <Button
-          href={routes.login}
+          href={routes.account}
           variant="secondary"
           size="lg"
           className="sm:flex-1"
         >
-          View my entries
+          View my orders
         </Button>
       </div>
     </div>

@@ -4,7 +4,9 @@ import type { ReactNode } from "react";
 import { useCart } from "./CartContext";
 import { gbp } from "@/lib/format";
 
-/** Subtotal / discount / total block. Shared by the cart and checkout. */
+/** Subtotal / total block. Shared by the cart and checkout. No discount
+ * row — no promotion/coupon logic exists (see docs/SCHEMA_DESIGN_P5.md);
+ * subtotal and total are always equal in P5. */
 export default function OrderSummary({
   children,
   showItems = false,
@@ -12,7 +14,7 @@ export default function OrderSummary({
   children?: ReactNode;
   showItems?: boolean;
 }) {
-  const { items, subtotal, discount, total, promo, count } = useCart();
+  const { items, subtotal, total, count } = useCart();
 
   return (
     <div className="rounded-card border border-line bg-card p-5 card-shadow sm:p-6">
@@ -23,7 +25,7 @@ export default function OrderSummary({
       {showItems && items.length > 0 && (
         <ul className="mt-4 space-y-2 border-b border-line pb-4 text-sm">
           {items.map((i) => (
-            <li key={i.slug} className="flex justify-between gap-3 text-muted">
+            <li key={i.id} className="flex justify-between gap-3 text-muted">
               <span className="min-w-0 truncate">
                 {i.title}{" "}
                 <span className="text-xs">× {i.quantity}</span>
@@ -46,12 +48,6 @@ export default function OrderSummary({
           </dt>
           <dd className="tabular-nums text-heading">{gbp(subtotal)}</dd>
         </div>
-        {promo && (
-          <div className="flex justify-between text-success-600">
-            <dt>Discount ({promo.code})</dt>
-            <dd className="tabular-nums">−{gbp(discount)}</dd>
-          </div>
-        )}
         <div className="flex justify-between border-t border-line pt-3 font-display text-base font-extrabold text-heading">
           <dt>Total</dt>
           <dd className="tabular-nums">{gbp(total)}</dd>

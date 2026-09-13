@@ -14,7 +14,7 @@ export default function CheckoutPage() {
       <PageHeader
         eyebrow="Checkout"
         title="Confirm your entries"
-        lede="Enter your details to complete your order. This is a prototype — no payment is taken."
+        lede="Enter your details to complete your order. No payment is taken yet — payment isn't connected until a later phase."
         breadcrumbs={[
           { label: "Home", href: routes.home },
           { label: "Basket", href: routes.cart },

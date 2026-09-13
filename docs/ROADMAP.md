@@ -19,13 +19,17 @@ ticket allocation is concurrency-safe).
   frontend switched from mock data to real API calls. See
   [`COMPETITIONS_API.md`](COMPETITIONS_API.md). No write/admin endpoints
   yet — there's no role/permission concept to gate them on (that's P11).
-- **P5 — Orders**: order creation flow, replacing the `sessionStorage`
-  mock in `src/lib/order.ts`.
-- **P6 — Ticket engine**: concurrency-safe allocation/reservation/release,
+- **P5 — Orders** (complete): `carts`/`cart_items`/`orders`/`order_items`
+  schema, server-side price integrity, authenticated cart/order API,
+  frontend cart/checkout switched from the P1 mock (`src/lib/order.ts`,
+  now removed) to the real API. Orders are created `pending` only — no
+  payment or ticket logic. See [`ORDERS_API.md`](ORDERS_API.md).
+- **P6 — Payments**: provider integration, webhook handling, idempotency
+  keys, replacing `PaymentPlaceholder`, transitioning orders out of
+  `pending`.
+- **P7 — Ticket engine**: concurrency-safe allocation/reservation/release,
   per-user and per-competition limits, sold-out handling — needs its own
   design pass (row locking, idempotency) before any code is written.
-- **P7 — Payments**: provider integration, webhook handling, idempotency
-  keys, replacing `PaymentPlaceholder`.
 - **P8 — Competition lifecycle**: closing rules, sold-out detection,
   scheduled jobs (this is what P1's scheduler infrastructure is for).
 - **P9 — Draw engine**: eligible-ticket snapshot, winner selection,

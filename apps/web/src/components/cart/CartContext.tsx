@@ -4,19 +4,25 @@ import {
   createContext,
   useCallback,
   useContext,
-  useMemo,
-  useSyncExternalStore,
+  useEffect,
+  useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@/lib/auth/AuthContext";
+import * as cartClient from "@/lib/cart/client";
+import { drawLabelShort } from "@/lib/format";
+import type { ApiCartItem } from "@/lib/cart/types";
 
 /**
- * Frontend-only cart. localStorage is the single source of truth; React
- * reads it through useSyncExternalStore (no effects, no hydration mismatch).
- * There is NO backend, no real basket and no ticket reservation. Promo
- * codes are a small hardcoded lookup for the discount UI.
+ * Server-backed cart (P5) — replaces the P1 localStorage mock. A cart
+ * requires authentication (no guest cart architecture — see
+ * docs/SCHEMA_DESIGN_P5.md), so this reads auth state from AuthContext
+ * (P3) and only talks to the API once a real session exists.
  */
 
 export type CartItem = {
+  id: number;
+  competitionId: number;
   slug: string;
   title: string;
   image: string;
@@ -25,195 +31,118 @@ export type CartItem = {
   drawLabel: string;
 };
 
-export type Promo = { code: string; label: string; rate: number };
-
-const PROMOS: Promo[] = [
-  { code: "RAFFLE10", label: "10% off your entries", rate: 0.1 },
-  { code: "GURU5", label: "5% welcome discount", rate: 0.05 },
-];
-
-const STORAGE_KEY = "raffleguru.cart.v1";
-const EVENT = "raffleguru:cart";
-
-type StoredState = { items: CartItem[]; promoCode: string | null };
-
-const EMPTY: StoredState = { items: [], promoCode: null };
-
-/* ---- external store ------------------------------------------------ */
-
-let cache: StoredState = EMPTY;
-let cacheRaw: string | null = null;
-
-function read(): StoredState {
-  if (typeof window === "undefined") return EMPTY;
-  let raw: string | null = null;
-  try {
-    raw = window.localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return EMPTY;
-  }
-  if (raw === cacheRaw) return cache;
-  cacheRaw = raw;
-  if (!raw) {
-    cache = EMPTY;
-    return cache;
-  }
-  try {
-    const parsed = JSON.parse(raw) as StoredState;
-    cache = {
-      items: Array.isArray(parsed.items) ? parsed.items : [],
-      promoCode: parsed.promoCode ?? null,
-    };
-  } catch {
-    cache = EMPTY;
-  }
-  return cache;
-}
-
-function write(next: StoredState) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    /* storage unavailable — cart won't persist this session */
-  }
-  cacheRaw = null; // force re-parse on next read
-  window.dispatchEvent(new Event(EVENT));
-}
-
-function update(fn: (prev: StoredState) => StoredState) {
-  write(fn(read()));
-}
-
-function subscribe(cb: () => void) {
-  window.addEventListener(EVENT, cb);
-  window.addEventListener("storage", cb);
-  return () => {
-    window.removeEventListener(EVENT, cb);
-    window.removeEventListener("storage", cb);
-  };
-}
-
-/* ---- context ----------------------------------------------------- */
+type CartStatus = "loading" | "ready" | "guest" | "error";
 
 type CartValue = {
   items: CartItem[];
   count: number;
   subtotal: number;
-  discount: number;
   total: number;
-  promo: Promo | null;
+  status: CartStatus;
+  /** true once status has settled (ready/guest/error) — kept for the
+   * same SSR-safe gating pattern components already used. */
   hydrated: boolean;
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  setQuantity: (slug: string, quantity: number) => void;
-  removeItem: (slug: string) => void;
-  clear: () => void;
-  applyPromo: (code: string) => boolean;
-  removePromo: () => void;
+  addItem: (competitionId: number, quantity?: number) => Promise<void>;
+  setQuantity: (itemId: number, quantity: number) => Promise<void>;
+  removeItem: (itemId: number) => Promise<void>;
+  clear: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const CartContext = createContext<CartValue | null>(null);
 
+function adaptItem(api: ApiCartItem): CartItem {
+  return {
+    id: api.id,
+    competitionId: api.competition.id,
+    slug: api.competition.slug,
+    title: api.competition.title,
+    image: api.competition.image ?? "",
+    entryPrice: api.unit_price / 100,
+    quantity: api.quantity,
+    drawLabel: api.competition.draw_at ? drawLabelShort(api.competition.draw_at) : "TBC",
+  };
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const state = useSyncExternalStore(
-    subscribe,
-    read,
-    () => EMPTY,
-  );
-  const hydrated = useSyncExternalStore(
-    subscribe,
-    () => true,
-    () => false,
-  );
+  const { status: authStatus } = useAuth();
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [subtotal, setSubtotal] = useState(0);
+  const [status, setStatus] = useState<CartStatus>("loading");
 
-  const addItem = useCallback(
-    (item: Omit<CartItem, "quantity">, quantity = 1) =>
-      update((prev) => {
-        const existing = prev.items.find((i) => i.slug === item.slug);
-        const items = existing
-          ? prev.items.map((i) =>
-              i.slug === item.slug
-                ? { ...i, quantity: Math.min(999, i.quantity + quantity) }
-                : i,
-            )
-          : [...prev.items, { ...item, quantity: Math.max(1, quantity) }];
-        return { ...prev, items };
-      }),
-    [],
-  );
-
-  const setQuantity = useCallback(
-    (slug: string, quantity: number) =>
-      update((prev) => ({
-        ...prev,
-        items:
-          quantity <= 0
-            ? prev.items.filter((i) => i.slug !== slug)
-            : prev.items.map((i) =>
-                i.slug === slug
-                  ? { ...i, quantity: Math.min(999, Math.round(quantity)) }
-                  : i,
-              ),
-      })),
-    [],
-  );
-
-  const removeItem = useCallback(
-    (slug: string) =>
-      update((prev) => ({
-        ...prev,
-        items: prev.items.filter((i) => i.slug !== slug),
-      })),
-    [],
-  );
-
-  const clear = useCallback(() => write(EMPTY), []);
-
-  const applyPromo = useCallback((code: string) => {
-    const match = PROMOS.find(
-      (p) => p.code.toLowerCase() === code.trim().toLowerCase(),
-    );
-    if (!match) return false;
-    update((prev) => ({ ...prev, promoCode: match.code }));
-    return true;
+  const refresh = useCallback(async () => {
+    try {
+      const { data } = await cartClient.getCart();
+      setItems(data.items.map(adaptItem));
+      setSubtotal(data.subtotal / 100);
+      setStatus("ready");
+    } catch {
+      setStatus("error");
+    }
   }, []);
 
-  const removePromo = useCallback(
-    () => update((prev) => ({ ...prev, promoCode: null })),
-    [],
+  useEffect(() => {
+    async function sync() {
+      if (authStatus === "loading") {
+        setStatus("loading");
+        return;
+      }
+      if (authStatus === "guest") {
+        setItems([]);
+        setSubtotal(0);
+        setStatus("guest");
+        return;
+      }
+      await refresh();
+    }
+    void sync();
+  }, [authStatus, refresh]);
+
+  const addItem = useCallback(async (competitionId: number, quantity = 1) => {
+    const { data } = await cartClient.addCartItem(competitionId, quantity);
+    setItems(data.items.map(adaptItem));
+    setSubtotal(data.subtotal / 100);
+  }, []);
+
+  const removeItem = useCallback(async (itemId: number) => {
+    const { data } = await cartClient.removeCartItem(itemId);
+    setItems(data.items.map(adaptItem));
+    setSubtotal(data.subtotal / 100);
+  }, []);
+
+  const setQuantity = useCallback(
+    async (itemId: number, quantity: number) => {
+      if (quantity <= 0) {
+        await removeItem(itemId);
+        return;
+      }
+      const { data } = await cartClient.updateCartItem(itemId, quantity);
+      setItems(data.items.map(adaptItem));
+      setSubtotal(data.subtotal / 100);
+    },
+    [removeItem],
   );
 
-  const value = useMemo<CartValue>(() => {
-    const promo = PROMOS.find((p) => p.code === state.promoCode) ?? null;
-    const subtotal = state.items.reduce(
-      (sum, i) => sum + i.entryPrice * i.quantity,
-      0,
-    );
-    const discount = promo ? subtotal * promo.rate : 0;
-    return {
-      items: state.items,
-      count: state.items.reduce((n, i) => n + i.quantity, 0),
-      subtotal,
-      discount,
-      total: Math.max(0, subtotal - discount),
-      promo,
-      hydrated,
-      addItem,
-      setQuantity,
-      removeItem,
-      clear,
-      applyPromo,
-      removePromo,
-    };
-  }, [
-    state,
-    hydrated,
+  const clear = useCallback(async () => {
+    for (const item of items) {
+      await cartClient.removeCartItem(item.id);
+    }
+    await refresh();
+  }, [items, refresh]);
+
+  const value: CartValue = {
+    items,
+    count: items.reduce((n, i) => n + i.quantity, 0),
+    subtotal,
+    total: subtotal, // no discount/promotion logic — see docs/SCHEMA_DESIGN_P5.md
+    status,
+    hydrated: status !== "loading",
     addItem,
     setQuantity,
     removeItem,
     clear,
-    applyPromo,
-    removePromo,
-  ]);
+    refresh,
+  };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
@@ -223,6 +152,3 @@ export function useCart(): CartValue {
   if (!ctx) throw new Error("useCart must be used within <CartProvider>");
   return ctx;
 }
-
-export { PROMOS };
-

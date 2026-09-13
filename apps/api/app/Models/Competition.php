@@ -84,4 +84,18 @@ class Competition extends Model
             CompetitionStatus::Scheduled,
         ]);
     }
+
+    /**
+     * Competitions that currently accept a new entry — narrower than
+     * scopePublic(): a sold-out/closed/drawn competition is still worth
+     * showing a customer (P4), but none of those should take a new cart
+     * item or order line (P5). See docs/SCHEMA_DESIGN_P5.md.
+     *
+     * @param  Builder<Competition>  $query
+     * @return Builder<Competition>
+     */
+    public function scopePurchasable(Builder $query): Builder
+    {
+        return $query->where('status', CompetitionStatus::Active);
+    }
 }

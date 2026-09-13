@@ -7,8 +7,10 @@ use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\Auth\VerifyEmailController;
+use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CompetitionController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\OrderController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,9 +18,9 @@ use Illuminate\Support\Facades\Route;
 | API Routes (v1)
 |--------------------------------------------------------------------------
 |
-| Customer authentication (P3), public competition browsing (P4), plus
-| infrastructure health checks (P1). Domain routes (orders, tickets,
-| payments, draws, ...) are added in their own phases.
+| Customer authentication (P3), public competition browsing (P4), cart &
+| orders (P5), plus infrastructure health checks (P1). Payment/ticket/
+| draw routes are added in their own phases.
 |
 */
 
@@ -31,6 +33,19 @@ Route::prefix('v1')->group(function () {
     // architecture yet to gate them on (see docs/COMPETITIONS_API.md).
     Route::get('competitions', [CompetitionController::class, 'index']);
     Route::get('competitions/{slug}', [CompetitionController::class, 'show']);
+
+    // Cart & orders — every route requires authentication (no guest cart,
+    // see docs/SCHEMA_DESIGN_P5.md), and is scoped to the caller only.
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('cart', [CartController::class, 'show']);
+        Route::post('cart/items', [CartController::class, 'store']);
+        Route::patch('cart/items/{item}', [CartController::class, 'update']);
+        Route::delete('cart/items/{item}', [CartController::class, 'destroy']);
+
+        Route::get('orders', [OrderController::class, 'index']);
+        Route::post('orders', [OrderController::class, 'store']);
+        Route::get('orders/{reference}', [OrderController::class, 'show']);
+    });
 
     Route::prefix('auth')->group(function () {
         // -- Public --

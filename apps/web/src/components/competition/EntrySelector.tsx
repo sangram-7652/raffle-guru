@@ -9,12 +9,14 @@ import ProgressBar from "../ui/ProgressBar";
 import Countdown from "../ui/Countdown";
 import CompetitionQuestion from "./CompetitionQuestion";
 import { useCart } from "../cart/CartContext";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { ApiValidationError } from "@/lib/api/http";
 import { gbp, drawDateLong } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import type { Competition } from "@/data/competitions";
 
 const QUICK_PICKS = [1, 5, 10, 25];
-const MAX = 250;
+const MAX = 100; // matches CartItem::MAX_QUANTITY server-side (see docs/ORDERS_API.md)
 
 export default function EntrySelector({
   competition,
@@ -24,30 +26,41 @@ export default function EntrySelector({
   domId?: string;
 }) {
   const { addItem } = useCart();
+  const { status: authStatus } = useAuth();
   const router = useRouter();
   const [qty, setQty] = useState(1);
   const [answered, setAnswered] = useState<boolean | null>(null);
   const [justAdded, setJustAdded] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const soldOut = competition.status === "sold-out" || competition.soldPct >= 100;
   const total = competition.entryPrice * qty;
 
-  function add(goToCheckout: boolean) {
-    addItem(
-      {
-        slug: competition.slug,
-        title: competition.title,
-        image: competition.image,
-        entryPrice: competition.entryPrice,
-        drawLabel: competition.drawLabel,
-      },
-      qty,
-    );
-    if (goToCheckout) {
-      router.push(routes.cart);
-    } else {
-      setJustAdded(true);
-      window.setTimeout(() => setJustAdded(false), 2500);
+  async function add(goToCheckout: boolean) {
+    if (authStatus === "guest") {
+      router.push(`${routes.login}?redirect=${encodeURIComponent(routes.competition(competition.slug))}`);
+      return;
+    }
+
+    setError(null);
+    setAdding(true);
+    try {
+      await addItem(Number(competition.id), qty);
+      if (goToCheckout) {
+        router.push(routes.cart);
+      } else {
+        setJustAdded(true);
+        window.setTimeout(() => setJustAdded(false), 2500);
+      }
+    } catch (err) {
+      setError(
+        err instanceof ApiValidationError
+          ? (err.fieldError("competition_id") ?? err.fieldError("quantity") ?? err.message)
+          : "Couldn't add this to your basket. Please try again.",
+      );
+    } finally {
+      setAdding(false);
     }
   }
 
@@ -149,8 +162,21 @@ export default function EntrySelector({
             </p>
           )}
 
+          {error && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-error-600">
+              <Icon name="close" className="h-3.5 w-3.5" />
+              {error}
+            </p>
+          )}
+
           <div className="mt-4 space-y-2">
-            <Button block size="lg" onClick={() => add(true)}>
+            <Button
+              block
+              size="lg"
+              onClick={() => add(true)}
+              loading={adding}
+              disabled={adding}
+            >
               {justAdded ? "Added — go to basket" : "Enter now"}
               <Icon name="arrow" className="h-4 w-4" />
             </Button>
@@ -159,6 +185,8 @@ export default function EntrySelector({
               variant="secondary"
               onClick={() => add(false)}
               aria-live="polite"
+              loading={adding}
+              disabled={adding}
             >
               {justAdded ? (
                 <>
@@ -173,7 +201,7 @@ export default function EntrySelector({
 
           <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted">
             <Icon name="lock" className="h-3.5 w-3.5" />
-            Prototype checkout — no payment is taken
+            No payment is taken yet
           </p>
         </>
       )}

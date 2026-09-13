@@ -1,17 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "../cart/CartContext";
 import OrderSummary from "../cart/OrderSummary";
-import PromoCode from "../cart/PromoCode";
 import PaymentPlaceholder from "./PaymentPlaceholder";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import EmptyState from "../ui/EmptyState";
 import { FormField, Input, Select, Checkbox } from "../ui/form";
-import { buildMockOrder, saveMockOrder } from "@/lib/order";
+import { useAuth } from "@/lib/auth/AuthContext";
+import { createOrder } from "@/lib/orders/client";
+import { ApiValidationError } from "@/lib/api/http";
 import { routes } from "@/lib/routes";
 
 type Field =
@@ -47,9 +48,24 @@ const ukPostcodeRe = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
 export default function CheckoutView() {
   const router = useRouter();
   const cart = useCart();
+  const { status: authStatus } = useAuth();
   const [values, setValues] = useState<Values>(initial);
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({});
   const [placing, setPlacing] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
+
+  // Defensive guest redirect — CartView/EntrySelector already gate adding
+  // to a basket on being signed in, but a guest could still navigate here
+  // directly.
+  useEffect(() => {
+    if (authStatus === "guest") {
+      router.replace(`${routes.login}?redirect=${encodeURIComponent(routes.checkout)}`);
+    }
+  }, [authStatus, router]);
+
+  if (authStatus === "loading" || authStatus === "guest") {
+    return <div className="h-96 rounded-card border border-line bg-mist" />;
+  }
 
   if (cart.hydrated && cart.items.length === 0) {
     return (
@@ -93,8 +109,9 @@ export default function CheckoutView() {
     return e;
   }
 
-  function onSubmit(ev: React.FormEvent) {
+  async function onSubmit(ev: React.FormEvent) {
     ev.preventDefault();
+    setOrderError(null);
     const e = validate();
     setErrors(e);
     if (Object.keys(e).length > 0) {
@@ -104,18 +121,18 @@ export default function CheckoutView() {
       return;
     }
     setPlacing(true);
-    const order = buildMockOrder({
-      items: cart.items,
-      subtotal: cart.subtotal,
-      discount: cart.discount,
-      total: cart.total,
-      promoCode: cart.promo?.code ?? null,
-      email: values.email.trim(),
-      name: `${values.firstName.trim()} ${values.lastName.trim()}`,
-    });
-    saveMockOrder(order);
-    cart.clear();
-    router.push(routes.orderSuccess);
+    try {
+      const { data: order } = await createOrder();
+      await cart.refresh();
+      router.push(`${routes.orderSuccess}?reference=${encodeURIComponent(order.reference)}`);
+    } catch (err) {
+      setOrderError(
+        err instanceof ApiValidationError
+          ? (err.fieldError("cart") ?? err.message)
+          : "Something went wrong placing your order. Please try again.",
+      );
+      setPlacing(false);
+    }
   }
 
   return (
@@ -264,7 +281,15 @@ export default function CheckoutView() {
       <div className="lg:sticky lg:top-24 lg:self-start">
         <OrderSummary showItems>
           <div className="space-y-4">
-            <PromoCode />
+            {orderError && (
+              <p
+                role="alert"
+                className="flex items-center gap-1.5 text-xs font-medium text-error-600"
+              >
+                <Icon name="close" className="h-3.5 w-3.5 shrink-0" />
+                {orderError}
+              </p>
+            )}
             <Button type="submit" block size="lg" loading={placing}>
               {placing ? "Placing order" : "Place order"}
             </Button>
@@ -275,7 +300,8 @@ export default function CheckoutView() {
               </li>
               <li className="flex items-center gap-1.5">
                 <Icon name="shield" className="h-3.5 w-3.5 text-pink-600" />
-                Prototype only — no payment is taken and no order is created
+                No payment is taken — your order is created and marked
+                pending payment
               </li>
             </ul>
           </div>

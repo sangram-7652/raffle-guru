@@ -4,21 +4,50 @@ import Link from "next/link";
 import { useCart } from "./CartContext";
 import CartLineItem from "./CartLineItem";
 import OrderSummary from "./OrderSummary";
-import PromoCode from "./PromoCode";
 import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import EmptyState from "../ui/EmptyState";
 import { routes } from "@/lib/routes";
 
 export default function CartView() {
-  const { items, count, clear, hydrated } = useCart();
+  const { items, count, clear, status, refresh } = useCart();
 
-  if (!hydrated) {
+  if (status === "loading") {
     return (
       <div className="grid gap-8 lg:grid-cols-[1fr_22rem]">
         <div className="h-64 rounded-card border border-line bg-mist" />
         <div className="h-64 rounded-card border border-line bg-mist" />
       </div>
+    );
+  }
+
+  if (status === "guest") {
+    return (
+      <EmptyState
+        icon="lock"
+        title="Sign in to see your basket"
+        description="Your basket is tied to your account — sign in to view or add entries."
+        action={
+          <Button href={`${routes.login}?redirect=${encodeURIComponent(routes.cart)}`}>
+            Sign in
+          </Button>
+        }
+      />
+    );
+  }
+
+  if (status === "error") {
+    return (
+      <EmptyState
+        icon="ticket"
+        title="Couldn't load your basket"
+        description="Something went wrong reaching the server. Please try again."
+        action={
+          <Button variant="secondary" onClick={() => void refresh()}>
+            Retry
+          </Button>
+        }
+      />
     );
   }
 
@@ -48,7 +77,7 @@ export default function CartView() {
           </h2>
           <button
             type="button"
-            onClick={clear}
+            onClick={() => void clear()}
             className="text-xs font-semibold text-muted underline underline-offset-2 hover:text-heading"
           >
             Clear basket
@@ -57,7 +86,7 @@ export default function CartView() {
 
         <ul className="mt-2 divide-y divide-line border-y border-line">
           {items.map((item) => (
-            <CartLineItem key={item.slug} item={item} />
+            <CartLineItem key={item.id} item={item} />
           ))}
         </ul>
 
@@ -73,14 +102,14 @@ export default function CartView() {
       <div className="lg:sticky lg:top-24 lg:self-start">
         <OrderSummary>
           <div className="space-y-4">
-            <PromoCode />
             <Button href={routes.checkout} block size="lg">
               Checkout
               <Icon name="arrow" className="h-4 w-4" />
             </Button>
             <p className="flex items-center justify-center gap-1.5 text-xs text-muted">
               <Icon name="lock" className="h-3.5 w-3.5" />
-              Prototype checkout — no payment is taken
+              No payment is taken yet — payment isn&apos;t connected until a
+              later phase.
             </p>
           </div>
         </OrderSummary>
