@@ -18,6 +18,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // the real client IP/scheme from X-Forwarded-* instead of seeing
         // every request as HTTP from Nginx's own address.
         $middleware->trustProxies(at: '*');
+
+        // Next.js and the API are served from the same Nginx origin (see
+        // docs/PRODUCTION_ARCHITECTURE.md) — Sanctum's SPA mode lets the
+        // browser authenticate with a normal session cookie against /api/*
+        // routes instead of needing a bearer token. See config/sanctum.php
+        // for the "stateful" domains this actually applies to.
+        $middleware->statefulApi();
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

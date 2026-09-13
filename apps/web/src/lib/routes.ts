@@ -20,6 +20,11 @@ export const routes = {
   responsiblePlay: "/responsible-play",
   competitionRules: "/competition-rules",
   login: "/login",
+  register: "/register",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  verifyEmail: "/verify-email",
+  account: "/account",
 } as const;
 
 export const legalSlugs = [

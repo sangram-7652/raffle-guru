@@ -10,8 +10,10 @@ ticket allocation is concurrency-safe).
 - **P2 — Database foundation** (complete): `users`/`competitions`/`prizes`
   schema, models, factories, seeders — see
   [`SCHEMA_DESIGN_P2.md`](SCHEMA_DESIGN_P2.md). No API endpoints yet.
-- **P3 — Authentication**: replace the decorative login page with real
-  auth (Sanctum or session-based), email verification, password reset.
+- **P3 — Authentication** (complete): Sanctum SPA (cookie-session) auth —
+  register/login/logout, email verification, password reset, rate
+  limiting, `/account` as a protected route. See
+  [`AUTHENTICATION.md`](AUTHENTICATION.md). No orders/tickets/etc. yet.
 - **P4 — Competition domain**: CRUD + Filament resource; frontend switches
   from `src/data/competitions.ts` to real API calls.
 - **P5 — Orders**: order creation flow, replacing the `sessionStorage`

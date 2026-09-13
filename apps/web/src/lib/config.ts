@@ -1,8 +1,11 @@
 /**
- * Frontend configuration boundary for the future Laravel API.
+ * Frontend configuration boundary for the Laravel API.
  *
- * Infra-only for now: nothing in the app calls this yet. It exists so the
- * environment-driven URL is available in one place once real API calls
- * are wired up, instead of hardcoding hosts anywhere.
+ * Both derive from the same origin (Nginx serves web + api together — see
+ * docs/PRODUCTION_ARCHITECTURE.md) so there's only one env var to set.
  */
 export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
+
+/** Origin with any trailing "/api" removed — for routes Sanctum registers
+ * outside the /api prefix, e.g. GET /sanctum/csrf-cookie. */
+export const apiOrigin = apiBaseUrl.replace(/\/api\/?$/, "");

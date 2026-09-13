@@ -9,6 +9,7 @@ import Container from "./Container";
 import DesktopNavigation from "./navigation/DesktopNavigation";
 import MobileNavigation from "./navigation/MobileNavigation";
 import { useCart } from "../cart/CartContext";
+import { useAuth } from "@/lib/auth/AuthContext";
 import { mainNav } from "@/data/site";
 import { routes } from "@/lib/routes";
 
@@ -33,6 +34,7 @@ function CartLink({ className = "" }: { className?: string }) {
 export default function Header() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { status, user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -61,12 +63,21 @@ export default function Header() {
         <DesktopNavigation links={mainNav} />
 
         <div className="hidden items-center gap-3 lg:flex">
-          <Link
-            href={routes.login}
-            className="text-sm font-semibold text-heading transition-colors hover:text-pink-600"
-          >
-            Login
-          </Link>
+          {status === "authenticated" ? (
+            <Link
+              href={routes.account}
+              className="text-sm font-semibold text-heading transition-colors hover:text-pink-600"
+            >
+              {user?.name.split(" ")[0]}
+            </Link>
+          ) : (
+            <Link
+              href={routes.login}
+              className="text-sm font-semibold text-heading transition-colors hover:text-pink-600"
+            >
+              Login
+            </Link>
+          )}
           <CartLink />
           <Button href={routes.competitions} size="sm">
             ENTER NOW

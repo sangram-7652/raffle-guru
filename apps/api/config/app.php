@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Frontend URL
+    |--------------------------------------------------------------------------
+    |
+    | Where the Next.js app is served from the browser's point of view (the
+    | Nginx origin — see docs/PRODUCTION_ARCHITECTURE.md). Used to build
+    | links in emails (password reset, email verification) that point back
+    | at frontend pages rather than a Laravel route.
+    |
+    */
+
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:8080'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

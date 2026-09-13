@@ -6,15 +6,18 @@ development and production.
 
 ## Status: demo UI + production foundation
 
-- **`apps/web`** — the approved customer-facing UI. Frontend-only demo:
-  cart/checkout/login are mocked client-side (`localStorage`/
-  `sessionStorage`), no real backend calls, no payments. See
-  [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) and
+- **`apps/web`** — the approved customer-facing UI. Login/register/forgot-
+  password/reset-password/email-verification and the `/account` route are
+  real, backed by the Laravel API (see
+  [`docs/AUTHENTICATION.md`](docs/AUTHENTICATION.md)). Cart/checkout are
+  still a frontend-only demo (`localStorage`/`sessionStorage`, no real
+  orders/payments). See [`apps/web/CLAUDE.md`](apps/web/CLAUDE.md) and
   [`apps/web/DESIGN_SYSTEM.md`](apps/web/DESIGN_SYSTEM.md).
-- **`apps/api`** — a fresh Laravel application: infrastructure only (health
-  checks, DB/Redis/queue/scheduler wiring). No Competition/Ticket/Order/
-  Payment/Draw models or endpoints exist yet — see
-  [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next and
+- **`apps/api`** — a Laravel application with a database foundation
+  (`users`/`competitions`/`prizes`, see
+  [`docs/SCHEMA_DESIGN_P2.md`](docs/SCHEMA_DESIGN_P2.md)) and customer
+  authentication. No Competition/Ticket/Order/Payment/Draw endpoints exist
+  yet — see [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's next and
   [`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md) for
   how the pieces fit together.
 

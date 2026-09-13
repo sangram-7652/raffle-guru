@@ -2,6 +2,19 @@
 # non-default numbers to avoid clashing with other projects on the same
 # machine; the public entry point is Nginx on http://localhost:8080.
 #
+# apps/api/vendor is NOT volume-isolated from the bind mount — Composer
+# packages are pure PHP, so install/update dependencies on the host and
+# the container sees them immediately. An earlier version used a named
+# volume here too, which went stale (missing packages, hard-to-diagnose
+# fatal errors) every time a new dependency was added on the host without
+# also rebuilding the image.
+#
+# apps/web/node_modules is different: it contains platform-specific
+# native bindings (e.g. @next/swc-*) that must match the container's own
+# libc, not the host's — so it stays in its own volume, and the web
+# service runs `npm install` on every start instead (self-heals rather
+# than going stale).
+#
 # Usage: docker compose up --build
 
 services:
@@ -51,7 +64,6 @@ services:
       REDIS_PORT: 6379
     volumes:
       - ./apps/api:/var/www/html
-      - api-vendor:/var/www/html/vendor
     ports:
       - "127.0.0.1:8001:8000"
     depends_on:
@@ -76,7 +88,6 @@ services:
       REDIS_PORT: 6379
     volumes:
       - ./apps/api:/var/www/html
-      - api-vendor:/var/www/html/vendor
     depends_on:
       mysql:
         condition: service_healthy
@@ -99,7 +110,6 @@ services:
       REDIS_PORT: 6379
     volumes:
       - ./apps/api:/var/www/html
-      - api-vendor:/var/www/html/vendor
     depends_on:
       mysql:
         condition: service_healthy
@@ -114,10 +124,17 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    # Unlike apps/api/vendor (pure PHP, no native binaries), node_modules
+    # contains platform-specific compiled bindings (e.g. @next/swc-*) — the
+    # host's own node_modules is built for the host's libc and crashes
+    # inside this Alpine/musl container. So node_modules stays in its own
+    # volume, and `npm install` reruns on every container start (self-heals
+    # instead of going stale) rather than bind-mounting it from the host.
     volumes:
       - ./apps/web:/app
       - web-node-modules:/app/node_modules
       - web-next-cache:/app/.next
+    command: sh -c "npm install && npm run dev -- -H 0.0.0.0 -p 3000"
     ports:
       - "127.0.0.1:3100:3000"
 
@@ -135,6 +152,5 @@ services:
 volumes:
   mysql-data:
   redis-data:
-  api-vendor:
   web-node-modules:
   web-next-cache:

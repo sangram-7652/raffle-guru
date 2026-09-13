@@ -115,6 +115,16 @@ Core relational foundation is in place: `users`, `competitions`, `prizes`
 No Competition/Prize API endpoints exist yet (that's P4) — P2 is schema,
 models, factories, and tests only.
 
+## Authentication (P3)
+
+Cookie-session auth (Laravel Sanctum SPA mode) for the `/api/v1/auth/*`
+endpoints — register, login, logout, email verification, password reset.
+Full reasoning and endpoint table in
+[`docs/AUTHENTICATION.md`](AUTHENTICATION.md). This is why
+`/sanctum/*` is proxied by Nginx alongside `/api/*` (see the dev/prod
+Nginx configs) and why `bootstrap/app.php` calls
+`$middleware->statefulApi()`.
+
 ## AWS direction (not provisioned — documentation only)
 
 A V1 production footprint, deliberately not Kubernetes/ECS at this stage:
