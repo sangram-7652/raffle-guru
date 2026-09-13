@@ -40,11 +40,13 @@ class SerializationTest extends TestCase
         $orderKeys = array_keys($response->json('data'));
         sort($orderKeys);
         $this->assertSame(
-            ['created_at', 'currency', 'id', 'items', 'payment', 'reference', 'status', 'subtotal', 'total'],
+            ['created_at', 'currency', 'entries', 'id', 'items', 'payment', 'reference', 'status', 'subtotal', 'total'],
             $orderKeys,
         );
-        // No payment attempt exists yet for a just-created order.
+        // No payment attempt exists yet for a just-created order, and
+        // nothing has been allocated (P7) — it isn't even paid yet.
         $this->assertNull($response->json('data.payment'));
+        $this->assertSame([], $response->json('data.entries'));
 
         $body = $response->getContent();
         foreach (['card', 'payment_method', 'password', 'ticket_number', 'cvv'] as $forbidden) {

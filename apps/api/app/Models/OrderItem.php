@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'order_id',
@@ -45,5 +46,13 @@ class OrderItem extends Model
     public function prize(): BelongsTo
     {
         return $this->belongsTo(Prize::class);
+    }
+
+    /**
+     * @return HasOne<Entry, $this>
+     */
+    public function entry(): HasOne
+    {
+        return $this->hasOne(Entry::class);
     }
 }

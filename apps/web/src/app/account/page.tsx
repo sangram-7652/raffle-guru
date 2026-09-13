@@ -156,6 +156,13 @@ function AccountContent() {
           </Button>
         </div>
 
+        <div className="mt-6 max-w-lg">
+          <Button href={routes.accountEntries} variant="secondary">
+            <Icon name="ticket" className="h-4 w-4" />
+            My entries
+          </Button>
+        </div>
+
         <RecentOrders />
       </Container>
     </>

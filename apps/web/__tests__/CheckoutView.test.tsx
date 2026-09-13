@@ -69,6 +69,7 @@ function fakeOrder(overrides: Partial<ApiOrder> = {}): ApiOrder {
       },
     ],
     payment: null,
+    entries: [],
     created_at: "2026-09-13T12:00:00Z",
     ...overrides,
   };

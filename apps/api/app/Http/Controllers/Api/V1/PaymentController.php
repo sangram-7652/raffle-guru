@@ -87,7 +87,7 @@ class PaymentController extends Controller
 
         if ($payment->status === PaymentStatus::Paid) {
             // Duplicate verification call — safe no-op, not an error.
-            return new OrderResource($payment->order->fresh(['items', 'latestPayment']));
+            return new OrderResource($payment->order->fresh(['items', 'latestPayment', 'entries.competition', 'entries.tickets', 'entries.order']));
         }
 
         if (! $this->gateway->verifyPaymentSignature($gatewayOrderId, $gatewayPaymentId, $signature)) {
@@ -124,6 +124,6 @@ class PaymentController extends Controller
 
         $this->payments->markPaid($payment, ['gateway_signature' => $signature]);
 
-        return new OrderResource($payment->order->fresh(['items', 'latestPayment']));
+        return new OrderResource($payment->order->fresh(['items', 'latestPayment', 'entries.competition', 'entries.tickets', 'entries.order']));
     }
 }

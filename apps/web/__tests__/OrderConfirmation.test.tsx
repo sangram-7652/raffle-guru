@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OrderConfirmation from "@/components/checkout/OrderConfirmation";
 import type { ApiOrder } from "@/lib/orders/types";
@@ -32,6 +32,7 @@ function fakeOrder(overrides: Partial<ApiOrder> = {}): ApiOrder {
     total: 1000,
     created_at: "2026-09-13T12:00:00Z",
     payment: null,
+    entries: [],
     items: [
       {
         id: 1,
@@ -128,5 +129,84 @@ describe("OrderConfirmation", () => {
 
     expect(await screen.findByText("Order not found")).toBeDefined();
     expect(getOrder).not.toHaveBeenCalled();
+  });
+
+  test("shows a truthful allocation-in-progress state for a paid order with no entries yet — never a fake ticket", async () => {
+    searchParams = new URLSearchParams({ reference: "RG-482915" });
+    getOrder.mockResolvedValueOnce(fakeOrder({ status: "paid", entries: [] }));
+
+    render(<OrderConfirmation />);
+
+    expect(await screen.findByText("Allocating your tickets — this page updates automatically.")).toBeDefined();
+    expect(screen.getByText("Ticket allocation in progress")).toBeDefined();
+    expect(screen.queryByText(/^#\d/)).toBeNull();
+  });
+
+  test("shows real ticket numbers once entries have been allocated", async () => {
+    searchParams = new URLSearchParams({ reference: "RG-482915" });
+    getOrder.mockResolvedValueOnce(
+      fakeOrder({
+        status: "paid",
+        entries: [
+          {
+            id: 1,
+            competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition" },
+            order_reference: "RG-482915",
+            quantity: 5,
+            ticket_numbers: [1, 2, 3, 4, 5],
+            allocated_at: "2026-09-13T12:01:00Z",
+          },
+        ],
+      }),
+    );
+
+    render(<OrderConfirmation />);
+
+    expect(await screen.findByText("#1, #2, #3, #4, #5")).toBeDefined();
+    expect(screen.queryByText("Ticket allocation in progress")).toBeNull();
+    expect(screen.queryByText("Allocating your tickets — this page updates automatically.")).toBeNull();
+  });
+
+  test("polls for allocation to complete while a paid order still has no entries", async () => {
+    vi.useFakeTimers();
+    try {
+      searchParams = new URLSearchParams({ reference: "RG-482915" });
+      getOrder
+        .mockResolvedValueOnce(fakeOrder({ status: "paid", entries: [] }))
+        .mockResolvedValueOnce(
+          fakeOrder({
+            status: "paid",
+            entries: [
+              {
+                id: 1,
+                competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition" },
+                order_reference: "RG-482915",
+                quantity: 5,
+                ticket_numbers: [1, 2, 3, 4, 5],
+                allocated_at: "2026-09-13T12:01:00Z",
+              },
+            ],
+          }),
+        );
+
+      render(<OrderConfirmation />);
+      // Flush the initial load()'s promise/microtasks without advancing
+      // the clock — fake timers are active, so findBy/waitFor's own
+      // internal polling can't be used here.
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(0);
+      });
+      expect(getOrder).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("Ticket allocation in progress")).toBeDefined();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+
+      expect(getOrder).toHaveBeenCalledTimes(2);
+      expect(screen.getByText("#1, #2, #3, #4, #5")).toBeDefined();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

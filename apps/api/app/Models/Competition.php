@@ -62,6 +62,14 @@ class Competition extends Model
     }
 
     /**
+     * @return HasMany<Ticket, $this>
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /**
      * Competitions safe to show a public/customer-facing API — excludes
      * `draft` (unpublished) and `scheduled` (approved but not yet live).
      * Everything from `active` onward (including `sold_out`, `closed`,

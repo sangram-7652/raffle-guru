@@ -32,9 +32,17 @@ ticket allocation is concurrency-safe).
   [`PAYMENTS_API.md`](PAYMENTS_API.md) /
   [`PAYMENTS_DESIGN_P6.md`](PAYMENTS_DESIGN_P6.md). No refund
   initiation, no ticket logic.
-- **P7 — Ticket engine**: concurrency-safe allocation/reservation/release,
-  per-user and per-competition limits, sold-out handling — needs its own
-  design pass (row locking, idempotency) before any code is written.
+- **P7 — Ticket engine** (complete): `entries`/`tickets` schema,
+  concurrency-safe allocation (`TicketAllocationService`, competition
+  row locking, verified with real forked-process MySQL concurrency
+  tests) triggered off `Order.status = paid` via an `OrderPaid` event —
+  no coupling added to `PaymentService` beyond firing it, none added to
+  the payment webhook at all. Per-competition and per-user limits
+  enforced atomically at allocation time (the true enforcement
+  boundary — P5's cart-time check is a UX nicety only). Read-only
+  `/v1/entries` API, `/account/entries` page. No draw/winner logic. See
+  [`TICKET_ENGINE_API.md`](TICKET_ENGINE_API.md) /
+  [`TICKET_ENGINE_DESIGN_P7.md`](TICKET_ENGINE_DESIGN_P7.md).
 - **P8 — Competition lifecycle**: closing rules, sold-out detection,
   scheduled jobs (this is what P1's scheduler infrastructure is for).
 - **P9 — Draw engine**: eligible-ticket snapshot, winner selection,

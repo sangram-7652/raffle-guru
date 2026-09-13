@@ -4,6 +4,7 @@ namespace App\Services\Payments;
 
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
+use App\Events\OrderPaid;
 use App\Models\Order;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
@@ -42,6 +43,13 @@ class PaymentService
 
             if ($order->isPayable()) {
                 $order->update(['status' => OrderStatus::Paid]);
+
+                // P7 handoff — fired only on the call that actually
+                // performs this transition (never on the already-paid
+                // no-op above), and only once the transition has
+                // genuinely, durably committed. See
+                // docs/TICKET_ENGINE_DESIGN_P7.md "Order/payment handoff".
+                DB::afterCommit(fn () => OrderPaid::dispatch($order->fresh()));
             }
 
             return $locked;

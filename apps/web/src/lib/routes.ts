@@ -25,6 +25,7 @@ export const routes = {
   resetPassword: "/reset-password",
   verifyEmail: "/verify-email",
   account: "/account",
+  accountEntries: "/account/entries",
 } as const;
 
 export const legalSlugs = [

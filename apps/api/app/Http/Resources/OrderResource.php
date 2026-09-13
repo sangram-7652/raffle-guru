@@ -32,6 +32,11 @@ class OrderResource extends JsonResource
                 'latestPayment',
                 fn () => $this->latestPayment ? new PaymentResource($this->latestPayment) : null,
             ),
+            // Empty until allocation completes (P7) — the frontend
+            // distinguishes "paid, allocation in progress" from
+            // "allocated" by whether this is empty, not by a status
+            // field. See docs/TICKET_ENGINE_DESIGN_P7.md.
+            'entries' => EntryResource::collection($this->whenLoaded('entries')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

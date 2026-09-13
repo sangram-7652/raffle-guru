@@ -1,3 +1,5 @@
+import type { ApiEntry } from "@/lib/entries/types";
+
 export type ApiOrderItem = {
   id: number;
   competition_id: number;
@@ -46,6 +48,11 @@ export type ApiOrder = {
   /** The latest payment attempt only, or null before any exists — never
    * the full payment history. See docs/PAYMENTS_API.md. */
   payment: ApiPayment | null;
+  /** Empty until ticket allocation completes (P7) — the frontend
+   * distinguishes "paid, allocation in progress" from "allocated" by
+   * whether this is empty, never by inferring it from the URL. See
+   * docs/TICKET_ENGINE_API.md. */
+  entries: ApiEntry[];
   created_at: string | null;
 };
 

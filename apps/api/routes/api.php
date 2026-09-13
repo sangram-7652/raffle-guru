@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\Auth\VerifyEmailController;
 use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CompetitionController;
+use App\Http\Controllers\Api\V1\EntryController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentController;
@@ -21,8 +22,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Customer authentication (P3), public competition browsing (P4), cart &
-| orders (P5), payment processing (P6), plus infrastructure health
-| checks (P1). Ticket/draw routes are added in their own phases.
+| orders (P5), payment processing (P6), ticket entries (P7), plus
+| infrastructure health checks (P1). Draw routes are a future phase.
 |
 */
 
@@ -53,6 +54,11 @@ Route::prefix('v1')->group(function () {
         // authenticated user), same pattern as cart/orders above.
         Route::post('orders/{reference}/payment', [PaymentController::class, 'store']);
         Route::post('payments/verify', [PaymentController::class, 'verify']);
+
+        // Entries/tickets (P7) — see docs/TICKET_ENGINE_API.md. Read-only:
+        // no mutation endpoints exist, or should.
+        Route::get('entries', [EntryController::class, 'index']);
+        Route::get('entries/{entry}', [EntryController::class, 'show']);
     });
 
     // Gateway → server. Deliberately outside auth:sanctum — the gateway

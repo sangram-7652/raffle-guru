@@ -28,7 +28,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Laravel 11+ dropped the EventServiceProvider skeleton file — this
-        // is the standard replacement location for manual listener wiring.
+        // is the standard replacement location for manual listener wiring
+        // for a listener that isn't auto-discoverable (SendEmailVerification
+        // Notification lives in Illuminate\Auth\Listeners, outside
+        // app/Listeners, so Laravel's event auto-discovery never finds it).
+        // App\Listeners\DispatchTicketAllocation (P7), by contrast, IS
+        // auto-discovered from its handle(OrderPaid $event) type-hint —
+        // registering it again here would double-dispatch the allocation
+        // job. See docs/TICKET_ENGINE_DESIGN_P7.md "Order/payment handoff".
         Event::listen(Registered::class, SendEmailVerificationNotification::class);
 
         // The frontend (apps/web), not a Laravel Blade view, renders the

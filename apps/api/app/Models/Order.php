@@ -75,4 +75,12 @@ class Order extends Model
     {
         return in_array($this->status, [OrderStatus::Pending, OrderStatus::PaymentPending], true);
     }
+
+    /**
+     * @return HasMany<Entry, $this>
+     */
+    public function entries(): HasMany
+    {
+        return $this->hasMany(Entry::class);
+    }
 }
