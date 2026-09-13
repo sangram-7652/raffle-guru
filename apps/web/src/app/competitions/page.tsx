@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Container, PageHeader } from "@/components/layout";
 import CompetitionListing from "@/components/competition/CompetitionListing";
-import { competitions } from "@/data/competitions";
 import { routes } from "@/lib/routes";
 
 export const metadata: Metadata = {
@@ -30,10 +29,7 @@ export default async function CompetitionsPage({
       />
 
       <Container className="py-12 lg:py-16">
-        <CompetitionListing
-          competitions={competitions}
-          initialCategory={category ?? "All"}
-        />
+        <CompetitionListing initialCategory={category ?? "All"} />
       </Container>
     </>
   );

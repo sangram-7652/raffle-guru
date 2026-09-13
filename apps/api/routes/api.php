@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\Auth\NewPasswordController;
 use App\Http\Controllers\Api\V1\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Api\V1\Auth\RegisteredUserController;
 use App\Http\Controllers\Api\V1\Auth\VerifyEmailController;
+use App\Http\Controllers\Api\V1\CompetitionController;
 use App\Http\Controllers\Api\V1\HealthController;
 use Illuminate\Support\Facades\Route;
 
@@ -15,15 +16,21 @@ use Illuminate\Support\Facades\Route;
 | API Routes (v1)
 |--------------------------------------------------------------------------
 |
-| Customer authentication (P3) plus infrastructure health checks (P1).
-| Domain routes (competitions, orders, tickets, payments, draws, ...) are
-| added in their own phases.
+| Customer authentication (P3), public competition browsing (P4), plus
+| infrastructure health checks (P1). Domain routes (orders, tickets,
+| payments, draws, ...) are added in their own phases.
 |
 */
 
 Route::prefix('v1')->group(function () {
     Route::get('health', [HealthController::class, 'index']);
     Route::get('health/status', [HealthController::class, 'status']);
+
+    // Public — read-only. No authenticated/admin management endpoints
+    // exist yet: there's no role/permission concept anywhere in the
+    // architecture yet to gate them on (see docs/COMPETITIONS_API.md).
+    Route::get('competitions', [CompetitionController::class, 'index']);
+    Route::get('competitions/{slug}', [CompetitionController::class, 'show']);
 
     Route::prefix('auth')->group(function () {
         // -- Public --

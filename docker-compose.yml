@@ -124,6 +124,12 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: http://localhost:8080/api
+      # Server Components run inside this container, which can't reach the
+      # public Nginx *port* the browser uses (that's a host port mapping) —
+      # but nginx is still reachable by its service name on the internal
+      # Docker network, and proxies exactly the same either way. See
+      # src/lib/config.ts.
+      API_INTERNAL_URL: http://nginx/api
     # Unlike apps/api/vendor (pure PHP, no native binaries), node_modules
     # contains platform-specific compiled bindings (e.g. @next/swc-*) — the
     # host's own node_modules is built for the host's libc and crashes

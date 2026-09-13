@@ -14,8 +14,11 @@ ticket allocation is concurrency-safe).
   register/login/logout, email verification, password reset, rate
   limiting, `/account` as a protected route. See
   [`AUTHENTICATION.md`](AUTHENTICATION.md). No orders/tickets/etc. yet.
-- **P4 — Competition domain**: CRUD + Filament resource; frontend switches
-  from `src/data/competitions.ts` to real API calls.
+- **P4 — Competition domain** (complete): public read API
+  (`GET /api/v1/competitions`, `GET /api/v1/competitions/{slug}`),
+  frontend switched from mock data to real API calls. See
+  [`COMPETITIONS_API.md`](COMPETITIONS_API.md). No write/admin endpoints
+  yet — there's no role/permission concept to gate them on (that's P11).
 - **P5 — Orders**: order creation flow, replacing the `sessionStorage`
   mock in `src/lib/order.ts`.
 - **P6 — Ticket engine**: concurrency-safe allocation/reservation/release,

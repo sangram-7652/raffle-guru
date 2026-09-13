@@ -9,16 +9,13 @@ import CompetitionInfo from "@/components/competition/CompetitionInfo";
 import EntrySelector from "@/components/competition/EntrySelector";
 import StickyEnterBar from "@/components/competition/StickyEnterBar";
 import RelatedCompetitions from "@/components/competition/RelatedCompetitions";
-import {
-  competitions,
-  getCompetition,
-  getRelatedCompetitions,
-} from "@/data/competitions";
+import { adaptCompetition } from "@/lib/competitions/adapter";
+import { getCompetition, listCompetitions } from "@/lib/competitions/client";
 import { routes } from "@/lib/routes";
 
-export function generateStaticParams() {
-  return competitions.map((c) => ({ slug: c.slug }));
-}
+// Competitions are now real, changeable data (not a fixed mock set) —
+// rendered dynamically per-request rather than pre-generated at build
+// time, so a competition added after the last build still has a page.
 
 export async function generateMetadata({
   params,
@@ -26,11 +23,11 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const competition = getCompetition(slug);
+  const competition = await getCompetition(slug);
   if (!competition) return { title: "Competition not found" };
   return {
     title: competition.title,
-    description: competition.blurb,
+    description: competition.short_description,
   };
 }
 
@@ -47,11 +44,20 @@ export default async function CompetitionDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const competition = getCompetition(slug);
-  if (!competition) notFound();
+  const apiCompetition = await getCompetition(slug);
+  if (!apiCompetition) notFound();
 
-  const related = getRelatedCompetitions(slug, 3);
+  const competition = adaptCompetition(apiCompetition);
   const badge = statusBadge[competition.status];
+
+  const relatedResponse = await listCompetitions({
+    category: competition.category,
+    per_page: 4,
+  });
+  const related = relatedResponse.data
+    .filter((c) => c.slug !== slug)
+    .slice(0, 3)
+    .map(adaptCompetition);
 
   return (
     <>

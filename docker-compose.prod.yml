@@ -111,6 +111,10 @@ services:
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      # See docker-compose.yml — Server Components need an internal route
+      # to the API; nginx proxies it the same way for internal and
+      # external callers.
+      API_INTERNAL_URL: http://nginx/api
 
   nginx:
     image: nginx:1.27-alpine

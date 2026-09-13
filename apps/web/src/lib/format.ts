@@ -34,3 +34,15 @@ export function dateMedium(iso: string): string {
 export function pct(n: number): number {
   return Math.min(100, Math.max(0, Math.round(n)));
 }
+
+/** "Fri 8PM" — short label used on cards/entry panels. */
+export function drawLabelShort(iso: string): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    hour: "numeric",
+    hour12: true,
+    timeZone: "UTC",
+  })
+    .format(new Date(iso))
+    .replace(/\s/g, "");
+}

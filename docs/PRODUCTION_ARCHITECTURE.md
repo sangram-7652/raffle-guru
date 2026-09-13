@@ -112,8 +112,7 @@ Core relational foundation is in place: `users`, `competitions`, `prizes`
   `docs/SCHEMA_DESIGN_P2.md` for why each was deferred rather than
   guessed at.
 
-No Competition/Prize API endpoints exist yet (that's P4) — P2 is schema,
-models, factories, and tests only.
+Competition/Prize now have a public read API — see the next section.
 
 ## Authentication (P3)
 
@@ -124,6 +123,16 @@ Full reasoning and endpoint table in
 `/sanctum/*` is proxied by Nginx alongside `/api/*` (see the dev/prod
 Nginx configs) and why `bootstrap/app.php` calls
 `$middleware->statefulApi()`.
+
+## Competition management (P4)
+
+Public, read-only competition/prize browsing —
+`GET /api/v1/competitions`, `GET /api/v1/competitions/{slug}`. Full
+endpoint/query/visibility-rules reference in
+[`docs/COMPETITIONS_API.md`](COMPETITIONS_API.md). Server Components
+(the competition detail page's `generateMetadata`/data fetch) reach the
+API via `API_INTERNAL_URL` (`http://nginx/api` in Docker) rather than
+the browser-facing `NEXT_PUBLIC_API_URL` — see `src/lib/config.ts`.
 
 ## AWS direction (not provisioned — documentation only)
 

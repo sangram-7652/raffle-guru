@@ -35,7 +35,13 @@ class CompetitionFactory extends Factory
             'currency' => 'GBP',
             'max_entries' => $maxEntries,
             'max_entries_per_user' => null,
-            'images' => [fake()->imageUrl()],
+            // Not fake()->imageUrl() (via.placeholder.com) — the frontend's
+            // next/image only allows specific hosts (see
+            // apps/web/next.config.ts), matching what a real deployment
+            // would actually serve prize photos from (a controlled media
+            // host — see docs/PRODUCTION_ARCHITECTURE.md's S3/CloudFront
+            // direction), not an arbitrary placeholder service.
+            'images' => ["https://images.unsplash.com/photo-1502877338535-766e1452684a?auto=format&fit=crop&w=1400&q=80"],
             'skill_question' => [
                 'prompt' => 'What colour is the sky on a clear day?',
                 'options' => ['Green', 'Blue', 'Red', 'Purple'],

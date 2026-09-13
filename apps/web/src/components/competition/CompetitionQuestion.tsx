@@ -7,6 +7,11 @@ import type { CompetitionQuestion as QuestionType } from "@/data/competitions";
 /**
  * Skill question. UI only — the "correct" answer is checked in the browser
  * purely to show feedback. Nothing is submitted anywhere.
+ *
+ * `answerIndex` is -1 for real (API-backed) competitions: the public API
+ * never sends the answer (see docs/COMPETITIONS_API.md), so there's
+ * nothing to check client-side any more — any selection is treated as a
+ * valid entry rather than falsely claiming it's "wrong".
  */
 export default function CompetitionQuestion({
   question,
@@ -17,13 +22,14 @@ export default function CompetitionQuestion({
 }) {
   const name = useId();
   const [selected, setSelected] = useState<number | null>(null);
+  const hasKnownAnswer = question.answerIndex >= 0;
 
   const choose = (i: number) => {
     setSelected(i);
-    onAnsweredChange?.(i === question.answerIndex);
+    onAnsweredChange?.(hasKnownAnswer ? i === question.answerIndex : true);
   };
 
-  const correct = selected === question.answerIndex;
+  const correct = hasKnownAnswer ? selected === question.answerIndex : true;
 
   return (
     <fieldset className="rounded-2xl border border-line bg-card p-5">
@@ -69,9 +75,11 @@ export default function CompetitionQuestion({
             name={correct ? "check" : "close"}
             className="h-3.5 w-3.5 shrink-0"
           />
-          {correct
-            ? "Correct — you'd be entered into the draw."
-            : "Not quite. Only correct answers are entered into the draw."}
+          {!hasKnownAnswer
+            ? "Answer selected."
+            : correct
+              ? "Correct — you'd be entered into the draw."
+              : "Not quite. Only correct answers are entered into the draw."}
         </p>
       )}
     </fieldset>
