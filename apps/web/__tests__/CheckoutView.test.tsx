@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import CheckoutView from "@/components/checkout/CheckoutView";
 import { ApiValidationError } from "@/lib/api/http";
+import type { ApiOrder } from "@/lib/orders/types";
 
 const push = vi.fn();
 const replace = vi.fn();
@@ -36,13 +37,52 @@ vi.mock("@/components/cart/OrderSummary", () => ({
   default: ({ children }: { children?: React.ReactNode }) => <div>{children}</div>,
 }));
 
+const pay = vi.fn();
+let capturedOnPaid: ((order: ApiOrder) => void) | null = null;
+const paymentState: { current: { status: string; message?: string } } = { current: { status: "idle" } };
+
+vi.mock("@/lib/payments/useRazorpayCheckout", () => ({
+  useRazorpayCheckout: (onPaid: (order: ApiOrder) => void) => {
+    capturedOnPaid = onPaid;
+    return { state: paymentState.current, pay, reset: vi.fn() };
+  },
+}));
+
+function fakeOrder(overrides: Partial<ApiOrder> = {}): ApiOrder {
+  return {
+    id: 1,
+    reference: "RG-482915",
+    status: "pending",
+    currency: "GBP",
+    subtotal: 500,
+    total: 500,
+    items: [
+      {
+        id: 1,
+        competition_id: 10,
+        competition_title: "BMW M4 Competition",
+        competition_slug: "bmw-m4",
+        quantity: 1,
+        unit_price: 500,
+        currency: "GBP",
+        line_total: 500,
+      },
+    ],
+    payment: null,
+    created_at: "2026-09-13T12:00:00Z",
+    ...overrides,
+  };
+}
+
 async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/First name/), "Jane");
   await user.type(screen.getByLabelText(/Last name/), "Doe");
   await user.type(screen.getByLabelText(/^Email/), "jane@example.com");
   await user.type(screen.getByLabelText(/Phone/), "07700900123");
-  const dob = screen.getByLabelText(/Date of birth/) as HTMLInputElement;
-  await user.type(dob, "1990-01-01");
+  // A native <input type="date"> doesn't reliably accept keystroke-by-
+  // keystroke typing in jsdom — set the value directly, as a browser's
+  // own date picker UI would.
+  fireEvent.change(screen.getByLabelText(/Date of birth/), { target: { value: "1990-01-01" } });
   await user.type(screen.getByLabelText(/^Address/), "1 Example Street");
   await user.type(screen.getByLabelText(/Town/), "London");
   await user.type(screen.getByLabelText(/Postcode/), "SW1A 1AA");
@@ -55,6 +95,8 @@ describe("CheckoutView", () => {
     authState.status = "authenticated";
     cartState.hydrated = true;
     cartState.items = [{ id: 1 }];
+    paymentState.current = { status: "idle" };
+    capturedOnPaid = null;
   });
 
   test("redirects a guest to login with a checkout redirect target", async () => {
@@ -72,8 +114,8 @@ describe("CheckoutView", () => {
     expect(screen.queryByLabelText(/First name/)).toBeNull();
   });
 
-  test("places a real order and navigates to the order-success page with its reference", async () => {
-    createOrder.mockResolvedValueOnce({ data: { reference: "RG-482915" } });
+  test("places a real order, then hands off to Razorpay checkout for payment", async () => {
+    createOrder.mockResolvedValueOnce({ data: fakeOrder() });
     const user = userEvent.setup();
     render(<CheckoutView />);
 
@@ -82,6 +124,24 @@ describe("CheckoutView", () => {
 
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(refresh).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(pay).toHaveBeenCalledWith("RG-482915"));
+    // Navigation only happens once the payment hook itself reports success
+    // (a server-verified payment) — never merely on order creation.
+    expect(push).not.toHaveBeenCalled();
+    expect(screen.getByText("BMW M4 Competition")).toBeDefined();
+  });
+
+  test("navigates to order success only once the payment hook confirms a verified payment", async () => {
+    createOrder.mockResolvedValueOnce({ data: fakeOrder() });
+    const user = userEvent.setup();
+    render(<CheckoutView />);
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /Place order/ }));
+    await waitFor(() => expect(pay).toHaveBeenCalled());
+
+    capturedOnPaid?.(fakeOrder({ status: "paid" }));
+
     expect(push).toHaveBeenCalledWith("/order/success?reference=RG-482915");
   });
 
@@ -90,7 +150,7 @@ describe("CheckoutView", () => {
 
     expect(screen.queryByText(/payment successful/i)).toBeNull();
     expect(
-      screen.getByText(/No payment is taken — your order is created and marked/),
+      screen.getByText(/Your order isn.t marked paid until payment is verified/),
     ).toBeDefined();
   });
 
@@ -106,5 +166,25 @@ describe("CheckoutView", () => {
 
     expect(await screen.findByText("Your basket is empty.")).toBeDefined();
     expect(push).not.toHaveBeenCalled();
+    expect(pay).not.toHaveBeenCalled();
+  });
+
+  test("shows a dismissed-checkout notice and lets the user retry without recreating the order", async () => {
+    createOrder.mockResolvedValueOnce({ data: fakeOrder() });
+    paymentState.current = { status: "dismissed" };
+    const user = userEvent.setup();
+    render(<CheckoutView />);
+
+    await fillValidForm(user);
+    await user.click(screen.getByRole("button", { name: /Place order/ }));
+    await waitFor(() => expect(pay).toHaveBeenCalledTimes(1));
+
+    expect(await screen.findByText(/Checkout closed — no payment was taken/)).toBeDefined();
+
+    await user.click(screen.getByRole("button", { name: /Retry payment/ }));
+
+    expect(createOrder).toHaveBeenCalledTimes(1);
+    expect(pay).toHaveBeenCalledTimes(2);
+    expect(pay).toHaveBeenLastCalledWith("RG-482915");
   });
 });

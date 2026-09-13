@@ -22,7 +22,7 @@ class OrderController extends Controller
     {
         $orders = $request->user()
             ->orders()
-            ->with('items')
+            ->with(['items', 'latestPayment'])
             ->latest()
             ->paginate(10);
 
@@ -36,7 +36,7 @@ class OrderController extends Controller
         // confirms the order exists.
         $order = $request->user()
             ->orders()
-            ->with('items')
+            ->with(['items', 'latestPayment'])
             ->where('reference', $reference)
             ->firstOrFail();
 
@@ -86,7 +86,7 @@ class OrderController extends Controller
 
         $order = $this->createOrderWithRetry($user, $cart, $lines, $subtotal);
 
-        return (new OrderResource($order->load('items')))
+        return (new OrderResource($order->load(['items', 'latestPayment'])))
             ->response()
             ->setStatusCode(201);
     }

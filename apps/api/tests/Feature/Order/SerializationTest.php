@@ -40,9 +40,11 @@ class SerializationTest extends TestCase
         $orderKeys = array_keys($response->json('data'));
         sort($orderKeys);
         $this->assertSame(
-            ['created_at', 'currency', 'id', 'items', 'reference', 'status', 'subtotal', 'total'],
+            ['created_at', 'currency', 'id', 'items', 'payment', 'reference', 'status', 'subtotal', 'total'],
             $orderKeys,
         );
+        // No payment attempt exists yet for a just-created order.
+        $this->assertNull($response->json('data.payment'));
 
         $body = $response->getContent();
         foreach (['card', 'payment_method', 'password', 'ticket_number', 'cvv'] as $forbidden) {

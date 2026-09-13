@@ -16,3 +16,10 @@ class IntersectionObserverStub {
 }
 // @ts-expect-error — test-environment stub, not a spec-complete implementation
 globalThis.IntersectionObserver = IntersectionObserverStub;
+
+// jsdom also doesn't implement scrollIntoView (used by CheckoutView to
+// scroll to the first validation error) — a no-op stub is all a test DOM
+// needs.
+if (!Element.prototype.scrollIntoView) {
+  Element.prototype.scrollIntoView = () => {};
+}

@@ -26,6 +26,12 @@ class OrderResource extends JsonResource
             'subtotal' => $this->subtotal,
             'total' => $this->total,
             'items' => OrderItemResource::collection($this->whenLoaded('items')),
+            // Latest attempt only (P6) — never a full payment history via
+            // this resource. See docs/PAYMENTS_DESIGN_P6.md.
+            'payment' => $this->whenLoaded(
+                'latestPayment',
+                fn () => $this->latestPayment ? new PaymentResource($this->latestPayment) : null,
+            ),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

@@ -7,9 +7,28 @@ import Icon from "../ui/Icon";
 import { gbp, dateMedium } from "@/lib/format";
 import { getOrder } from "@/lib/orders/client";
 import type { ApiOrder } from "@/lib/orders/types";
+import { useRazorpayCheckout } from "@/lib/payments/useRazorpayCheckout";
 import { routes } from "@/lib/routes";
 
-const nextSteps = [
+const paidNextSteps = [
+  {
+    icon: "check" as const,
+    title: "Payment confirmed",
+    body: "We've received your payment and it's been verified.",
+  },
+  {
+    icon: "clock" as const,
+    title: "Entries allocated",
+    body: "Ticket allocation is handled separately once an order is paid.",
+  },
+  {
+    icon: "trophy" as const,
+    title: "The draw",
+    body: "The competition draws on its published date, streamed live with a verified random draw.",
+  },
+];
+
+const pendingNextSteps = [
   {
     icon: "check" as const,
     title: "Order created",
@@ -17,13 +36,13 @@ const nextSteps = [
   },
   {
     icon: "clock" as const,
-    title: "Payment",
-    body: "Payment isn't connected yet in this phase. We'll follow up once checkout can take payment.",
+    title: "Complete payment",
+    body: "Finish payment above to confirm your entries — you can come back to this page any time.",
   },
   {
     icon: "trophy" as const,
     title: "The draw",
-    body: "Once an order is paid, entries are allocated and the competition draws on its published date.",
+    body: "Once your order is paid, entries are allocated and the competition draws on its published date.",
   },
 ];
 
@@ -32,10 +51,36 @@ type State =
   | { kind: "not-found" }
   | { kind: "ready"; order: ApiOrder };
 
+/** Server-confirmed states only — never inferred from the URL. */
+function paymentHeading(order: ApiOrder): { title: string; body: string } {
+  if (order.status === "paid" || order.status === "processing" || order.status === "completed") {
+    return {
+      title: "Payment successful",
+      body: "Your payment has been verified and your order is confirmed.",
+    };
+  }
+
+  if (order.payment?.status === "failed") {
+    return {
+      title: "Payment failed — retry payment",
+      body: "Your last payment attempt didn't go through. No payment has been taken — you can try again below.",
+    };
+  }
+
+  return {
+    title: "Payment pending",
+    body: "Your order has been created. No payment has been taken yet.",
+  };
+}
+
 export default function OrderConfirmation() {
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
   const [state, setState] = useState<State>({ kind: "loading" });
+
+  const { state: paymentState, pay } = useRazorpayCheckout((order) => {
+    setState({ kind: "ready", order });
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -80,17 +125,24 @@ export default function OrderConfirmation() {
 
   const { order } = state;
   const entryCount = order.items.reduce((n, i) => n + i.quantity, 0);
+  const isPaid = order.status === "paid" || order.status === "processing" || order.status === "completed";
+  const canRetry = !isPaid && order.status !== "cancelled" && order.status !== "refunded" && order.status !== "failed";
+  const heading = paymentHeading(order);
+  const nextSteps = isPaid ? paidNextSteps : pendingNextSteps;
+  const paying = paymentState.status === "processing" || paymentState.status === "verifying";
 
   return (
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-col items-center text-center">
-        <span className="grid h-16 w-16 place-items-center rounded-full bg-success text-white">
-          <Icon name="check" className="h-8 w-8" />
+        <span
+          className={`grid h-16 w-16 place-items-center rounded-full text-white ${isPaid ? "bg-success" : "bg-mist text-pink-600"}`}
+        >
+          <Icon name={isPaid ? "check" : "clock"} className="h-8 w-8" />
         </span>
-        <h1 className="mt-5 t-h1 text-heading">Order created — payment pending</h1>
+        <h1 className="mt-5 t-h1 text-heading">{heading.title}</h1>
         <p className="mt-3 t-body-lg text-muted">
-          Your order for {entryCount} {entryCount === 1 ? "entry" : "entries"}{" "}
-          has been created. No payment has been taken yet.
+          {heading.body} Your order is for {entryCount}{" "}
+          {entryCount === 1 ? "entry" : "entries"}.
         </p>
       </div>
 
@@ -131,10 +183,36 @@ export default function OrderConfirmation() {
             <dd className="tabular-nums text-heading">{gbp(order.subtotal / 100)}</dd>
           </div>
           <div className="flex justify-between border-t border-line pt-2 font-display text-base font-extrabold text-heading">
-            <dt>Total (payment pending)</dt>
+            <dt>{isPaid ? "Total paid" : "Total (payment pending)"}</dt>
             <dd className="tabular-nums">{gbp(order.total / 100)}</dd>
           </div>
         </dl>
+
+        {canRetry && (
+          <div className="border-t border-line px-5 py-4 sm:px-6">
+            {paymentState.status === "dismissed" && (
+              <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-warning">
+                <Icon name="close" className="h-3.5 w-3.5 shrink-0" />
+                Checkout closed — no payment was taken.
+              </p>
+            )}
+            {paymentState.status === "error" && (
+              <p role="alert" className="mb-3 flex items-center gap-1.5 text-xs font-medium text-error-600">
+                <Icon name="close" className="h-3.5 w-3.5 shrink-0" />
+                {paymentState.message}
+              </p>
+            )}
+            <Button
+              block
+              size="lg"
+              loading={paying}
+              disabled={paying}
+              onClick={() => void pay(order.reference)}
+            >
+              {paying ? "Processing payment" : "Complete payment"}
+            </Button>
+          </div>
+        )}
       </div>
 
       <h2 className="mt-10 font-display text-lg font-extrabold tracking-tight text-heading">

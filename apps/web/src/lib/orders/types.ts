@@ -21,6 +21,20 @@ export type ApiOrderStatus =
   | "failed"
   | "refunded";
 
+/** Mirrors App\Enums\PaymentStatus (P6). */
+export type ApiPaymentStatus = "created" | "paid" | "failed" | "refunded";
+
+export type ApiPayment = {
+  id: number;
+  gateway: string;
+  status: ApiPaymentStatus;
+  amount: number;
+  currency: string;
+  failure_message: string | null;
+  paid_at: string | null;
+  created_at: string | null;
+};
+
 export type ApiOrder = {
   id: number;
   reference: string;
@@ -29,6 +43,9 @@ export type ApiOrder = {
   subtotal: number;
   total: number;
   items: ApiOrderItem[];
+  /** The latest payment attempt only, or null before any exists — never
+   * the full payment history. See docs/PAYMENTS_API.md. */
+  payment: ApiPayment | null;
   created_at: string | null;
 };
 

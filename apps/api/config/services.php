@@ -35,4 +35,16 @@ return [
         ],
     ],
 
+    'razorpay' => [
+        'key_id' => env('RAZORPAY_KEY_ID'),
+        'key_secret' => env('RAZORPAY_KEY_SECRET'),
+        'webhook_secret' => env('RAZORPAY_WEBHOOK_SECRET'),
+    ],
+
+    // "razorpay" (default) or "fake" — see docs/PAYMENTS_DESIGN_P6.md
+    // "Test gateway". Only ever "fake" for local/Docker verification
+    // without a real Razorpay account; PHPUnit binds FakePaymentGateway
+    // directly and ignores this.
+    'payment_gateway' => env('PAYMENT_GATEWAY', 'razorpay'),
+
 ];

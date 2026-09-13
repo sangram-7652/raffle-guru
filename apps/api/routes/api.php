@@ -11,6 +11,8 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CompetitionController;
 use App\Http\Controllers\Api\V1\HealthController;
 use App\Http\Controllers\Api\V1\OrderController;
+use App\Http\Controllers\Api\V1\PaymentController;
+use App\Http\Controllers\Api\V1\PaymentWebhookController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -19,8 +21,8 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 |
 | Customer authentication (P3), public competition browsing (P4), cart &
-| orders (P5), plus infrastructure health checks (P1). Payment/ticket/
-| draw routes are added in their own phases.
+| orders (P5), payment processing (P6), plus infrastructure health
+| checks (P1). Ticket/draw routes are added in their own phases.
 |
 */
 
@@ -45,7 +47,19 @@ Route::prefix('v1')->group(function () {
         Route::get('orders', [OrderController::class, 'index']);
         Route::post('orders', [OrderController::class, 'store']);
         Route::get('orders/{reference}', [OrderController::class, 'show']);
+
+        // Payment (P6) — see docs/PAYMENTS_API.md. Ownership is enforced
+        // in the controllers (order/payment always scoped to the
+        // authenticated user), same pattern as cart/orders above.
+        Route::post('orders/{reference}/payment', [PaymentController::class, 'store']);
+        Route::post('payments/verify', [PaymentController::class, 'verify']);
     });
+
+    // Gateway → server. Deliberately outside auth:sanctum — the gateway
+    // has no customer session; authenticity comes entirely from the
+    // webhook signature (verified inside the controller before anything
+    // else happens). See docs/PAYMENTS_DESIGN_P6.md "Webhook flow".
+    Route::post('payments/webhook/razorpay', [PaymentWebhookController::class, 'razorpay']);
 
     Route::prefix('auth')->group(function () {
         // -- Public --

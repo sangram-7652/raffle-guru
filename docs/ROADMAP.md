@@ -24,9 +24,14 @@ ticket allocation is concurrency-safe).
   frontend cart/checkout switched from the P1 mock (`src/lib/order.ts`,
   now removed) to the real API. Orders are created `pending` only — no
   payment or ticket logic. See [`ORDERS_API.md`](ORDERS_API.md).
-- **P6 — Payments**: provider integration, webhook handling, idempotency
-  keys, replacing `PaymentPlaceholder`, transitioning orders out of
-  `pending`.
+- **P6 — Payments** (complete): Razorpay integration behind a
+  `PaymentGatewayInterface` abstraction, `payments`/`payment_webhooks`
+  schema, authenticated payment-initiation/verification endpoints, an
+  unauthenticated signature-verified webhook, idempotent order/payment
+  transitions, retry-after-failure. Orders now reach `paid`. See
+  [`PAYMENTS_API.md`](PAYMENTS_API.md) /
+  [`PAYMENTS_DESIGN_P6.md`](PAYMENTS_DESIGN_P6.md). No refund
+  initiation, no ticket logic.
 - **P7 — Ticket engine**: concurrency-safe allocation/reservation/release,
   per-user and per-competition limits, sold-out handling — needs its own
   design pass (row locking, idempotency) before any code is written.
