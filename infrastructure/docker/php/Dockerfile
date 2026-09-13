@@ -8,8 +8,10 @@ RUN apk add --no-cache \
         icu-dev \
         libzip-dev \
         oniguruma-dev \
+        sqlite-dev \
     && docker-php-ext-install \
         pdo_mysql \
+        pdo_sqlite \
         mbstring \
         bcmath \
         intl \
@@ -38,7 +40,10 @@ RUN adduser -D -u 1000 appuser && chown -R appuser:appuser /var/www/html
 # actually handles requests, silently dropping app-specific ones like
 # DB_HOST/REDIS_HOST that Docker Compose injects.
 FROM base AS dev
+# base installed --no-dev (correct for prod); dev additionally needs
+# require-dev packages (phpunit, etc.) to actually run the test suite.
 USER appuser
+RUN composer install --no-interaction --prefer-dist
 EXPOSE 8000
 CMD ["sh", "-c", "cd public && php -S 0.0.0.0:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php"]
 

@@ -7,9 +7,9 @@ ticket allocation is concurrency-safe).
 - **P1 — Infrastructure foundation** (this phase, complete): Next.js/Laravel
   monorepo split, Docker (MySQL, Redis, queue, scheduler, Nginx), CI,
   health checks. No domain logic.
-- **P2 — Database foundation**: schema/migrations for `users`,
-  `competitions`, `prizes` first — lowest risk, matches the shapes already
-  implied by the frontend's mock data.
+- **P2 — Database foundation** (complete): `users`/`competitions`/`prizes`
+  schema, models, factories, seeders — see
+  [`SCHEMA_DESIGN_P2.md`](SCHEMA_DESIGN_P2.md). No API endpoints yet.
 - **P3 — Authentication**: replace the decorative login page with real
   auth (Sanctum or session-based), email verification, password reset.
 - **P4 — Competition domain**: CRUD + Filament resource; frontend switches

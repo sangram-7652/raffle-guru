@@ -19,6 +19,9 @@ return new class extends Migration
             $table->string('password');
             $table->rememberToken();
             $table->timestamps();
+            // Orders/tickets (P5/P7) will reference users by ID — soft delete
+            // so that history stays intact instead of being hard-erased.
+            $table->softDeletes();
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {

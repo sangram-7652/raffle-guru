@@ -91,6 +91,30 @@ commit any of this.
   `up`/`down` booleans only (no credentials, no raw exception text; `503`
   when degraded). Useful for container health checks / uptime monitors.
 
+## Database schema (P2)
+
+Core relational foundation is in place: `users`, `competitions`, `prizes`
+(`Competition hasMany Prize`). Full reasoning in
+[`docs/SCHEMA_DESIGN_P2.md`](SCHEMA_DESIGN_P2.md) — summary:
+
+- **Money** is integer minor units (pence), never float — matches how
+  payment providers bill (P6), avoids binary-float rounding errors.
+- **Status** (`competitions.status`) is a plain string column backed by a
+  PHP enum (`App\Enums\CompetitionStatus`), not a MySQL `ENUM` type — new
+  statuses are a code change, not a migration.
+- **IDs** stay auto-increment, matching the existing `users` convention;
+  public URLs use `competitions.slug`, not the ID.
+- **Deletion**: all three tables are soft-deleted (`deleted_at`) so
+  history survives once Orders/Tickets/Draws (P5/P7/P9) reference them.
+  `prizes.competition_id` restricts (rather than cascades) hard deletes.
+- **Deferred on purpose**: no `categories`, `competition_rules`, or
+  `competition_faqs` tables, and no per-prize images — see
+  `docs/SCHEMA_DESIGN_P2.md` for why each was deferred rather than
+  guessed at.
+
+No Competition/Prize API endpoints exist yet (that's P4) — P2 is schema,
+models, factories, and tests only.
+
 ## AWS direction (not provisioned — documentation only)
 
 A V1 production footprint, deliberately not Kubernetes/ECS at this stage:
