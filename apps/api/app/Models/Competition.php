@@ -70,6 +70,17 @@ class Competition extends Model
     }
 
     /**
+     * Audit trail of lifecycle transitions (P8) — see
+     * docs/COMPETITION_LIFECYCLE_P8.md.
+     *
+     * @return HasMany<CompetitionLifecycleEvent, $this>
+     */
+    public function lifecycleEvents(): HasMany
+    {
+        return $this->hasMany(CompetitionLifecycleEvent::class);
+    }
+
+    /**
      * Competitions safe to show a public/customer-facing API — excludes
      * `draft` (unpublished) and `scheduled` (approved but not yet live).
      * Everything from `active` onward (including `sold_out`, `closed`,

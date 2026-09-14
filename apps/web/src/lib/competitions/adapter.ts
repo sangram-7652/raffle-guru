@@ -9,9 +9,11 @@
  * docs/COMPETITIONS_API.md "Frontend integration"):
  * - `soldPct` is always 0 — there's no ticket engine yet (P7) to compute
  *   a real sold percentage from.
- * - `status` collapses the backend's 9-value lifecycle onto the mock's
- *   4-value union (only ever "live"/"sold-out"/"drawn" here — the public
- *   API never returns "draft"/"scheduled" in the first place).
+ * - `status` maps the backend's 9-value lifecycle (P8) onto the mock's
+ *   union (never "draft"/"scheduled" here — the public API never
+ *   returns those). "closed" and "draw-pending" are kept distinct from
+ *   "drawn" — see @/lib/competitionAvailability.ts — so the UI never
+ *   claims a draw happened before it actually has.
  * - `question.answerIndex` is always -1 (never a real option index): the
  *   API never sends the answer, so CompetitionQuestion can no longer
  *   show "correct" — the honest behavior once the answer truly isn't
@@ -25,6 +27,7 @@ import {
   standardRules,
   type Competition,
 } from "@/data/competitions";
+import { competitionAvailability } from "@/lib/competitionAvailability";
 import { drawLabelShort, gbp } from "@/lib/format";
 import type { ApiCompetition, ApiCompetitionStatus } from "./types";
 
@@ -32,11 +35,22 @@ function toDisplayStatus(status: ApiCompetitionStatus): Competition["status"] {
   switch (status) {
     case "sold_out":
       return "sold-out";
+    case "closed":
+      return "closed";
+    case "draw_pending":
+      return "draw-pending";
+    case "drawn":
+    case "completed":
+      return "drawn";
+    // draw_in_progress is P9's — this app never produces it yet, but if
+    // it ever appears, treat it the same as "closed" (not purchasable,
+    // not yet drawn) rather than falsely claiming "drawn".
+    case "draw_in_progress":
+      return "closed";
     case "active":
     case "scheduled":
-      return "live";
     default:
-      return "drawn";
+      return "live";
   }
 }
 
@@ -53,14 +67,11 @@ export function adaptCompetition(api: ApiCompetition): Competition {
     title: api.title,
     blurb: api.short_description,
     image: api.images?.[0] ?? "",
-    badge:
-      status === "sold-out"
-        ? "Sold Out"
-        : status === "drawn"
-          ? "Drawn"
-          : api.is_featured
-            ? "Featured"
-            : "Live",
+    badge: (() => {
+      const availability = competitionAvailability(status);
+      if (!availability.purchasable) return availability.label;
+      return api.is_featured ? "Featured" : "Live";
+    })(),
     category: api.category,
     entryPrice: api.entry_price / 100,
     cashAlternative: cashAlternativeValue ? `or ${gbp(cashAlternativeValue)} cash` : undefined,

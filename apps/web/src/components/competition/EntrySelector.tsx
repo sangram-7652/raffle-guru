@@ -11,6 +11,7 @@ import CompetitionQuestion from "./CompetitionQuestion";
 import { useCart } from "../cart/CartContext";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { ApiValidationError } from "@/lib/api/http";
+import { competitionAvailability } from "@/lib/competitionAvailability";
 import { gbp, drawDateLong } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import type { Competition } from "@/data/competitions";
@@ -34,7 +35,8 @@ export default function EntrySelector({
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const soldOut = competition.status === "sold-out" || competition.soldPct >= 100;
+  const availability = competitionAvailability(competition.status);
+  const soldOut = !availability.purchasable || competition.soldPct >= 100;
   const total = competition.entryPrice * qty;
 
   async function add(goToCheckout: boolean) {
@@ -101,10 +103,10 @@ export default function EntrySelector({
 
       {soldOut ? (
         <div className="mt-5 rounded-xl border border-line bg-panel p-4 text-center text-sm text-muted">
-          <p className="font-display font-bold text-heading">Sold out</p>
+          <p className="font-display font-bold text-heading">{availability.label}</p>
           <p className="mt-1">
-            Every ticket has been claimed. The draw still takes place{" "}
-            {competition.drawLabel}.
+            {availability.description || "This competition is no longer taking entries."}{" "}
+            {competition.status !== "drawn" ? `The draw takes place ${competition.drawLabel}.` : null}
           </p>
         </div>
       ) : (

@@ -35,6 +35,10 @@ const statusBadge = {
   live: { tone: "live" as const, label: "Live" },
   "ending-soon": { tone: "ending-soon" as const, label: "Ending soon" },
   "sold-out": { tone: "sold-out" as const, label: "Sold out" },
+  // "closed"/"draw-pending" (P8) — entries have stopped but the draw
+  // hasn't happened yet; never labeled "Drawn" until it actually has.
+  closed: { tone: "neutral" as const, label: "Closed" },
+  "draw-pending": { tone: "neutral" as const, label: "Draw pending" },
   drawn: { tone: "neutral" as const, label: "Drawn" },
 };
 

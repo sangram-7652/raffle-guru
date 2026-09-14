@@ -11,7 +11,20 @@
  * docs/SCHEMA_DESIGN_P2.md for why those were never stored per-row).
  */
 
-export type CompetitionStatus = "live" | "ending-soon" | "sold-out" | "drawn";
+/**
+ * "closed"/"draw-pending" (P8) distinguish "no longer taking entries,
+ * not yet drawn" from "drawn" (the draw has actually happened) — never
+ * collapse these into "drawn", which would falsely claim a draw
+ * occurred. See @/lib/competitionAvailability.ts and
+ * docs/COMPETITION_LIFECYCLE_P8.md.
+ */
+export type CompetitionStatus =
+  | "live"
+  | "ending-soon"
+  | "sold-out"
+  | "closed"
+  | "draw-pending"
+  | "drawn";
 
 export type CompetitionQuestion = {
   prompt: string;

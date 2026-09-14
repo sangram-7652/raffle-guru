@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Icon from "../ui/Icon";
+import { competitionAvailability } from "@/lib/competitionAvailability";
 import { gbp } from "@/lib/format";
 import type { Competition } from "@/data/competitions";
 
@@ -15,7 +16,8 @@ export default function StickyEnterBar({
   competition: Competition;
 }) {
   const [show, setShow] = useState(false);
-  const soldOut = competition.status === "sold-out" || competition.soldPct >= 100;
+  const availability = competitionAvailability(competition.status);
+  const soldOut = !availability.purchasable || competition.soldPct >= 100;
 
   useEffect(() => {
     const target = document.getElementById("enter");
@@ -40,7 +42,7 @@ export default function StickyEnterBar({
             {competition.title}
           </p>
           <p className="text-xs text-muted">
-            {soldOut ? "Sold out" : `From ${gbp(competition.entryPrice)} per entry`}
+            {soldOut ? availability.label : `From ${gbp(competition.entryPrice)} per entry`}
           </p>
         </div>
         <a
@@ -50,7 +52,7 @@ export default function StickyEnterBar({
           }`}
           aria-disabled={soldOut || undefined}
         >
-          {soldOut ? "View draw" : "Enter now"}
+          {soldOut ? availability.label : "Enter now"}
           <Icon name="arrow" className="h-4 w-4" />
         </a>
       </div>

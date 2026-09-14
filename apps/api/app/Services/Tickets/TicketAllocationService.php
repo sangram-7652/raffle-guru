@@ -2,12 +2,14 @@
 
 namespace App\Services\Tickets;
 
+use App\Enums\CompetitionStatus;
 use App\Enums\OrderStatus;
 use App\Models\Competition;
 use App\Models\Entry;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Ticket;
+use App\Services\Competitions\CompetitionLifecycleService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -19,9 +21,19 @@ use Illuminate\Support\Facades\Log;
  * competition-row lock (competitions visited in ascending id order, to
  * avoid deadlocking against another order's allocation) guarding the
  * capacity/per-user checks and the ticket-number assignment together.
+ *
+ * P8 addition: once a batch of tickets brings a competition to
+ * capacity, this is also where `active -> sold_out` is triggered — see
+ * docs/COMPETITION_LIFECYCLE_P8.md "Where each transition actually
+ * happens". It reuses the competition row lock already held here; no
+ * new lock, no extra round trip.
  */
 class TicketAllocationService
 {
+    public function __construct(
+        private readonly CompetitionLifecycleService $lifecycle,
+    ) {}
+
     /**
      * Idempotent: safe to call 0, 1, or many times for the same order.
      * Allocates every order item that doesn't already have an Entry;
@@ -149,5 +161,15 @@ class TicketAllocationService
             'competition_id' => $competition->id,
             'quantity' => $item->quantity,
         ]);
+
+        // Capacity is now authoritative for this decision (P8) — the
+        // count used here is the exact same locked count already
+        // computed above, not a second counter. A no-op if the
+        // competition wasn't `active` (e.g. already sold_out from a
+        // concurrent item in the same order) or if it isn't actually at
+        // capacity yet.
+        if ($allocatedForCompetition + $item->quantity >= $competition->max_entries) {
+            $this->lifecycle->transition($competition, CompetitionStatus::SoldOut, 'capacity reached');
+        }
     }
 }

@@ -86,4 +86,35 @@ describe("EntrySelector", () => {
 
     expect(await screen.findByText("This competition is no longer available.")).toBeDefined();
   });
+
+  // -- P8: server-controlled lifecycle status, never invented client-side --------------------------------------------------
+
+  test("shows 'Sold out' and hides the entry form for a sold-out competition", () => {
+    render(<EntrySelector competition={{ ...competition, status: "sold-out" }} />);
+
+    expect(screen.getByText("Sold out")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Add to basket/ })).toBeNull();
+  });
+
+  test("shows 'Closed' (never 'Sold out' or 'Drawn') for a closed competition", () => {
+    render(<EntrySelector competition={{ ...competition, status: "closed" }} />);
+
+    expect(screen.getByText("Closed")).toBeDefined();
+    expect(screen.queryByText("Sold out")).toBeNull();
+    expect(screen.queryByText("Drawn")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Add to basket/ })).toBeNull();
+  });
+
+  test("shows 'Draw pending' for a competition awaiting its draw", () => {
+    render(<EntrySelector competition={{ ...competition, status: "draw-pending" }} />);
+
+    expect(screen.getByText("Draw pending")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /Add to basket/ })).toBeNull();
+  });
+
+  test("never claims a draw happened before status is actually 'drawn'", () => {
+    render(<EntrySelector competition={{ ...competition, status: "closed" }} />);
+
+    expect(screen.queryByText(/^Drawn$/)).toBeNull();
+  });
 });
