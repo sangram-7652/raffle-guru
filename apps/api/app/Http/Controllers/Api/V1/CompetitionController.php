@@ -38,7 +38,11 @@ class CompetitionController extends Controller
 
         $competitions = Competition::query()
             ->public()
-            ->with('prizes')
+            // drawResult (P9) eager-loaded alongside prizes for the same
+            // reason: without it, CompetitionResource's `draw` field
+            // would issue one extra query per drawn competition on this
+            // page (N+1) rather than one query for the whole page.
+            ->with(['prizes', 'drawResult'])
             ->when($search, fn ($query, $search) => $query->where(
                 fn ($q) => $q->where('title', 'like', "%{$search}%")
                     ->orWhere('short_description', 'like', "%{$search}%"),
@@ -61,7 +65,7 @@ class CompetitionController extends Controller
     {
         $competition = Competition::query()
             ->public()
-            ->with('prizes')
+            ->with(['prizes', 'drawResult'])
             ->where('slug', $slug)
             ->firstOrFail();
 

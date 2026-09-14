@@ -108,6 +108,11 @@ export default function EntrySelector({
             {availability.description || "This competition is no longer taking entries."}{" "}
             {competition.status !== "drawn" ? `The draw takes place ${competition.drawLabel}.` : null}
           </p>
+          {competition.status === "drawn" && competition.winningTicketNumber !== undefined && (
+            <p className="mt-2 font-display font-bold text-heading">
+              Winning ticket: #{competition.winningTicketNumber}
+            </p>
+          )}
         </div>
       ) : (
         <>

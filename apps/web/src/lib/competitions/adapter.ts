@@ -31,7 +31,7 @@ import { competitionAvailability } from "@/lib/competitionAvailability";
 import { drawLabelShort, gbp } from "@/lib/format";
 import type { ApiCompetition, ApiCompetitionStatus } from "./types";
 
-function toDisplayStatus(status: ApiCompetitionStatus): Competition["status"] {
+export function toDisplayStatus(status: ApiCompetitionStatus): Competition["status"] {
   switch (status) {
     case "sold_out":
       return "sold-out";
@@ -88,6 +88,7 @@ export function adaptCompetition(api: ApiCompetition): Competition {
     description: api.description ?? [],
     prizeDetails: primaryPrize?.description ?? [],
     rules: standardRules,
+    winningTicketNumber: api.draw?.ticket_number,
     question: {
       prompt: api.skill_question?.prompt ?? "",
       options: api.skill_question?.options ?? [],

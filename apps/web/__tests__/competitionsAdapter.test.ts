@@ -57,4 +57,21 @@ describe("adaptCompetition — P8 lifecycle status mapping", () => {
     expect(adaptCompetition(apiCompetition("draw_pending")).badge).toBe("Draw pending");
     expect(adaptCompetition(apiCompetition("drawn")).badge).toBe("Drawn");
   });
+
+  // -- P9: winning ticket number ------------------------------------------------------------
+
+  test("winningTicketNumber is populated from api.draw once drawn", () => {
+    const drawn = adaptCompetition({
+      ...apiCompetition("drawn"),
+      draw: { ticket_number: 4821, drawn_at: "2026-10-01T20:00:03Z" },
+    });
+
+    expect(drawn.winningTicketNumber).toBe(4821);
+  });
+
+  test("winningTicketNumber is undefined when no draw has happened", () => {
+    expect(adaptCompetition(apiCompetition("active")).winningTicketNumber).toBeUndefined();
+    expect(adaptCompetition(apiCompetition("closed")).winningTicketNumber).toBeUndefined();
+    expect(adaptCompetition(apiCompetition("draw_pending")).winningTicketNumber).toBeUndefined();
+  });
 });

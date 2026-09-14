@@ -117,4 +117,22 @@ describe("EntrySelector", () => {
 
     expect(screen.queryByText(/^Drawn$/)).toBeNull();
   });
+
+  // -- P9: winning ticket number --------------------------------------------------------------
+
+  test("shows the winning ticket number once a competition is actually drawn", () => {
+    render(
+      <EntrySelector
+        competition={{ ...competition, status: "drawn", winningTicketNumber: 4821 }}
+      />,
+    );
+
+    expect(screen.getByText("Winning ticket: #4821")).toBeDefined();
+  });
+
+  test("shows no winning ticket number for a closed (not yet drawn) competition", () => {
+    render(<EntrySelector competition={{ ...competition, status: "closed" }} />);
+
+    expect(screen.queryByText(/Winning ticket/)).toBeNull();
+  });
 });

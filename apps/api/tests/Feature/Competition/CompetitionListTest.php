@@ -187,7 +187,8 @@ class CompetitionListTest extends TestCase
         \Illuminate\Support\Facades\DB::disableQueryLog();
 
         // One query for the paginated competitions, one count query, one
-        // eager-load query for prizes — NOT one prize query per competition.
-        $this->assertLessThanOrEqual(3, count($queries));
+        // eager-load query for prizes, one eager-load query for drawResult
+        // (P9) — NOT one prize/drawResult query per competition.
+        $this->assertLessThanOrEqual(4, count($queries));
     }
 }

@@ -56,6 +56,13 @@ export type ApiCompetition = {
   draw_at: string | null;
   is_featured: boolean;
   prizes: ApiPrize[];
+  /** P9 — present only once `status === "drawn"`; absent otherwise.
+   * See docs/DRAW_ENGINE_P9.md "Public API behavior": deliberately just
+   * these two facts, nothing about who won (that's P10's). */
+  draw?: {
+    ticket_number: number;
+    drawn_at: string;
+  };
 };
 
 export type PaginationMeta = {

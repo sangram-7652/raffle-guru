@@ -8,6 +8,8 @@ import EmptyState from "@/components/ui/EmptyState";
 import RequireAuth from "@/components/auth/RequireAuth";
 import { listEntries } from "@/lib/entries/client";
 import type { ApiEntry } from "@/lib/entries/types";
+import { toDisplayStatus } from "@/lib/competitions/adapter";
+import { competitionAvailability } from "@/lib/competitionAvailability";
 import { dateMedium } from "@/lib/format";
 import { routes } from "@/lib/routes";
 
@@ -73,11 +75,20 @@ function EntriesList() {
 
   return (
     <ul className="divide-y divide-line rounded-card border border-line bg-card">
-      {state.entries.map((entry) => (
+      {state.entries.map((entry) => {
+        const displayStatus = toDisplayStatus(entry.competition.status);
+        const availability = competitionAvailability(displayStatus);
+
+        return (
         <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
           <div className="min-w-0">
             <p className="font-display text-sm font-extrabold tracking-tight text-heading">
               {entry.competition.title}
+              {!availability.purchasable && (
+                <span className="ml-2 rounded-full bg-mist px-2 py-0.5 text-[11px] font-medium text-muted">
+                  {availability.label}
+                </span>
+              )}
             </p>
             <p className="mt-1 text-xs text-muted">
               Order {entry.order_reference}
@@ -91,7 +102,8 @@ function EntriesList() {
             </span>
           </div>
         </li>
-      ))}
+        );
+      })}
     </ul>
   );
 }

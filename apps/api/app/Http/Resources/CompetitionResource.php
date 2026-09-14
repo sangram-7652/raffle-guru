@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Enums\CompetitionStatus;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -12,6 +13,14 @@ use Illuminate\Http\Resources\Json\JsonResource;
  * defeat the point of a skill-testing question (see
  * docs/SCHEMA_DESIGN_P2.md). No other internal/admin field (timestamps
  * aside from the public ones, soft-delete state, etc.) is included.
+ *
+ * `draw` (P9) is included ONLY once the competition is actually
+ * `drawn`, and only the two facts a public raffle result conventionally
+ * publishes — the winning ticket number and when. No draw id, no
+ * strategy/RNG method, no snapshot checksum, no attempt history, no
+ * winner identity: all of that is either internal draw-engine detail
+ * that has no public API contract, or P10's ("winner publishing"). See
+ * docs/DRAW_ENGINE_P9.md "Public API behavior".
  */
 class CompetitionResource extends JsonResource
 {
@@ -42,6 +51,13 @@ class CompetitionResource extends JsonResource
             'draw_at' => $this->draw_at?->toIso8601String(),
             'is_featured' => $this->is_featured,
             'prizes' => PrizeResource::collection($this->whenLoaded('prizes')),
+            'draw' => $this->when(
+                $this->status === CompetitionStatus::Drawn && $this->drawResult !== null,
+                fn () => [
+                    'ticket_number' => $this->drawResult->ticket_number,
+                    'drawn_at' => $this->drawResult->selected_at?->toIso8601String(),
+                ],
+            ),
         ];
     }
 }

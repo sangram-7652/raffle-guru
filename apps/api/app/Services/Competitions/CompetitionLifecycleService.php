@@ -3,6 +3,7 @@
 namespace App\Services\Competitions;
 
 use App\Enums\CompetitionStatus;
+use App\Events\CompetitionDrawPending;
 use App\Models\Competition;
 use App\Models\CompetitionLifecycleEvent;
 use Illuminate\Support\Facades\DB;
@@ -10,15 +11,17 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * The only place `competitions.status` is ever written. See
- * docs/COMPETITION_LIFECYCLE_P8.md for the full design — this class
- * implements exactly the transition matrix documented there.
+ * docs/COMPETITION_LIFECYCLE_P8.md for P8's part of the matrix and
+ * docs/DRAW_ENGINE_P9.md for P9's addition (draw_pending ->
+ * draw_in_progress -> drawn) — this remains the single owner for both
+ * phases rather than P9 inventing a second lifecycle-writing mechanism.
  */
 class CompetitionLifecycleService
 {
     /**
-     * Every allowed (from, to) pair. Anything not listed here — including
-     * every path to draw_in_progress/drawn/completed, which are P9/P10's
-     * — is rejected.
+     * Every allowed (from, to) pair. Anything not listed here —
+     * including any path to `completed` (P10's job) or any backward
+     * transition — is rejected.
      *
      * @var array<string, list<CompetitionStatus>>
      */
@@ -27,6 +30,15 @@ class CompetitionLifecycleService
         CompetitionStatus::Active->value => [CompetitionStatus::SoldOut, CompetitionStatus::Closed],
         CompetitionStatus::SoldOut->value => [CompetitionStatus::Closed],
         CompetitionStatus::Closed->value => [CompetitionStatus::DrawPending],
+        // P9 additions — see docs/DRAW_ENGINE_P9.md "Draw lifecycle".
+        // Note there is deliberately no entry for DrawInProgress ->
+        // DrawPending (a stale/crashed attempt is recovered by starting
+        // a NEW `draws` attempt row while the competition stays
+        // draw_in_progress, never by moving the competition backwards —
+        // see App\Services\Draw\DrawService) and no entry for Drawn at
+        // all (drawn -> completed is explicitly P10's).
+        CompetitionStatus::DrawPending->value => [CompetitionStatus::DrawInProgress],
+        CompetitionStatus::DrawInProgress->value => [CompetitionStatus::Drawn],
     ];
 
     public function canTransition(CompetitionStatus $from, CompetitionStatus $to): bool
@@ -77,6 +89,17 @@ class CompetitionLifecycleService
                 'to' => $to->value,
                 'reason' => $reason,
             ]);
+
+            // P8 -> P9 handoff, mirroring exactly how PaymentService
+            // fires OrderPaid for the P6 -> P7 handoff: fired only on
+            // the call that actually performs this specific transition
+            // (never on an idempotent no-op), and only once it has
+            // genuinely, durably committed. CompetitionLifecycleService
+            // stays unaware of anything about how draws work beyond
+            // "an event exists" — see docs/DRAW_ENGINE_P9.md "Trigger".
+            if ($to === CompetitionStatus::DrawPending) {
+                DB::afterCommit(fn () => CompetitionDrawPending::dispatch($locked->fresh()));
+            }
 
             return true;
         });

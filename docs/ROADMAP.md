@@ -43,11 +43,26 @@ ticket allocation is concurrency-safe).
   `/v1/entries` API, `/account/entries` page. No draw/winner logic. See
   [`TICKET_ENGINE_API.md`](TICKET_ENGINE_API.md) /
   [`TICKET_ENGINE_DESIGN_P7.md`](TICKET_ENGINE_DESIGN_P7.md).
-- **P8 — Competition lifecycle**: closing rules, sold-out detection,
-  scheduled jobs (this is what P1's scheduler infrastructure is for).
-- **P9 — Draw engine**: eligible-ticket snapshot, winner selection,
-  auditability, duplicate-execution prevention — highest-trust component,
-  needs a dedicated security/audit review before build.
+- **P8 — Competition lifecycle** (complete): server-controlled,
+  time-/capacity-based status automation
+  (`scheduled→active→sold_out/closed→draw_pending`) centralized in
+  `CompetitionLifecycleService`'s transition matrix — the single place
+  `competitions.status` is ever written — automated via a scheduled
+  `competition:lifecycle` command plus an inline capacity hook in
+  `TicketAllocationService`. No draw/winner logic. See
+  [`COMPETITION_LIFECYCLE_P8.md`](COMPETITION_LIFECYCLE_P8.md).
+- **P9 — Draw engine** (complete): the final leg,
+  `draw_pending→draw_in_progress→drawn`, added as two new edges on the
+  same `CompetitionLifecycleService` matrix — no second lifecycle
+  mechanism. Eligible tickets are those whose order is `paid` (a direct
+  `tickets ⋈ orders` join); a snapshot (count/range/checksum, never a
+  row-by-row copy) makes each draw auditable; winner selection uses
+  `random_int()` rejection sampling by ticket_number, bounded query cost
+  regardless of competition size. Event-driven trigger
+  (`CompetitionDrawPending` → `DrawCompetitionJob`) mirrors the P6→P7
+  handoff, with a scheduled sweep (`competition:draw`) as a crash-recovery
+  safety net. No winner claims, prize delivery, or `drawn→completed` —
+  those are P10's. See [`DRAW_ENGINE_P9.md`](DRAW_ENGINE_P9.md).
 - **P10 — Winner / prize claim + notifications**: claim workflow, delivery
   tracking, email/SMS.
 - **P11 — Filament admin**: build out resources once the underlying

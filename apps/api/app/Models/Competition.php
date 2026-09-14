@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
@@ -78,6 +79,29 @@ class Competition extends Model
     public function lifecycleEvents(): HasMany
     {
         return $this->hasMany(CompetitionLifecycleEvent::class);
+    }
+
+    /**
+     * Every draw attempt ever made for this competition (P9) — see
+     * docs/DRAW_ENGINE_P9.md. Usually zero or one; more than one only
+     * when an earlier attempt failed/crashed and was recovered.
+     *
+     * @return HasMany<Draw, $this>
+     */
+    public function draws(): HasMany
+    {
+        return $this->hasMany(Draw::class);
+    }
+
+    /**
+     * The final, immutable winner record (P9) — at most one per
+     * competition, ever (database-enforced). Null until drawn.
+     *
+     * @return HasOne<DrawResult, $this>
+     */
+    public function drawResult(): HasOne
+    {
+        return $this->hasOne(DrawResult::class);
     }
 
     /**

@@ -19,7 +19,7 @@ vi.mock("@/lib/entries/client", () => ({
 
 const entry = {
   id: 1,
-  competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition" },
+  competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition", status: "active" },
   order_reference: "RG-482915",
   quantity: 3,
   ticket_numbers: [1, 2, 3],
@@ -64,5 +64,28 @@ describe("AccountEntriesPage", () => {
     expect(await screen.findByText("BMW M4 Competition")).toBeDefined();
     expect(screen.getByText("#1, #2, #3")).toBeDefined();
     expect(screen.getByText(/Order RG-482915/)).toBeDefined();
+  });
+
+  // -- P9: read-only lifecycle status badge -----------------------------------------------------
+
+  test("shows no status badge for a still-open (active) competition", async () => {
+    listEntries.mockResolvedValueOnce({ data: [entry], meta: { current_page: 1, last_page: 1, per_page: 10, total: 1 } });
+
+    render(<AccountEntriesPage />);
+
+    await screen.findByText("BMW M4 Competition");
+    expect(screen.queryByText("Drawn")).toBeNull();
+    expect(screen.queryByText("Closed")).toBeNull();
+  });
+
+  test("shows a 'Drawn' badge once the competition has been drawn — never a winner claim", async () => {
+    const drawnEntry = { ...entry, competition: { ...entry.competition, status: "drawn" } };
+    listEntries.mockResolvedValueOnce({ data: [drawnEntry], meta: { current_page: 1, last_page: 1, per_page: 10, total: 1 } });
+
+    render(<AccountEntriesPage />);
+
+    expect(await screen.findByText("Drawn")).toBeDefined();
+    expect(screen.queryByText(/won/i)).toBeNull();
+    expect(screen.queryByText(/claim/i)).toBeNull();
   });
 });

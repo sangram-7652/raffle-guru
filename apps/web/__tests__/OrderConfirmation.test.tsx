@@ -150,7 +150,7 @@ describe("OrderConfirmation", () => {
         entries: [
           {
             id: 1,
-            competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition" },
+            competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition", status: "active" },
             order_reference: "RG-482915",
             quantity: 5,
             ticket_numbers: [1, 2, 3, 4, 5],
@@ -179,7 +179,7 @@ describe("OrderConfirmation", () => {
             entries: [
               {
                 id: 1,
-                competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition" },
+                competition: { id: 10, slug: "bmw-m4", title: "BMW M4 Competition", status: "active" },
                 order_reference: "RG-482915",
                 quantity: 5,
                 ticket_numbers: [1, 2, 3, 4, 5],

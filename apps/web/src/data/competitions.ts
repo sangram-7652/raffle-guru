@@ -62,6 +62,10 @@ export type Competition = {
   rules: string[];
   question: CompetitionQuestion;
   faqs: { q: string; a: string }[];
+  /** P9 — only ever set once status is actually "drawn". The public
+   * winning ticket number, nothing about who holds it (see
+   * docs/DRAW_ENGINE_P9.md "Public API behavior" / P10 boundary). */
+  winningTicketNumber?: number;
 };
 
 /** Generic platform copy — identical for every competition, not fetched

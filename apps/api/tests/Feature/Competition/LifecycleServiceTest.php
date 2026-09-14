@@ -63,6 +63,24 @@ class LifecycleServiceTest extends TestCase
         $this->assertSame(CompetitionStatus::DrawPending, $competition->fresh()->status);
     }
 
+    // -- P9 additions (draw engine owns these two edges) ---------------------
+
+    public function test_draw_pending_transitions_to_draw_in_progress(): void
+    {
+        $competition = Competition::factory()->withStatus(CompetitionStatus::DrawPending)->create();
+
+        $this->assertTrue($this->service()->transition($competition, CompetitionStatus::DrawInProgress, 'draw acquired'));
+        $this->assertSame(CompetitionStatus::DrawInProgress, $competition->fresh()->status);
+    }
+
+    public function test_draw_in_progress_transitions_to_drawn(): void
+    {
+        $competition = Competition::factory()->withStatus(CompetitionStatus::DrawInProgress)->create();
+
+        $this->assertTrue($this->service()->transition($competition, CompetitionStatus::Drawn, 'draw completed'));
+        $this->assertSame(CompetitionStatus::Drawn, $competition->fresh()->status);
+    }
+
     // -- Invalid transitions --------------------------------------------------
 
     public static function invalidTransitionProvider(): array
@@ -83,7 +101,15 @@ class LifecycleServiceTest extends TestCase
             'closed -> draw_in_progress' => [CompetitionStatus::Closed, CompetitionStatus::DrawInProgress],
             'closed -> completed' => [CompetitionStatus::Closed, CompetitionStatus::Completed],
             'draw_pending -> drawn' => [CompetitionStatus::DrawPending, CompetitionStatus::Drawn],
-            'draw_pending -> draw_in_progress' => [CompetitionStatus::DrawPending, CompetitionStatus::DrawInProgress],
+            'draw_pending -> completed' => [CompetitionStatus::DrawPending, CompetitionStatus::Completed],
+            // draw_pending -> draw_in_progress is now valid (P9) — see
+            // test_draw_pending_transitions_to_draw_in_progress below.
+            'draw_in_progress -> draw_pending' => [CompetitionStatus::DrawInProgress, CompetitionStatus::DrawPending],
+            'draw_in_progress -> completed' => [CompetitionStatus::DrawInProgress, CompetitionStatus::Completed],
+            // draw_in_progress -> drawn is now valid (P9) — see
+            // test_draw_in_progress_transitions_to_drawn below.
+            'drawn -> completed' => [CompetitionStatus::Drawn, CompetitionStatus::Completed],
+            'drawn -> draw_pending' => [CompetitionStatus::Drawn, CompetitionStatus::DrawPending],
         ];
     }
 
@@ -99,17 +125,42 @@ class LifecycleServiceTest extends TestCase
         $this->assertSame(0, CompetitionLifecycleEvent::query()->where('competition_id', $competition->id)->count());
     }
 
-    // -- No path to P9/P10 states ever exists --------------------------------------------------
+    // -- No path to P10's state ever exists (P9 boundary) --------------------------------------------------
 
-    public function test_no_status_can_ever_reach_draw_in_progress_drawn_or_completed(): void
+    /**
+     * Supersedes the P8-scoped version of this test, which asserted
+     * that NEITHER draw_in_progress NOR drawn was reachable — that was
+     * only ever true because P8 hadn't implemented the draw engine yet,
+     * not because those states are permanently forbidden. P9 legitimately
+     * opens exactly two edges into them (see the two tests above). What
+     * must remain permanently true, in every phase, is that nothing
+     * reaches `completed` — that belongs to P10 alone.
+     */
+    public function test_no_status_can_ever_reach_completed(): void
     {
         foreach (CompetitionStatus::cases() as $from) {
-            foreach ([CompetitionStatus::DrawInProgress, CompetitionStatus::Drawn, CompetitionStatus::Completed] as $to) {
-                $this->assertFalse(
-                    $this->service()->canTransition($from, $to),
-                    "{$from->value} -> {$to->value} must never be a valid transition in P8.",
-                );
-            }
+            $this->assertFalse(
+                $this->service()->canTransition($from, CompetitionStatus::Completed),
+                "{$from->value} -> completed must never be a valid transition before P10.",
+            );
+        }
+    }
+
+    /**
+     * Regression guard for P8's own matrix subset: only the two P9
+     * additions above may reach draw_in_progress/drawn, and only from
+     * exactly the states P9 defines (draw_pending and draw_in_progress
+     * respectively) — nothing else gained a path to them as a side
+     * effect of adding those two edges.
+     */
+    public function test_only_the_p9_defined_states_can_reach_draw_in_progress_or_drawn(): void
+    {
+        foreach (CompetitionStatus::cases() as $from) {
+            $canReachDrawInProgress = $this->service()->canTransition($from, CompetitionStatus::DrawInProgress);
+            $canReachDrawn = $this->service()->canTransition($from, CompetitionStatus::Drawn);
+
+            $this->assertSame($from === CompetitionStatus::DrawPending, $canReachDrawInProgress);
+            $this->assertSame($from === CompetitionStatus::DrawInProgress, $canReachDrawn);
         }
     }
 

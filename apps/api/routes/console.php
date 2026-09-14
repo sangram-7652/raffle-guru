@@ -18,3 +18,17 @@ Artisan::command('inspire', function () {
 Schedule::command('competition:lifecycle')
     ->everyMinute()
     ->withoutOverlapping();
+
+// P9 — draw engine safety net. The PRIMARY trigger is event-driven, not
+// this schedule: CompetitionLifecycleService fires CompetitionDrawPending
+// the instant a competition reaches draw_pending, which a queued
+// DrawCompetitionJob normally picks up within seconds (see
+// docs/DRAW_ENGINE_P9.md "Trigger"). This sweep exists only to (a) catch
+// a competition the queue handoff somehow missed, and (b) recover a
+// competition stuck in draw_in_progress because its worker crashed
+// mid-draw (see "Crash recovery") — both handled the same idempotent
+// way DrawService::run() already handles the queued job. A 5-minute
+// cadence is appropriate for a safety net, not a primary trigger.
+Schedule::command('competition:draw')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();
