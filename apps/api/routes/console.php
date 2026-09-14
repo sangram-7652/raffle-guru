@@ -32,3 +32,14 @@ Schedule::command('competition:lifecycle')
 Schedule::command('competition:draw')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// P10 — winner creation safety net. The PRIMARY trigger is event-driven:
+// CompetitionLifecycleService fires CompetitionDrawn the instant a
+// competition reaches drawn, which a queued CreateWinnerJob normally
+// picks up within seconds (see docs/WINNER_CLAIM_P10.md "Draw -> winner
+// handoff"). This sweep exists only to catch a competition the queue
+// handoff missed (e.g. a worker crash between commit and job execution)
+// — same reasoning as the competition:draw sweep above.
+Schedule::command('winners:reconcile')
+    ->everyFiveMinutes()
+    ->withoutOverlapping();

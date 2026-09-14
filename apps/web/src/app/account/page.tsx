@@ -27,8 +27,8 @@ const STATUS_LABEL: Record<ApiOrder["status"], string> = {
 /**
  * Account landing page (P3) plus a compact recent-orders section (P5) —
  * full order history/filtering is out of scope here, this only surfaces
- * the customer's most recent orders. Entries/wins are separate future
- * phases (see docs/ROADMAP.md) and intentionally don't exist yet.
+ * the customer's most recent orders. Entries (P7) and winner/claim
+ * status (P10) live on their own dedicated pages, linked below.
  */
 function RecentOrders() {
   const [orders, setOrders] = useState<ApiOrder[] | null>(null);
@@ -156,10 +156,14 @@ function AccountContent() {
           </Button>
         </div>
 
-        <div className="mt-6 max-w-lg">
+        <div className="mt-6 flex max-w-lg flex-wrap gap-3">
           <Button href={routes.accountEntries} variant="secondary">
             <Icon name="ticket" className="h-4 w-4" />
             My entries
+          </Button>
+          <Button href={routes.accountWinner} variant="secondary">
+            <Icon name="trophy" className="h-4 w-4" />
+            My win
           </Button>
         </div>
 

@@ -3,6 +3,7 @@
 namespace App\Services\Competitions;
 
 use App\Enums\CompetitionStatus;
+use App\Events\CompetitionDrawn;
 use App\Events\CompetitionDrawPending;
 use App\Models\Competition;
 use App\Models\CompetitionLifecycleEvent;
@@ -39,6 +40,15 @@ class CompetitionLifecycleService
         // all (drawn -> completed is explicitly P10's).
         CompetitionStatus::DrawPending->value => [CompetitionStatus::DrawInProgress],
         CompetitionStatus::DrawInProgress->value => [CompetitionStatus::Drawn],
+        // P10 addition — see docs/WINNER_CLAIM_P10.md "Competition
+        // completion". Reached only via
+        // App\Services\Winner\PrizeFulfilmentService once the winner
+        // itself has reached WinnerStatus::Delivered ->
+        // WinnerStatus::Completed; never fired automatically right
+        // after the draw. No other edge into/out of Completed exists —
+        // active/closed/draw_pending/draw_in_progress -> completed all
+        // stay rejected.
+        CompetitionStatus::Drawn->value => [CompetitionStatus::Completed],
     ];
 
     public function canTransition(CompetitionStatus $from, CompetitionStatus $to): bool
@@ -99,6 +109,16 @@ class CompetitionLifecycleService
             // "an event exists" — see docs/DRAW_ENGINE_P9.md "Trigger".
             if ($to === CompetitionStatus::DrawPending) {
                 DB::afterCommit(fn () => CompetitionDrawPending::dispatch($locked->fresh()));
+            }
+
+            // P9 -> P10 handoff, same reasoning as above — see
+            // docs/WINNER_CLAIM_P10.md "Draw -> winner handoff". Fired
+            // only on the call that actually performs this specific
+            // transition, only once it has durably committed.
+            // CompetitionLifecycleService stays unaware of anything
+            // about winners beyond "an event exists".
+            if ($to === CompetitionStatus::Drawn) {
+                DB::afterCommit(fn () => CompetitionDrawn::dispatch($locked->fresh()));
             }
 
             return true;

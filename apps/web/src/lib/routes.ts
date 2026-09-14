@@ -26,6 +26,7 @@ export const routes = {
   verifyEmail: "/verify-email",
   account: "/account",
   accountEntries: "/account/entries",
+  accountWinner: "/account/winner",
 } as const;
 
 export const legalSlugs = [

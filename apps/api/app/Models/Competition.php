@@ -105,6 +105,18 @@ class Competition extends Model
     }
 
     /**
+     * The winner record (P10) — see docs/WINNER_CLAIM_P10.md. Null until
+     * CreateWinnerJob resolves it from the draw result. Database-unique
+     * on competitions.id, same guarantee as drawResult() above.
+     *
+     * @return HasOne<Winner, $this>
+     */
+    public function winner(): HasOne
+    {
+        return $this->hasOne(Winner::class);
+    }
+
+    /**
      * Competitions safe to show a public/customer-facing API — excludes
      * `draft` (unpublished) and `scheduled` (approved but not yet live).
      * Everything from `active` onward (including `sold_out`, `closed`,

@@ -63,8 +63,24 @@ ticket allocation is concurrency-safe).
   handoff, with a scheduled sweep (`competition:draw`) as a crash-recovery
   safety net. No winner claims, prize delivery, or `drawn→completed` —
   those are P10's. See [`DRAW_ENGINE_P9.md`](DRAW_ENGINE_P9.md).
-- **P10 — Winner / prize claim + notifications**: claim workflow, delivery
-  tracking, email/SMS.
+- **P10 — Winner, claim & prize fulfilment engine** (complete): resolves
+  `draw_results.ticket_id → tickets.user_id` into a `winners` row —
+  never recalculates P9's winner — then owns the customer-facing
+  lifecycle `pending_contact→contacted→verification_pending→verified→
+  claim_approved→delivery_pending→delivered→completed`, each strictly
+  forward-only through `WinnerLifecycleService`'s transition matrix (the
+  single place `winners.status` is ever written), same locking
+  philosophy as P7/P8/P9. One customer-initiated action exists in the
+  whole domain (submitting a claim); every other transition is
+  server/operator-only. Event-driven trigger (`CompetitionDrawn` →
+  `CreateWinnerJob`) mirrors the P8→P9 handoff, with `winners:reconcile`
+  as the crash-recovery safety net. Adds `drawn→completed` as one new
+  edge on `CompetitionLifecycleService`'s existing matrix — reached only
+  once a winner's prize has actually been delivered, never automatically
+  right after the draw. No KYC provider, courier integration, or admin
+  UI — those are explicitly out of scope; see
+  [`WINNER_CLAIM_P10.md`](WINNER_CLAIM_P10.md) §19 for the full P11
+  boundary.
 - **P11 — Filament admin**: build out resources once the underlying
   models are stable.
 - **P12 — Observability + testing hardening**: Sentry/logging, load tests

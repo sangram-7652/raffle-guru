@@ -56,4 +56,15 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->hasMany(Entry::class);
     }
+
+    /**
+     * Every competition this user has ever won (P10) — see
+     * docs/WINNER_CLAIM_P10.md. Usually empty or a single row.
+     *
+     * @return HasMany<Winner, $this>
+     */
+    public function winners(): HasMany
+    {
+        return $this->hasMany(Winner::class);
+    }
 }

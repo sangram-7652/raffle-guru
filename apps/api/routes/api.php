@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\WinnerClaimController;
+use App\Http\Controllers\Api\V1\Account\WinnerController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Api\V1\Auth\CurrentUserController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationNotificationController;
@@ -59,6 +61,21 @@ Route::prefix('v1')->group(function () {
         // no mutation endpoints exist, or should.
         Route::get('entries', [EntryController::class, 'index']);
         Route::get('entries/{entry}', [EntryController::class, 'show']);
+
+        // Winner/claim (P10) — see docs/WINNER_CLAIM_P10.md "API".
+        // Read-only except the single claim-submission endpoint; every
+        // route is scoped to the authenticated user inside its
+        // controller (ownership check, never route-level middleware
+        // alone — see WinnerController/WinnerClaimController). No
+        // route anywhere lets a customer set winner status, verify
+        // themselves, approve their own claim, or mutate delivery.
+        Route::prefix('account')->group(function () {
+            Route::get('winner', [WinnerController::class, 'current']);
+            Route::get('winners', [WinnerController::class, 'index']);
+            Route::get('winners/{winner}', [WinnerController::class, 'show']);
+            Route::get('winners/{winner}/claim', [WinnerClaimController::class, 'show']);
+            Route::post('winners/{winner}/claim', [WinnerClaimController::class, 'store']);
+        });
     });
 
     // Gateway → server. Deliberately outside auth:sanctum — the gateway

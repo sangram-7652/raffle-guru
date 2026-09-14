@@ -81,6 +81,16 @@ class LifecycleServiceTest extends TestCase
         $this->assertSame(CompetitionStatus::Drawn, $competition->fresh()->status);
     }
 
+    // -- P10 addition (winner/claim/fulfilment engine owns this edge) --------
+
+    public function test_drawn_transitions_to_completed(): void
+    {
+        $competition = Competition::factory()->withStatus(CompetitionStatus::Drawn)->create();
+
+        $this->assertTrue($this->service()->transition($competition, CompetitionStatus::Completed, 'winner completed'));
+        $this->assertSame(CompetitionStatus::Completed, $competition->fresh()->status);
+    }
+
     // -- Invalid transitions --------------------------------------------------
 
     public static function invalidTransitionProvider(): array
@@ -108,7 +118,8 @@ class LifecycleServiceTest extends TestCase
             'draw_in_progress -> completed' => [CompetitionStatus::DrawInProgress, CompetitionStatus::Completed],
             // draw_in_progress -> drawn is now valid (P9) — see
             // test_draw_in_progress_transitions_to_drawn below.
-            'drawn -> completed' => [CompetitionStatus::Drawn, CompetitionStatus::Completed],
+            // drawn -> completed is now valid (P10) — see
+            // test_drawn_transitions_to_completed above.
             'drawn -> draw_pending' => [CompetitionStatus::Drawn, CompetitionStatus::DrawPending],
         ];
     }
@@ -125,23 +136,28 @@ class LifecycleServiceTest extends TestCase
         $this->assertSame(0, CompetitionLifecycleEvent::query()->where('competition_id', $competition->id)->count());
     }
 
-    // -- No path to P10's state ever exists (P9 boundary) --------------------------------------------------
+    // -- Only P10's one defined edge reaches `completed` (P9/P10 boundary) ---
 
     /**
-     * Supersedes the P8-scoped version of this test, which asserted
-     * that NEITHER draw_in_progress NOR drawn was reachable — that was
-     * only ever true because P8 hadn't implemented the draw engine yet,
-     * not because those states are permanently forbidden. P9 legitimately
-     * opens exactly two edges into them (see the two tests above). What
-     * must remain permanently true, in every phase, is that nothing
-     * reaches `completed` — that belongs to P10 alone.
+     * Supersedes test_no_status_can_ever_reach_completed (the P9-scoped
+     * version of this test, which asserted that NOTHING could ever
+     * reach `completed` — that was only ever true because P10 hadn't
+     * opened its one edge yet, not because `completed` is permanently
+     * unreachable). P10 legitimately opens exactly one edge into it,
+     * from `drawn` (see test_drawn_transitions_to_completed above,
+     * and docs/WINNER_CLAIM_P10.md "Competition completion" for why —
+     * only after the winner itself has been delivered, via
+     * App\Services\Winner\PrizeFulfilmentService, never automatically
+     * right after the draw). What must remain permanently true is that
+     * every OTHER state stays unable to reach it.
      */
-    public function test_no_status_can_ever_reach_completed(): void
+    public function test_only_drawn_can_reach_completed(): void
     {
         foreach (CompetitionStatus::cases() as $from) {
-            $this->assertFalse(
+            $this->assertSame(
+                $from === CompetitionStatus::Drawn,
                 $this->service()->canTransition($from, CompetitionStatus::Completed),
-                "{$from->value} -> completed must never be a valid transition before P10.",
+                "{$from->value} -> completed reachability is wrong.",
             );
         }
     }
