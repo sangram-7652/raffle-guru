@@ -73,12 +73,6 @@ docker compose exec api php artisan migrate
 docker compose exec api vendor/bin/phpunit
 ```
 
-**Known rough edge:** if you rebuild/recreate the `api` container while
-`nginx` keeps running, Nginx may cache the old container's IP and return a
-502 until you `docker compose restart nginx`. See
-[`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md) for
-why, and the P1 report's Known Limitations for the proper fix.
-
 ### Option B — run each app directly on the host
 
 Frontend:

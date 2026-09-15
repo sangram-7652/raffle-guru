@@ -28,7 +28,14 @@ next.
 - **Nginx** is the only public entry point. It path-routes `/` to the
   Next.js server and `/api` to the Laravel API — both origins are the same
   from the browser's point of view, so no CORS configuration is needed for
-  the web frontend talking to its own API.
+  the web frontend talking to its own API. Upstreams are addressed by
+  Docker Compose service name (`web`, `api`) through Docker's embedded DNS
+  (`127.0.0.11`), resolved lazily per-request via an nginx `resolver` +
+  variable rather than once at startup — see the comment in
+  `infrastructure/nginx/dev.conf`/`prod.conf` — so Nginx doesn't need
+  either container to already be up when it starts, and keeps routing
+  correctly after `web`/`api` are recreated with a new address, without a
+  manual Nginx restart.
 - **Next.js** (`apps/web`) renders the customer-facing site. In production
   it runs as a standalone Node server (`next build` with `output:
   "standalone"`), not `next dev`.
