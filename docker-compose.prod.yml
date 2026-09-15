@@ -56,6 +56,15 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      # php-fpm speaks fastcgi, not HTTP, so there's no curl-able endpoint —
+      # a plain TCP connect to the fastcgi port is enough to confirm it's
+      # accepting connections.
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   queue:
     build:
@@ -124,8 +133,10 @@ services:
     ports:
       - "80:80"
     depends_on:
-      - web
-      - api
+      web:
+        condition: service_started
+      api:
+        condition: service_healthy
 
 volumes:
   mysql-data:
