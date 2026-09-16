@@ -12,7 +12,9 @@ you're touching:
 Cross-cutting docs live in [`docs/`](docs/):
 [`docs/PRODUCTION_ARCHITECTURE.md`](docs/PRODUCTION_ARCHITECTURE.md) for
 how the pieces fit together, [`docs/ROADMAP.md`](docs/ROADMAP.md) for what
-gets built next.
+gets built next, and [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md) for the
+customer-facing walkthrough (what a customer can actually do today, page
+by page) as opposed to the per-phase API references.
 
 ## Rules that apply everywhere
 
