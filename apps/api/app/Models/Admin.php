@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AdminAbility;
 use App\Enums\AdminRole;
 use Database\Factories\AdminFactory;
 use Filament\Models\Contracts\FilamentUser;
@@ -54,5 +55,17 @@ class Admin extends Authenticatable implements FilamentUser
     public function isSuperAdmin(): bool
     {
         return $this->role === AdminRole::SuperAdmin;
+    }
+
+    /**
+     * The single authorization primitive every Policy in app/Policies
+     * is built on (P11.2) — deliberately re-checks is_active here, not
+     * just at login/canAccessPanel(): a long-lived Livewire/panel
+     * session must lose every ability the instant an admin is
+     * deactivated, not just be refused the next full page load.
+     */
+    public function hasAbility(AdminAbility $ability): bool
+    {
+        return $this->is_active && in_array($ability, $this->role->abilities(), true);
     }
 }
