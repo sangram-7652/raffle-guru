@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Admin;
 use App\Models\User;
 
 return [
@@ -42,6 +43,16 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Staff/admin identity boundary (P11) — completely separate from
+        // the customer `web` guard above: a customer session can never
+        // satisfy `auth:admin`, and vice versa. Dedicated
+        // guard/provider/model rather than an `is_admin` flag on
+        // `users` — see the P11 architecture plan.
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'admins',
+        ],
     ],
 
     /*
@@ -71,6 +82,11 @@ return [
         //     'driver' => 'database',
         //     'table' => 'users',
         // ],
+
+        'admins' => [
+            'driver' => 'eloquent',
+            'model' => Admin::class,
+        ],
     ],
 
     /*
