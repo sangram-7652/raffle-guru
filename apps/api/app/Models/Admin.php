@@ -46,10 +46,23 @@ class Admin extends Authenticatable implements FilamentUser
      * (is_active = false) must immediately lock them out even if their
      * session cookie is still otherwise valid. This is checked on every
      * panel request, not just at login.
+     *
+     * Touching `$this->role` here (not just `is_active`) is deliberate,
+     * not decorative (P11.3 §14 "future unsupported roles fail closed"):
+     * `role` is a strict backed enum cast, so a row whose `role` column
+     * holds a value outside {super_admin, operations} — only reachable
+     * by bypassing Eloquent — throws \ValueError the moment it's
+     * accessed. Before this line existed, canAccessPanel() never read
+     * `role` at all, so with today's resource-less dashboard nothing on
+     * the page would touch it either, and such an admin would silently
+     * reach the panel shell instead of being denied. This is the same
+     * fail-closed behavior Admin::hasAbility() already relies on,
+     * reused at the earliest checkpoint rather than inventing a second
+     * access mechanism.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return $this->is_active;
+        return $this->is_active && $this->role instanceof AdminRole;
     }
 
     public function isSuperAdmin(): bool

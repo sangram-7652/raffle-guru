@@ -3,10 +3,12 @@
 namespace Tests\Feature\Admin;
 
 use App\Models\Admin;
+use App\Models\User;
 use Filament\Auth\Pages\Login;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -117,6 +119,70 @@ class AdminAuthenticationTest extends TestCase
         $admin = Admin::factory()->create();
 
         $this->assertTrue($admin->canAccessPanel(Filament::getPanel('admin')));
+    }
+
+    /**
+     * P11.3 §14: both approved roles must be able to reach the panel —
+     * asserted for each role explicitly (not just implicitly through
+     * the default factory role) since a future role addition could
+     * silently change which roles are actually let in.
+     */
+    public function test_super_admin_can_access_the_panel(): void
+    {
+        $superAdmin = Admin::factory()->superAdmin()->create();
+
+        $response = $this->actingAs($superAdmin, 'admin')->get('/admin');
+
+        $response->assertOk();
+    }
+
+    public function test_operations_admin_can_access_the_panel(): void
+    {
+        $operations = Admin::factory()->create(); // default role is Operations
+
+        $response = $this->actingAs($operations, 'admin')->get('/admin');
+
+        $response->assertOk();
+    }
+
+    /**
+     * Distinct from AdminGuardIsolationTest (which proves the `admin`
+     * guard never authenticates a customer session): this proves the
+     * actual panel *route*, hit as an authenticated customer, still
+     * refuses access — the end-to-end behavior a real browser request
+     * would hit, not just the guard facade in isolation.
+     */
+    public function test_customer_cannot_access_the_admin_panel_route(): void
+    {
+        $customer = User::factory()->create();
+
+        $response = $this->actingAs($customer, 'web')->get('/admin');
+
+        $response->assertRedirect('/admin/login');
+    }
+
+    /**
+     * P11.3 §14 "future unsupported roles fail closed": an admin row
+     * whose `role` column holds a value outside the AdminRole enum
+     * (only reachable by bypassing Eloquent) must never reach the panel
+     * shell. Admin::canAccessPanel() now touches `role`, not just
+     * `is_active`, specifically so this fails before rendering anything
+     * — see that method's docblock. It fails via an uncaught
+     * \ValueError (a 500), not a graceful redirect: the same
+     * deliberately-not-swallowed fail-closed behavior already
+     * established for Admin::hasAbility() in P11.2.
+     */
+    public function test_admin_with_an_unsupported_role_cannot_access_the_panel(): void
+    {
+        $admin = Admin::factory()->create();
+        DB::table('admins')->where('id', $admin->id)->update(['role' => 'not_a_real_role']);
+        $corrupted = Admin::find($admin->id);
+
+        $this->actingAs($corrupted, 'admin');
+
+        $this->withoutExceptionHandling();
+        $this->expectException(\ValueError::class);
+        $this->get('/admin');
     }
 
     public function test_unauthenticated_request_to_the_panel_redirects_to_login(): void
