@@ -2,16 +2,14 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Dashboard;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
@@ -39,11 +37,14 @@ class AdminPanelProvider extends PanelProvider
             ->pages([
                 Dashboard::class,
             ])
+            // Every dashboard widget lives in app/Filament/Widgets and is
+            // picked up here — no explicit ->widgets([...]) list. The
+            // bundled AccountWidget/FilamentInfoWidget default widgets
+            // (a profile card and a "powered by Filament" ad) are
+            // deliberately dropped: P11.4 replaces the default dashboard
+            // with a purpose-built operations console, not a generic
+            // Filament starter page.
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
