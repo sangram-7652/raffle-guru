@@ -5,6 +5,7 @@ namespace Tests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,13 @@ abstract class TestCase extends BaseTestCase
         Config::set('database.connections.mysql.database', self::MYSQL_TEST_DATABASE);
         Config::set('database.default', 'mysql');
         DB::purge('mysql');
+
+        // A previous `TESTING_DB=mysql` run can leave this database with no
+        // tables: DatabaseMigrations tests (e.g. DrawHandoffTest) roll every
+        // migration back in teardown. Bring the schema up to date — plain
+        // `migrate`, idempotent, never `fresh` — so these tests don't depend
+        // on which suite ran last.
+        Artisan::call('migrate', ['--database' => 'mysql', '--force' => true]);
     }
 
     protected function setUp(): void
