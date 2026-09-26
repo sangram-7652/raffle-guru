@@ -335,12 +335,9 @@ class TicketResourceTest extends TestCase
         $this->assertSame($counts['1-filtered'], $counts['25-filtered'], json_encode($counts));
     }
 
-    public function test_navigation_group_and_no_draw_resource(): void
+    public function test_navigation_group(): void
     {
         $this->assertSame('Tickets & Draws', TicketResource::getNavigationGroup());
-
-        $this->actingAs(Admin::factory()->superAdmin()->create(), 'admin');
-        $this->get('/admin/draws')->assertNotFound();
     }
 }
 

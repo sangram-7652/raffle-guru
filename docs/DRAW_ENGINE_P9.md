@@ -261,8 +261,10 @@ perform a draw. Every trigger converges through it:
 - **Duplicate queue job** (retry, or `CompetitionDrawPending` firing
   twice defensively) → second call sees status no longer `draw_pending`
   (or a still-live `running` attempt) → no-op.
-- **HTTP/scheduler retry** → same; there is no HTTP endpoint that can
-  trigger a draw at all (see §12).
+- **HTTP/scheduler retry** → same; there is no public or customer HTTP
+  endpoint that can trigger a draw (see §12). The admin panel's "Run
+  draw" action (P11.8) calls the same `run()`, so a repeat or
+  double-click is the same idempotent no-op.
 - **Worker restart** → covered by crash recovery (§7).
 - **Operator reruns the command** → same `run()` path, same guards.
 
@@ -359,10 +361,15 @@ announce), not a claim/winner workflow.
 `competition.status` (read-only, reflects P8/P9 lifecycle) — nothing
 about whether that entry's own tickets won.
 
-No new route exists to trigger, retry, or view internal draw state.
-There is no authenticated *or* unauthenticated HTTP path into
-`DrawService` at all — only the CLI command and the queue worker can
-reach it.
+No public or customer route exists to trigger, retry, or view internal
+draw state. `DrawService` is reachable only from the CLI command, the
+queue worker, and — amended in P11.8 — the admin panel's "Run draw"
+action (`App\Filament\Resources\Draws\Actions\RunDrawAction`), which
+requires the `admin` guard and `DrawPolicy::run` (`draw.run`, P11.2).
+That action only chooses *which* awaiting competition to draw; it calls
+the same `DrawService::run()` and never supplies a ticket, winner or
+randomness. `tests/Feature/Draw/DrawApiTest.php` enforces both the route
+rule and the code-level whitelist of `DrawService` callers.
 
 ## 13. Security model
 
