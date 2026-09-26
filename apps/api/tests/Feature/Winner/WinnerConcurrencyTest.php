@@ -55,9 +55,7 @@ class WinnerConcurrencyTest extends TestCase
             $this->markTestSkipped('pcntl extension not available — cannot fork for a genuine concurrency test.');
         }
 
-        Config::set('database.connections.mysql.database', 'raffleguru');
-        Config::set('database.default', 'mysql');
-        DB::purge('mysql');
+        $this->useIsolatedMysqlDatabase();
     }
 
     protected function tearDown(): void

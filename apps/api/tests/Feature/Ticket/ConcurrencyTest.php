@@ -15,8 +15,8 @@ use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
- * Runs against the REAL MySQL database (the same 'raffleguru' database
- * docker-compose gives the api/queue/scheduler containers) via
+ * Runs against a REAL MySQL database — the isolated
+ * TestCase::MYSQL_TEST_DATABASE, never the development database — via
  * pcntl_fork()'d child processes — genuinely concurrent transactions
  * cannot be exercised within one single-threaded PHP process/connection,
  * and sequential calls prove nothing about the row-lock strategy. See
@@ -26,7 +26,7 @@ use Tests\TestCase;
  * sqlite `:memory:` testing connection per phpunit.xml) — it switches
  * the app's default connection to the real 'mysql' one for its own
  * duration, creates its own fixtures, and cleans them up explicitly in
- * tearDown so it leaves no residue in the shared dev database.
+ * tearDown.
  */
 class ConcurrencyTest extends TestCase
 {
@@ -44,13 +44,9 @@ class ConcurrencyTest extends TestCase
             $this->markTestSkipped('pcntl extension not available — cannot fork for a genuine concurrency test.');
         }
 
-        // Same database name apps/api/.env.example gives this stack's
-        // dev MySQL — phpunit.xml only overrides DB_CONNECTION/DB_DATABASE
-        // for the default (sqlite testing) connection; host/port/
-        // credentials for 'mysql' still come from the real .env.
-        Config::set('database.connections.mysql.database', 'raffleguru');
-        Config::set('database.default', 'mysql');
-        DB::purge('mysql');
+        // Host/port/credentials for 'mysql' come from the real
+        // environment; the database is always the isolated *_testing one.
+        $this->useIsolatedMysqlDatabase();
     }
 
     protected function tearDown(): void
