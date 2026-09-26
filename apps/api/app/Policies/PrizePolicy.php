@@ -35,4 +35,13 @@ class PrizePolicy
     {
         return $admin->hasAbility(AdminAbility::PrizeDelete);
     }
+
+    /**
+     * See CompetitionPolicy::restore() — same reasoning, including why
+     * forceDelete()/forceDeleteAny() are deliberately absent.
+     */
+    public function restore(Admin $admin, Prize $prize): bool
+    {
+        return $admin->hasAbility(AdminAbility::PrizeDelete);
+    }
 }

@@ -29,6 +29,16 @@ class AdminPanelProvider extends PanelProvider
             // guard. See config/auth.php and App\Models\Admin.
             ->authGuard('admin')
             ->login()
+            // Without this, Filament's own authorization helper (see
+            // Resources\Resource\Concerns\HasAuthorization) silently
+            // ALLOWS an action when the specific policy method it needs
+            // (restore, deleteAny, forceDelete, ...) doesn't exist —
+            // the opposite of plain Laravel Gate::allows()'s deny-by-
+            // default. Strict mode turns a missing policy method into a
+            // LogicException instead, so a forgotten method fails loudly
+            // in development/tests rather than silently granting access
+            // in production (P11.5 security review finding).
+            ->strictAuthorization()
             ->colors([
                 'primary' => Color::Amber,
             ])

@@ -45,6 +45,19 @@ class CompetitionPolicy
     }
 
     /**
+     * The inverse of delete, so the same ability — P11.2 has no separate
+     * restore ability. Checked by Filament's RestoreAction. There are
+     * deliberately no forceDelete()/forceDeleteAny() methods: no
+     * force-delete action exists in the admin panel, and with the panel's
+     * strictAuthorization() a future one would throw instead of silently
+     * defaulting to allowed.
+     */
+    public function restore(Admin $admin, Competition $competition): bool
+    {
+        return $admin->hasAbility(AdminAbility::CompetitionDelete);
+    }
+
+    /**
      * Gates calling CompetitionLifecycleService at all — not which
      * transition. See class docblock.
      */
