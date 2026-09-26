@@ -1,5 +1,7 @@
 <?php
 
+use Tests\TestCase;
+
 /*
  * PHPUnit applies phpunit.xml's `<env force="true">` values to $_ENV and
  * putenv() only — but Laravel's env repository reads $_SERVER FIRST, and
@@ -13,8 +15,19 @@
  * forced ones) into $_SERVER before Laravel boots. Tests\TestCase then
  * refuses to boot at all if the result still isn't an isolated database.
  */
+
+require __DIR__.'/../vendor/autoload.php';
+
+// Explicit opt-in to run the whole suite on real MySQL instead of SQLite
+// (MySQL behaves differently for locking, JSON and constraint errors):
+//   docker compose exec -e TESTING_DB=mysql api vendor/bin/phpunit
+// It can only ever select the isolated *_testing database.
+if (($_SERVER['TESTING_DB'] ?? null) === 'mysql') {
+    $_ENV['DB_CONNECTION'] = 'mysql';
+    $_ENV['DB_DATABASE'] = TestCase::MYSQL_TEST_DATABASE;
+    $_ENV['DB_URL'] = '';
+}
+
 foreach ($_ENV as $name => $value) {
     $_SERVER[$name] = $value;
 }
-
-require __DIR__.'/../vendor/autoload.php';
