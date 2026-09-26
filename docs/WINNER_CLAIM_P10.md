@@ -384,10 +384,17 @@ backend either.
 
 Deliberately left out of P10, as scoped:
 
-- **Admin/operator UI** — no Filament exists in this codebase and none
-  was added; `WinnerLifecycleService`/`WinnerClaimService`/
-  `PrizeFulfilmentService` are the domain services a future admin
-  surface calls directly (no direct status writes anywhere else).
+- **Admin/operator UI** — none in P10. P11.9 added it (Filament
+  `WinnerResource` / `WinnerClaimResource`), calling these services
+  directly with no direct status writes: "Mark contacted" ->
+  `WinnerLifecycleService::transition(..., actorType: 'operator',
+  actorId: <admin>)`; claim review -> `WinnerClaimService::transition()`.
+  P11.9's only domain change: `WinnerClaimService::transition()` gained a
+  trailing `?int $actorId = null`, recorded on the claim's audit row and
+  on the coupled winner transition's audit row (null keeps the previous
+  behaviour), and `canTransition()` became public so the admin UI asks
+  the service which moves are valid instead of copying its matrix.
+  Delivery progression (`PrizeFulfilmentService`) is P11.10's.
 - **Real KYC/identity verification** — `verified` is a server-confirmed
   boundary today (§6), not an external identity check.
 - **Courier/tracking integration** — `delivery_method`/

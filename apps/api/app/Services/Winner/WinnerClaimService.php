@@ -112,11 +112,16 @@ class WinnerClaimService
      * customer request (see docs/WINNER_CLAIM_P10.md "Verification").
      * The extension point a future admin/operator surface calls.
      *
+     * `$actorId` (P11.9) is the operator (admin) performing the review.
+     * It is recorded on this claim's audit row AND on the coupled winner
+     * transition's audit row, so an operator decision is attributable
+     * end to end. Null keeps the pre-P11.9 behaviour (operator, no id).
+     *
      * @throws WinnerClaimException
      */
-    public function transition(WinnerClaim $claim, WinnerClaimStatus $to, string $reason, ?string $rejectionReason = null): WinnerClaim
+    public function transition(WinnerClaim $claim, WinnerClaimStatus $to, string $reason, ?string $rejectionReason = null, ?int $actorId = null): WinnerClaim
     {
-        return DB::transaction(function () use ($claim, $to, $reason, $rejectionReason) {
+        return DB::transaction(function () use ($claim, $to, $reason, $rejectionReason, $actorId) {
             /** @var WinnerClaim $locked */
             $locked = WinnerClaim::query()->lockForUpdate()->findOrFail($claim->id);
             $from = $locked->status;
@@ -147,6 +152,7 @@ class WinnerClaimService
                 'from_status' => $from->value,
                 'to_status' => $to->value,
                 'actor_type' => 'operator',
+                'actor_id' => $actorId,
                 'metadata' => ['reason' => $reason],
             ]);
 
@@ -158,6 +164,7 @@ class WinnerClaimService
                     self::WINNER_TRANSITION_ON[$to->value],
                     "claim {$to->value}",
                     actorType: 'operator',
+                    actorId: $actorId,
                 );
             }
 
@@ -165,7 +172,12 @@ class WinnerClaimService
         });
     }
 
-    private function canTransition(WinnerClaimStatus $from, WinnerClaimStatus $to): bool
+    /**
+     * Public (P11.9) so an admin surface can offer only currently-valid
+     * moves by asking the service, rather than re-implementing this
+     * matrix. transition() still re-checks it under the row lock.
+     */
+    public function canTransition(WinnerClaimStatus $from, WinnerClaimStatus $to): bool
     {
         return match ($from) {
             WinnerClaimStatus::Submitted => $to === WinnerClaimStatus::VerificationPending,
