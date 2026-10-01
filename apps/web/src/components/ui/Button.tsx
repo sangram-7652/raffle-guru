@@ -33,7 +33,7 @@ type ButtonAsButton = CommonProps &
 type ButtonProps = ButtonAsLink | ButtonAsButton;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-display font-bold tracking-tight whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full font-display font-bold tracking-tight whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
@@ -41,8 +41,8 @@ const variants: Record<ButtonVariant, string> = {
   secondary:
     "border border-gold/30 bg-mist text-heading backdrop-blur hover:border-gold/60 hover:bg-panel",
   outline:
-    "border border-gold/40 bg-transparent text-gold hover:border-gold hover:bg-gold/10",
-  ghost: "text-heading hover:text-gold",
+    "border border-gold/40 bg-transparent text-gold-700 hover:border-gold hover:bg-gold/10",
+  ghost: "text-heading hover:text-gold-700",
   danger:
     "bg-error-700 text-white hover:bg-error-700/85 shadow-[0_10px_30px_-12px_var(--color-error-700)] hover:-translate-y-0.5",
 };

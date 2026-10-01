@@ -20,7 +20,7 @@ export default function Checkbox({
     <input
       type="checkbox"
       id={id}
-      className={`mt-0.5 h-4 w-4 shrink-0 rounded border-line accent-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:opacity-60 ${className}`}
+      className={`mt-0.5 h-4 w-4 shrink-0 rounded border-line accent-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/40 disabled:opacity-60 ${className}`}
       {...props}
     />
   );

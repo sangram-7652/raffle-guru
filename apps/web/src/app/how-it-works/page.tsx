@@ -45,7 +45,7 @@ export default function HowItWorksPage() {
                 >
                   {step.number}
                 </span>
-                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line bg-panel text-gold">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line bg-panel text-gold-700">
                   <Icon name={step.icon} className="h-5 w-5" />
                 </span>
                 <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-heading">

@@ -30,7 +30,7 @@ const tones: Record<BadgeTone, string> = {
   neutral:
     "border border-line bg-card/90 text-heading shadow-sm backdrop-blur-md",
   featured: "brand-gradient text-ink",
-  "ending-soon": "border border-gold-light/30 bg-gold-light/12 text-gold-light",
+  "ending-soon": "border border-gold-700/25 bg-gold-light/20 text-gold-700",
   live: "border border-live/30 bg-live/12 text-live",
   "sold-out": "border border-line bg-panel text-muted",
   new: "border border-success/25 bg-success/12 text-success-600",

@@ -43,7 +43,7 @@ export default function WinnerCard({ winner }: { winner: WinnerCardData }) {
             {winner.location}
           </span>
         </p>
-        <p className="mt-1 text-sm font-semibold text-gold">{winner.prize}</p>
+        <p className="mt-1 text-sm font-semibold text-gold-700">{winner.prize}</p>
         <p className="mt-0.5 text-xs text-muted">{winner.competition}</p>
         {winner.quote && (
           <p className="mt-3 text-sm italic leading-relaxed text-muted">
@@ -51,7 +51,7 @@ export default function WinnerCard({ winner }: { winner: WinnerCardData }) {
           </p>
         )}
         <p className="mt-4 inline-flex w-fit items-center gap-1.5 rounded-full border border-line bg-panel px-2.5 py-1 font-mono text-xs text-heading">
-          <Icon name="ticket" className="h-3.5 w-3.5 text-gold" />
+          <Icon name="ticket" className="h-3.5 w-3.5 text-gold-700" />
           Ticket {winner.ticket}
         </p>
       </figcaption>

@@ -18,7 +18,7 @@ function Stars({ rating }: { rating: number }) {
         <svg
           key={i}
           viewBox="0 0 24 24"
-          className={`h-4 w-4 ${i < rating ? "text-gold-light" : "text-track"}`}
+          className={`h-4 w-4 ${i < rating ? "text-gold-700" : "text-track"}`}
           fill="currentColor"
           aria-hidden="true"
         >
@@ -123,7 +123,7 @@ export default function ReviewsSection() {
                             {review.location}
                           </span>
                         </span>
-                        <span className="block text-xs font-semibold text-gold">
+                        <span className="block text-xs font-semibold text-gold-700">
                           {review.prize}
                         </span>
                       </span>
@@ -139,7 +139,7 @@ export default function ReviewsSection() {
               type="button"
               onClick={() => go(active - 1)}
               aria-label="Previous review"
-              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
+              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/70"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -176,7 +176,7 @@ export default function ReviewsSection() {
               type="button"
               onClick={() => go(active + 1)}
               aria-label="Next review"
-              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
+              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/70"
             >
               <svg
                 viewBox="0 0 24 24"

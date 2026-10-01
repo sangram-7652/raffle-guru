@@ -24,7 +24,7 @@ export default function RegisterPage() {
           Already have an account?{" "}
           <Link
             href={routes.login}
-            className="font-semibold text-gold-700 hover:text-gold"
+            className="font-semibold text-gold-700 hover:text-gold-700"
           >
             Sign in
           </Link>

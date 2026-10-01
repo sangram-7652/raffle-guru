@@ -92,7 +92,7 @@ export default function CartView() {
 
         <Link
           href={routes.competitions}
-          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-700 hover:text-gold"
+          className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-gold-700 hover:text-gold-700"
         >
           <Icon name="arrow" className="h-4 w-4 rotate-180" />
           Continue browsing

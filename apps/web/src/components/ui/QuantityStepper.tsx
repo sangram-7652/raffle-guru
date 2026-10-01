@@ -39,7 +39,7 @@ export default function QuantityStepper({
         aria-label={`Decrease ${label}`}
         disabled={value <= min}
         onClick={() => onChange(clamp(value - step))}
-        className="grid place-items-center text-heading transition-colors hover:bg-panel disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold/50"
+        className="grid place-items-center text-heading transition-colors hover:bg-panel disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold-700/50"
       >
         <Icon name="close" className="h-3.5 w-3.5 rotate-45" />
       </button>
@@ -65,7 +65,7 @@ export default function QuantityStepper({
         aria-label={`Increase ${label}`}
         disabled={value >= max}
         onClick={() => onChange(clamp(value + step))}
-        className="grid place-items-center text-heading transition-colors hover:bg-panel disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold/50"
+        className="grid place-items-center text-heading transition-colors hover:bg-panel disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold-700/50"
       >
         <span aria-hidden className="text-lg leading-none">
           +

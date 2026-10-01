@@ -34,7 +34,7 @@ export default function CompetitionQuestion({
   return (
     <fieldset className="rounded-2xl border border-line bg-card p-5">
       <legend className="flex items-center gap-2 px-1 font-display text-sm font-bold tracking-tight text-heading">
-        <Icon name="spark" className="h-4 w-4 text-gold" />
+        <Icon name="spark" className="h-4 w-4 text-gold-700" />
         Entry question
       </legend>
       <p className="mt-1 text-sm text-muted">{question.prompt}</p>

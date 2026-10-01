@@ -35,7 +35,7 @@ export default function HeroBanner() {
 
   return (
     <div
-      className="card-shadow-lg relative overflow-hidden rounded-panel border border-line bg-ink"
+      className="card-shadow-lg relative overflow-hidden rounded-panel border border-gold/15 bg-ink"
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured competitions"
@@ -44,7 +44,7 @@ export default function HeroBanner() {
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
     >
-      <div className="relative min-h-[26rem] w-full sm:min-h-0 sm:aspect-[21/7]">
+      <div className="relative min-h-[31rem] w-full sm:min-h-0 sm:aspect-[7/3]">
 
         {heroBannerSlides.map((slide, i) => (
           <div

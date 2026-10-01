@@ -79,7 +79,7 @@ export default function EntrySelector({
           <span className="ml-1.5 text-sm text-muted">per entry</span>
         </div>
         {competition.cashAlternative && (
-          <span className="text-xs font-medium text-gold">
+          <span className="text-xs font-medium text-gold-700">
             {competition.cashAlternative}
           </span>
         )}
@@ -91,7 +91,7 @@ export default function EntrySelector({
       </p>
 
       <div className="mt-4 flex items-center gap-2 rounded-xl border border-line bg-panel px-3.5 py-3">
-        <Icon name="clock" className="h-4 w-4 shrink-0 text-gold" />
+        <Icon name="clock" className="h-4 w-4 shrink-0 text-gold-700" />
         <div className="min-w-0">
           <p className="text-xs text-muted">Draws {competition.drawLabel}</p>
           <Countdown
@@ -133,7 +133,7 @@ export default function EntrySelector({
                     key={n}
                     type="button"
                     onClick={() => setQty(n)}
-                    className={`h-8 rounded-full px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
+                    className={`h-8 rounded-full px-3 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/50 ${
                       qty === n
                         ? "brand-gradient text-ink"
                         : "border border-line text-muted hover:text-heading"

@@ -86,7 +86,7 @@ export default async function CompetitionDetailPage({
               <Badge
                 tone="neutral"
                 icon={
-                  <span className="text-gold" aria-hidden>
+                  <span className="text-gold-700" aria-hidden>
                     ●
                   </span>
                 }

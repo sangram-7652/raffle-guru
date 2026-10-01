@@ -45,7 +45,7 @@ export default function FaqBrowser() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search questions…"
-            className="h-11 w-full rounded-full border border-line bg-card pl-10 pr-4 text-sm text-heading placeholder:text-muted/70 focus-visible:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
+            className="h-11 w-full rounded-full border border-line bg-card pl-10 pr-4 text-sm text-heading placeholder:text-muted/70 focus-visible:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/40"
           />
         </label>
 
@@ -66,7 +66,7 @@ export default function FaqBrowser() {
                 aria-current={isActive ? "true" : undefined}
                 className={`shrink-0 rounded-full px-4 py-2 text-left text-sm font-medium transition-colors lg:rounded-lg ${
                   isActive
-                    ? "bg-gold text-ink lg:bg-panel lg:text-gold lg:font-semibold"
+                    ? "bg-gold text-ink lg:bg-panel lg:text-gold-700 lg:font-semibold"
                     : "border border-line text-muted hover:text-heading lg:border-transparent lg:hover:bg-panel"
                 }`}
               >
@@ -96,7 +96,7 @@ export default function FaqBrowser() {
             {results.map((group) => (
               <section key={group.label} aria-label={group.label}>
                 {searching && (
-                  <h2 className="t-eyebrow mb-3 text-gold">{group.label}</h2>
+                  <h2 className="t-eyebrow mb-3 text-gold-700">{group.label}</h2>
                 )}
                 <Accordion
                   items={group.items.map((it) => ({

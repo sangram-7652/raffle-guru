@@ -56,7 +56,7 @@ export default function CompetitionCard({
           className="absolute left-3 top-3"
           icon={
             soldOut ? undefined : (
-              <Icon name="spark" className="h-3 w-3 text-gold" />
+              <Icon name="spark" className="h-3 w-3 text-gold-700" />
             )
           }
         >
@@ -68,7 +68,7 @@ export default function CompetitionCard({
         <h3 className="t-h4 text-heading">
           <Link
             href={href}
-            className="rounded outline-none transition-colors hover:text-gold-700 focus-visible:ring-2 focus-visible:ring-gold/50"
+            className="rounded outline-none transition-colors hover:text-gold-700 focus-visible:ring-2 focus-visible:ring-gold-700/50"
           >
             {title}
           </Link>
@@ -81,7 +81,7 @@ export default function CompetitionCard({
           </span>
           <span className="text-xs text-muted">per entry</span>
           {cashAlternative && (
-            <span className="ml-auto text-xs font-medium text-gold">
+            <span className="ml-auto text-xs font-medium text-gold-700">
               {cashAlternative}
             </span>
           )}

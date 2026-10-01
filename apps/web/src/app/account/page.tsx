@@ -118,7 +118,7 @@ function AccountContent() {
                     type="button"
                     onClick={onResend}
                     disabled={resending}
-                    className="mt-2 text-sm font-semibold text-gold-700 hover:text-gold disabled:opacity-50"
+                    className="mt-2 text-sm font-semibold text-gold-700 hover:text-gold-700 disabled:opacity-50"
                   >
                     {resending ? "Sending…" : "Resend verification email"}
                   </button>

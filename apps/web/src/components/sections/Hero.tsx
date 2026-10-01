@@ -32,7 +32,7 @@ export default function Hero() {
           <h1 className="t-display text-heading">
             Your next big win
             <br />
-            <span className="text-gradient">starts here.</span>
+            <span className="text-gold-700">starts here.</span>
           </h1>
 
           <p className="max-w-lg t-body-lg text-muted">

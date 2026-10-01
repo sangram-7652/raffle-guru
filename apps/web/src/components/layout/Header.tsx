@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Logo from "../media/Logo";
 import Button from "../ui/Button";
@@ -19,7 +19,7 @@ function CartLink({ className = "" }: { className?: string }) {
     <Link
       href={routes.cart}
       aria-label={`Basket${hydrated && count ? `, ${count} entr${count === 1 ? "y" : "ies"}` : ""}`}
-      className={`relative grid h-10 w-10 place-items-center rounded-full border border-line bg-panel text-heading transition-colors hover:border-gold/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${className}`}
+      className={`relative grid h-10 w-10 place-items-center rounded-full border border-line bg-panel text-heading transition-colors hover:border-gold/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/60 ${className}`}
     >
       <Icon name="ticket" className="h-[18px] w-[18px]" />
       {hydrated && count > 0 && (
@@ -33,29 +33,15 @@ function CartLink({ className = "" }: { className?: string }) {
 
 export default function Header() {
   const [open, setOpen] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const { status, user } = useAuth();
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 12);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
   return (
-    <header
-      className={`sticky top-0 z-40 transition-colors duration-300 ${
-        scrolled
-          ? "border-b border-line bg-paper/90 backdrop-blur-xl"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
+    <header className="sticky top-0 z-40 border-b border-line bg-paper/95 backdrop-blur-xl">
       <Container className="flex items-center justify-between gap-4 py-3">
         <Link
           href={routes.home}
           aria-label="RaffleGuru home"
-          className="shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+          className="shrink-0 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/60"
         >
           <Logo priority className="h-12 w-auto sm:h-14" />
         </Link>
@@ -66,14 +52,14 @@ export default function Header() {
           {status === "authenticated" ? (
             <Link
               href={routes.account}
-              className="text-sm font-semibold text-heading transition-colors hover:text-gold"
+              className="text-sm font-semibold text-heading transition-colors hover:text-gold-700"
             >
               {user?.name.split(" ")[0]}
             </Link>
           ) : (
             <Link
               href={routes.login}
-              className="text-sm font-semibold text-heading transition-colors hover:text-gold"
+              className="text-sm font-semibold text-heading transition-colors hover:text-gold-700"
             >
               Login
             </Link>
@@ -92,7 +78,7 @@ export default function Header() {
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
             aria-controls="mobile-menu"
-            className="grid h-10 w-10 place-items-center rounded-full border border-line bg-panel text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60"
+            className="grid h-10 w-10 place-items-center rounded-full border border-line bg-panel text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/60"
           >
             <Icon name={open ? "close" : "menu"} />
           </button>

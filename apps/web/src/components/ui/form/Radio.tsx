@@ -16,7 +16,7 @@ export default function Radio({
     <input
       type="radio"
       id={id}
-      className={`mt-0.5 h-4 w-4 shrink-0 border-line accent-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40 disabled:opacity-60 ${className}`}
+      className={`mt-0.5 h-4 w-4 shrink-0 border-line accent-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/40 disabled:opacity-60 ${className}`}
       {...props}
     />
   );

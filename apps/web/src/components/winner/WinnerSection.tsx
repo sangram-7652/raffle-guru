@@ -11,7 +11,6 @@ export default function WinnerSection() {
   return (
     <Section
       id="winners"
-      surface="mist"
       bordered
       className="scroll-mt-24 overflow-hidden"
     >

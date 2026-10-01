@@ -65,12 +65,12 @@ export default function Accordion({
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 onClick={() => toggle(item.id)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display text-base font-bold tracking-tight text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold/50"
+                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display text-base font-bold tracking-tight text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold-700/50"
               >
                 {item.title}
                 <span
                   aria-hidden
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-gold transition-transform duration-300 ${
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-gold-700 transition-transform duration-300 ${
                     isOpen ? "rotate-45" : ""
                   }`}
                 >

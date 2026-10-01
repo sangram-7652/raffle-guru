@@ -17,7 +17,7 @@ export default function CategoryCard({
   return (
     <Link
       href={`${routes.competitions}?category=${encodeURIComponent(category.name)}`}
-      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
+      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/60 ${
         featured ? "min-h-[16rem] lg:min-h-[22rem]" : "min-h-[14rem]"
       }`}
     >

@@ -22,7 +22,7 @@ export default function CompetitionInfo({
       id: "prize",
       title: "Prize details",
       content: (
-        <ul className="list-disc space-y-1.5 pl-5 marker:text-gold-pale">
+        <ul className="list-disc space-y-1.5 pl-5 marker:text-gold-700">
           {competition.prizeDetails.map((d, i) => (
             <li key={i}>{d}</li>
           ))}

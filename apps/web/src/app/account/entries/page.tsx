@@ -96,7 +96,7 @@ function EntriesList() {
             </p>
           </div>
           <div className="flex items-center gap-1.5 text-sm">
-            <Icon name="ticket" className="h-4 w-4 shrink-0 text-gold" />
+            <Icon name="ticket" className="h-4 w-4 shrink-0 text-gold-700" />
             <span className="font-medium text-heading">
               {entry.ticket_numbers.map((n) => `#${n}`).join(", ")}
             </span>

@@ -1,8 +1,10 @@
 # RaffleGuru Design System
 
-The reusable visual language for the RaffleGuru platform: a premium black +
-gold identity built around the RaffleGuru Gold logo
-(`public/brand/raffle-guru-gold.png`). **The homepage is the source of
+The reusable visual language for the RaffleGuru platform: a premium
+**white + black + gold** identity built around the RaffleGuru Gold logo
+(`public/brand/raffle-guru-gold.png`). The site is **white/light-first** —
+dark (`--color-ink`) is used selectively, for the announcement bar, the
+final CTA band and the footer only. **The homepage is the source of
 truth** — this system codifies what already shipped, it does not redesign it.
 
 Single rule: **consume tokens and primitives, never hardcode.** No hex values,
@@ -20,30 +22,37 @@ into utilities automatically (`--color-gold` → `bg-gold`, `text-gold`, …).
 
 | Token | Value | Use |
 |---|---|---|
-| `--color-gold` | `#d4a62a` | **Primary brand.** Accent text, icons, CTA fill (paired with `text-ink`). |
-| `--color-gold-light` | `#e5b93f` | Hover / brighter gold, gradient mid-stop. |
-| `--color-gold-pale` | `#f5d77a` | Champagne — lightest gold, gradient tail, glow accents. |
-| `--color-gold-700` | `#b3860f` | Deep gold — pressed/strong-hover state, ~6:1 on dark surfaces. |
-| `--color-paper` | `#0a0a0a` | Page background |
-| `--color-card` | `#111111` | Raised surfaces |
-| `--color-panel` | `#161511` | Chips, hovers, inset form fields |
-| `--color-mist` | `#0d0c09` | Alternating tinted sections |
-| `--color-track` | `#262420` | Progress / slider track |
-| `--color-line` | `rgba(212,166,42,0.16)` | Hairline borders — subtle dark-gold/champagne |
-| `--color-heading` | `#f7f3ea` | Headings, strong text (warm cream) |
-| `--color-muted` | `#9a9a9a` | Secondary body text (~7:1 on dark surfaces) |
-| `--color-muted-600` | `#6f6f6f` | Tertiary — large text / icons only (~4:1) |
-| `--color-ink` | `#050505` | Deepest black (scrims, image chips, text-on-gold) |
-| `--color-success` / `-600` / `-700` | `#22c55e` / `#16a34a` / `#15803d` | Positive status. `-700` is for solid fills needing white text. |
-| `--color-warning` / `-600` | `#f59e0b` / `#d97706` | Caution status |
-| `--color-error` / `-600` / `-700` | `#f87171` / `#ef4444` / `#b91c1c` | Error status. `-700` is for solid fills (e.g. `danger` button) needing white text. |
-| `--color-live` | `#fb3a63` | "Draw is live" pulse |
+| `--color-gold` | `#c89b3c` | **Primary brand.** Fills/borders, and text **only on dark (`ink`) surfaces** — fails contrast on white/cream. |
+| `--color-gold-light` | `#e5c76b` | Lighter gold — fills/glow, dark surfaces only. |
+| `--color-gold-pale` | `#ead9ab` | Palest champagne — decorative glow accents only. |
+| `--color-gold-700` | `#8f6a22` | Dark gold — **text/icons on white/cream/panel** (≥4.3:1, AA). |
+| `--color-paper` | `#ffffff` | Page background |
+| `--color-card` | `#ffffff` | Raised surfaces |
+| `--color-panel` | `#fafaf8` | Chips, hovers, inset form fields |
+| `--color-mist` | `#f7f4ed` | Alternating tinted (cream) sections |
+| `--color-track` | `#f3efe5` | Progress / slider track |
+| `--color-line` | `#e8e2d5` | Hairline borders |
+| `--color-heading` | `#111111` | Headings, strong text |
+| `--color-muted` | `#555555` | Secondary body text (~7.5:1 on white) |
+| `--color-muted-light` | `#777777` | Tertiary — large text / icons only (~4.5:1) |
+| `--color-ink` | `#080808` | Selective dark sections: announcement bar, final CTA, footer |
+| `--color-success` / `-600` / `-700` | `#12a150` / `#0f8a44` / `#0a6b35` | Positive status. `-700` is for solid fills needing white text. |
+| `--color-warning` / `-600` | `#c2410c` / `#9a3412` | Caution status |
+| `--color-error` / `-600` / `-700` | `#dc2626` / `#b91c1c` / `#991b1b` | Error status. `-700` is for solid fills (e.g. `danger` button) needing white text. |
+| `--color-live` | `#e11d48` | "Draw is live" pulse |
 
-Gradient + text-gradient: `.brand-gradient`, `.text-gradient` (gold-light →
-gold → champagne). Anything painted with `.brand-gradient` carries
-**`text-ink`**, never `text-white` — gold is too light for white text to
-meet contrast. Status is **never colour-only** — every badge/message carries
-an icon or label.
+**The gold/gold-700 split is load-bearing** — base `gold` is only ~2.5:1 on
+white (fails even large-text/UI contrast), so any gold *text* or *icon* on a
+white/cream/panel surface must use `gold-700`. Base `gold` stays reserved for
+fills (`.brand-gradient`, `bg-gold`, always paired with `text-ink`), borders,
+and text/icons that sit on a dark (`ink`) surface, where it has ~7.8:1.
+`gold-light`/`gold-pale` are dark-surface-only (even worse contrast on white).
+
+Gradient: `.brand-gradient` (gold-light → gold) is a **fill**, always paired
+with `text-ink` or `text-white`, never `text-gold`. `.text-gradient` exists
+for gradient text on dark surfaces only — not currently used anywhere, since
+no on-white use of it would meet contrast. Status is **never colour-only** —
+every badge/message carries an icon or label.
 
 ### Typography
 
@@ -178,6 +187,11 @@ success / disabled states.
   `focus-visible` ring, and uses correct semantics (`<button>` vs `<a>`).
   Mobile menu closes on `Escape` and locks body scroll.
 - `prefers-reduced-motion` honoured globally.
-- Contrast: the site is dark-theme-first — `--color-gold` on `--color-paper`/
-  `--color-card` clears 8:1+. Text painted *on top of* a gold fill
-  (`.brand-gradient`, `bg-gold`) must use `text-ink`, never `text-white`.
+- Contrast: the site is white/light-first — gold **text/icons** on
+  `paper`/`card`/`panel`/`mist` must use `gold-700` (base `gold` fails at
+  ~2.5:1). Text painted *on top of* a gold fill (`.brand-gradient`, `bg-gold`)
+  must use `text-ink`, never `text-white`. On the selective dark (`ink`)
+  sections — announcement bar, final CTA, footer — base `gold` is correct
+  for text (~7.8:1) and `border-line`/`text-heading`/`text-muted` must not be
+  used (they're tuned for the light surfaces and are illegible on black; use
+  explicit `text-white`/`border-gold`/`20` instead).

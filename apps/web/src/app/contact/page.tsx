@@ -37,7 +37,7 @@ export default function ContactPage() {
                   key={c.label}
                   className="flex gap-4 rounded-2xl border border-line bg-card p-4 card-shadow"
                 >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-panel text-gold">
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-line bg-panel text-gold-700">
                     <Icon name={c.icon} className="h-[18px] w-[18px]" />
                   </span>
                   <div>
@@ -55,7 +55,7 @@ export default function ContactPage() {
               Looking for a quick answer? Our{" "}
               <Link
                 href={routes.faq}
-                className="font-medium text-gold-700 underline underline-offset-2 hover:text-gold"
+                className="font-medium text-gold-700 underline underline-offset-2 hover:text-gold-700"
               >
                 FAQ
               </Link>{" "}

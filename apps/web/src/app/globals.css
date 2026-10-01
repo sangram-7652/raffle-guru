@@ -14,38 +14,43 @@
    ============================================================ */
 
 @theme {
-  /* ---- Surfaces ------------------------------------------- */
-  --color-paper: #0a0a0a; /* page background */
-  --color-card: #111111; /* raised cards */
-  --color-panel: #161511; /* chips / hovers / inset fields */
-  --color-mist: #0d0c09; /* tinted alternating sections */
-  --color-track: #262420; /* progress / slider track */
-  --color-line: rgba(212, 166, 42, 0.16); /* hairline borders — subtle dark-gold */
+  /* ---- Surfaces — white-first. Dark (--color-ink) is used ---
+     selectively: announcement bar, final CTA, footer.          */
+  --color-paper: #ffffff; /* page background */
+  --color-card: #ffffff; /* raised cards */
+  --color-panel: #fafaf8; /* chips / hovers / inset fields */
+  --color-mist: #f7f4ed; /* tinted alternating sections (cream) */
+  --color-track: #f3efe5; /* progress / slider track */
+  --color-line: #e8e2d5; /* hairline borders */
 
   /* ---- Text --------------------------------------------- */
-  --color-heading: #f7f3ea; /* headings + strong text — warm cream */
-  --color-muted: #9a9a9a; /* secondary body text */
-  --color-muted-600: #6f6f6f; /* tertiary — large text / icons only */
+  --color-heading: #111111; /* headings + strong text */
+  --color-muted: #555555; /* secondary body text */
+  --color-muted-light: #777777; /* tertiary — large text / icons only */
 
-  /* ---- Dark accent (scrims, image chips, final CTA) ----- */
-  --color-ink: #050505;
+  /* ---- Dark accent (announcement bar, final CTA, footer) - */
+  --color-ink: #080808;
 
-  /* ---- Brand palette (from the RaffleGuru Gold logo) ---- */
-  --color-gold: #d4a62a; /* primary gold — accent, text, CTA fill */
-  --color-gold-light: #e5b93f; /* hover / brighter gold */
-  --color-gold-pale: #f5d77a; /* champagne — lightest, gradient tail */
-  --color-gold-700: #b3860f; /* deep gold — pressed / strong hover state */
+  /* ---- Brand palette (from the RaffleGuru Gold logo) ----
+     `gold` on a light surface fails text contrast (~2.5:1) —
+     use `gold-700` for gold TEXT/icons on white/cream/panel.
+     `gold` itself is for fills (paired with text-ink or
+     text-white), borders, and text ON dark (--color-ink) surfaces. */
+  --color-gold: #c89b3c; /* primary gold — fills, borders, text-on-dark */
+  --color-gold-light: #e5c76b; /* lighter gold — fills/glow on dark surfaces only */
+  --color-gold-pale: #ead9ab; /* palest champagne — decorative glow accents */
+  --color-gold-700: #8f6a22; /* dark gold — text/icons on light surfaces (AA) */
 
   /* ---- Status ------------------------------------------- */
-  --color-success: #22c55e;
-  --color-success-600: #16a34a;
-  --color-success-700: #15803d; /* solid-fill icons/buttons needing white text */
-  --color-warning: #f59e0b;
-  --color-warning-600: #d97706;
-  --color-error: #f87171;
-  --color-error-600: #ef4444;
-  --color-error-700: #b91c1c; /* solid-fill buttons needing white text */
-  --color-live: #fb3a63; /* "draw is live" pulse */
+  --color-success: #12a150;
+  --color-success-600: #0f8a44;
+  --color-success-700: #0a6b35; /* solid-fill icons/buttons needing white text */
+  --color-warning: #c2410c;
+  --color-warning-600: #9a3412;
+  --color-error: #dc2626;
+  --color-error-600: #b91c1c;
+  --color-error-700: #991b1b; /* solid-fill buttons needing white text */
+  --color-live: #e11d48; /* "draw is live" pulse */
 
   /* ---- Typography families ----------------------------- */
   --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
@@ -64,7 +69,7 @@
   --shadow-e2: 0 2px 4px rgba(15, 15, 28, 0.05),
     0 30px 60px -22px rgba(15, 15, 28, 0.22);
   --shadow-e3: 0 34px 80px -30px rgba(15, 15, 28, 0.30);
-  --shadow-glow: 0 30px 60px -22px rgba(212, 166, 42, 0.28);
+  --shadow-glow: 0 24px 48px -20px rgba(200, 155, 60, 0.25);
   --shadow-cta: 0 10px 30px -10px var(--color-gold);
   --shadow-ink: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
 
@@ -137,7 +142,7 @@
    ============================================================ */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 html {
@@ -303,21 +308,22 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Brand gradient — used sparingly for emphasis only (gold → champagne) */
+/* Brand gradient — CTA/badge fills. Always pair with text-ink or
+   text-white, never text-gold (fails contrast on top of its own fill). */
 .brand-gradient {
   background-image: linear-gradient(
     100deg,
     var(--color-gold-light) 0%,
-    var(--color-gold) 48%,
-    var(--color-gold-pale) 100%
+    var(--color-gold) 100%
   );
 }
 
+/* Gradient text — dark surfaces only (fails contrast on white/cream).
+   Not currently used on a light surface anywhere in the app. */
 .text-gradient {
   background-image: linear-gradient(
     100deg,
-    var(--color-gold) 0%,
-    var(--color-gold-light) 48%,
+    var(--color-gold-light) 0%,
     var(--color-gold-pale) 100%
   );
   -webkit-background-clip: text;

@@ -67,7 +67,7 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${item.title}`}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-error-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-error-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/50"
           >
             <Icon name="close" className="h-4 w-4" />
           </button>

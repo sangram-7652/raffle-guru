@@ -87,7 +87,7 @@ export default function LegalArticle({ page }: { page: LegalPage }) {
               Questions about this page?{" "}
               <Link
                 href={routes.contact}
-                className="font-medium text-gold-700 underline underline-offset-2 hover:text-gold"
+                className="font-medium text-gold-700 underline underline-offset-2 hover:text-gold-700"
               >
                 Contact our team
               </Link>

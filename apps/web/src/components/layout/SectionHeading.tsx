@@ -31,7 +31,7 @@ export default function SectionHeading({
       } ${className}`}
     >
       {eyebrow && (
-        <span className="t-eyebrow inline-flex items-center gap-2 text-gold">
+        <span className="t-eyebrow inline-flex items-center gap-2 text-gold-700">
           <span className="h-px w-6 bg-gold/60" />
           {eyebrow}
         </span>

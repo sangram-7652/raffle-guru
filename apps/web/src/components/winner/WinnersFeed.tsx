@@ -60,7 +60,7 @@ export default function WinnersFeed({ winners }: { winners: Winner[] }) {
               setFilter(f.id);
               setShown(PAGE);
             }}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
+            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/50 ${
               filter === f.id
                 ? "brand-gradient text-ink"
                 : "border border-line bg-card text-muted hover:text-heading"

@@ -170,7 +170,7 @@ export default function OrderConfirmation() {
     <div className="mx-auto max-w-3xl">
       <div className="flex flex-col items-center text-center">
         <span
-          className={`grid h-16 w-16 place-items-center rounded-full text-white ${isPaid ? "bg-success-700" : "bg-mist text-gold"}`}
+          className={`grid h-16 w-16 place-items-center rounded-full text-white ${isPaid ? "bg-success-700" : "bg-mist text-gold-700"}`}
         >
           <Icon name={isPaid ? "check" : "clock"} className="h-8 w-8" />
         </span>
@@ -291,7 +291,7 @@ export default function OrderConfirmation() {
             key={s.title}
             className="rounded-2xl border border-line bg-card p-4"
           >
-            <span className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-panel text-gold">
+            <span className="grid h-9 w-9 place-items-center rounded-xl border border-line bg-panel text-gold-700">
               <Icon name={s.icon} className="h-4 w-4" />
             </span>
             <p className="mt-3 font-display text-sm font-bold tracking-tight text-heading">

@@ -87,7 +87,7 @@ export default function AboutPage() {
               key={v.title}
               className="rounded-card border border-line bg-card p-6 card-shadow"
             >
-              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-line bg-panel text-gold">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl border border-line bg-panel text-gold-700">
                 <Icon name={v.icon} className="h-5 w-5" />
               </span>
               <h3 className="mt-5 font-display text-base font-extrabold uppercase tracking-tight text-heading">
@@ -105,7 +105,7 @@ export default function AboutPage() {
           {timeline.map((t) => (
             <li key={t.year} className="relative">
               <span className="absolute -left-[1.65rem] top-1 h-3 w-3 rounded-full brand-gradient ring-4 ring-paper" />
-              <p className="font-display text-sm font-bold uppercase tracking-wider text-gold">
+              <p className="font-display text-sm font-bold uppercase tracking-wider text-gold-700">
                 {t.year}
               </p>
               <p className="mt-1 max-w-2xl t-body text-muted">{t.body}</p>
@@ -123,29 +123,24 @@ export default function AboutPage() {
       </Section>
 
       <Section>
-        <div className="relative overflow-hidden rounded-hero brand-gradient px-6 py-14 text-center sm:px-12 sm:py-16">
-          <div className="grid-texture pointer-events-none absolute inset-0 opacity-20 mix-blend-overlay" />
+        <div className="relative overflow-hidden rounded-hero bg-ink px-6 py-14 text-center sm:px-12 sm:py-16">
+          <div className="grid-texture pointer-events-none absolute inset-0 opacity-10" />
           <div className="relative">
-            <h2 className="t-h2 mx-auto max-w-xl text-ink">
+            <h2 className="t-h2 mx-auto max-w-xl text-white">
               Ready to find your competition?
             </h2>
-            <p className="mx-auto mt-3 max-w-md text-ink/80">
+            <p className="mx-auto mt-3 max-w-md text-white/75">
               New draws every week, entries from under £1.
             </p>
             <div className="mt-7 flex flex-wrap justify-center gap-3">
-              <Button
-                href={routes.competitions}
-                variant="secondary"
-                size="lg"
-                className="!bg-ink !text-gold !border-transparent hover:!bg-ink/90"
-              >
+              <Button href={routes.competitions} size="lg">
                 Browse competitions
               </Button>
               <Button
                 href={routes.howItWorks}
                 variant="ghost"
                 size="lg"
-                className="!text-ink hover:!text-ink/70"
+                className="!text-white hover:!text-white/70"
               >
                 How it works
               </Button>

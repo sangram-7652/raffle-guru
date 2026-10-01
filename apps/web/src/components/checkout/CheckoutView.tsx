@@ -310,7 +310,7 @@ export default function CheckoutView() {
 
         {order && (
           <p className="flex items-center gap-1.5 rounded-xl border border-line bg-panel px-3.5 py-3 text-sm text-muted">
-            <Icon name="check" className="h-4 w-4 shrink-0 text-gold" />
+            <Icon name="check" className="h-4 w-4 shrink-0 text-gold-700" />
             Order {order.reference} created — payment pending.
           </p>
         )}
@@ -402,11 +402,11 @@ function PaymentActions({
       </Button>
       <ul className="space-y-1.5 text-xs text-muted">
         <li className="flex items-center gap-1.5">
-          <Icon name="lock" className="h-3.5 w-3.5 text-gold" />
+          <Icon name="lock" className="h-3.5 w-3.5 text-gold-700" />
           Secure checkout via Razorpay — card details never touch our servers
         </li>
         <li className="flex items-center gap-1.5">
-          <Icon name="shield" className="h-3.5 w-3.5 text-gold" />
+          <Icon name="shield" className="h-3.5 w-3.5 text-gold-700" />
           Your order isn&apos;t marked paid until payment is verified
         </li>
       </ul>

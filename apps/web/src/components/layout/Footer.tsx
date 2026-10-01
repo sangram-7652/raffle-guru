@@ -9,14 +9,14 @@ import { routes } from "@/lib/routes";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-line bg-mist">
+    <footer className="border-t border-gold/15 bg-ink">
       <Container className="py-16">
         <div className="grid gap-12 lg:grid-cols-[1.4fr_2fr]">
           <div>
             <Link href={routes.home} aria-label="RaffleGuru home">
               <Logo className="h-16 w-auto" />
             </Link>
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/65">
               A premium UK competition platform. Incredible prizes, transparent
               draws and real winners — every single week.
             </p>
@@ -40,7 +40,7 @@ export default function Footer() {
           </nav>
         </div>
 
-        <div className="mt-14 flex flex-col gap-4 border-t border-line pt-8 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-14 flex flex-col gap-4 border-t border-gold/15 pt-8 text-xs text-white/55 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} RaffleGuru. All rights reserved.</p>
           <p className="flex items-center gap-2">
             <Icon name="shield" className="h-3.5 w-3.5 text-gold" />
@@ -48,7 +48,7 @@ export default function Footer() {
           </p>
         </div>
 
-        <p className="mt-6 rounded-xl border border-line bg-card p-3 text-center text-[11px] leading-relaxed text-muted">
+        <p className="mt-6 rounded-xl border border-white/10 bg-white/5 p-3 text-center text-[11px] leading-relaxed text-white/55">
           Prototype only — this is a non-functional UI concept created for
           review. No purchases, accounts, payments or prize draws are live, and
           all competition, winner and company details shown are sample content.
