@@ -40,7 +40,7 @@ export default function CompetitionToolbar({
             value={query}
             onChange={(e) => onQuery(e.target.value)}
             placeholder="Search prizes, e.g. BMW, cash, Rolex…"
-            className="h-11 w-full rounded-full border border-line bg-paper pl-10 pr-4 text-sm text-heading placeholder:text-muted/70 focus-visible:border-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/40"
+            className="h-11 w-full rounded-full border border-line bg-paper pl-10 pr-4 text-sm text-heading placeholder:text-muted/70 focus-visible:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
           />
         </label>
         <label className="relative sm:w-56">
@@ -48,7 +48,7 @@ export default function CompetitionToolbar({
           <select
             value={sort}
             onChange={(e) => onSort(e.target.value as CompetitionSort)}
-            className="h-11 w-full appearance-none rounded-full border border-line bg-paper pl-4 pr-10 text-sm text-heading focus-visible:border-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/40"
+            className="h-11 w-full appearance-none rounded-full border border-line bg-paper pl-4 pr-10 text-sm text-heading focus-visible:border-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/40"
           >
             {competitionSorts.map((s) => (
               <option key={s.value} value={s.value}>
@@ -70,10 +70,10 @@ export default function CompetitionToolbar({
             type="button"
             onClick={() => onCategory(c)}
             aria-pressed={category === c}
-            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50 ${
+            className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
               category === c
-                ? "brand-gradient text-white"
-                : "border border-line text-muted hover:border-pink/50 hover:text-heading"
+                ? "brand-gradient text-ink"
+                : "border border-line text-muted hover:border-gold/50 hover:text-heading"
             }`}
           >
             {c}

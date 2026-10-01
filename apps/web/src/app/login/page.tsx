@@ -27,7 +27,7 @@ export default function LoginPage() {
           New to RaffleGuru?{" "}
           <Link
             href={routes.register}
-            className="font-semibold text-pink-700 hover:text-pink-600"
+            className="font-semibold text-gold-700 hover:text-gold"
           >
             Create an account
           </Link>

@@ -33,18 +33,18 @@ type ButtonAsButton = CommonProps &
 type ButtonProps = ButtonAsLink | ButtonAsButton;
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-full font-display font-bold tracking-tight whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-full font-display font-bold tracking-tight whitespace-nowrap transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 focus-visible:ring-offset-2 focus-visible:ring-offset-paper active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50";
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "brand-gradient text-white shadow-[var(--shadow-cta)] hover:shadow-[0_16px_40px_-8px_var(--color-pink)] hover:-translate-y-0.5",
+    "brand-gradient text-ink shadow-[var(--shadow-cta)] hover:shadow-[0_16px_40px_-8px_var(--color-gold)] hover:-translate-y-0.5",
   secondary:
-    "border border-line bg-mist text-heading backdrop-blur hover:border-pink/60 hover:bg-panel",
+    "border border-gold/30 bg-mist text-heading backdrop-blur hover:border-gold/60 hover:bg-panel",
   outline:
-    "border border-pink-600/40 bg-transparent text-pink-700 hover:border-pink-600 hover:bg-pink-600/5",
-  ghost: "text-heading hover:text-pink-600",
+    "border border-gold/40 bg-transparent text-gold hover:border-gold hover:bg-gold/10",
+  ghost: "text-heading hover:text-gold",
   danger:
-    "bg-error text-white hover:bg-error-600 shadow-[0_10px_30px_-12px_var(--color-error)] hover:-translate-y-0.5",
+    "bg-error-700 text-white hover:bg-error-700/85 shadow-[0_10px_30px_-12px_var(--color-error-700)] hover:-translate-y-0.5",
 };
 
 const sizes: Record<ButtonSize, string> = {

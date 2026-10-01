@@ -1,8 +1,9 @@
 # RaffleGuru Design System
 
-The reusable visual language for the RaffleGuru platform, extracted from the
-approved homepage concept. **The homepage is the source of truth** — this
-system codifies what already shipped, it does not redesign it.
+The reusable visual language for the RaffleGuru platform: a premium black +
+gold identity built around the RaffleGuru Gold logo
+(`public/brand/raffle-guru-gold.png`). **The homepage is the source of
+truth** — this system codifies what already shipped, it does not redesign it.
 
 Single rule: **consume tokens and primitives, never hardcode.** No hex values,
 no hand-picked font sizes, no bespoke button/badge markup in feature code.
@@ -13,30 +14,36 @@ no hand-picked font sizes, no bespoke button/badge markup in feature code.
 
 All tokens live in the `@theme` block of [`src/app/globals.css`](src/app/globals.css).
 That block is the only place to edit the brand. Tailwind v4 turns each token
-into utilities automatically (`--color-pink` → `bg-pink`, `text-pink`, …).
+into utilities automatically (`--color-gold` → `bg-gold`, `text-gold`, …).
 
 ### Colour
 
 | Token | Value | Use |
 |---|---|---|
-| `--color-pink` / `--color-pink-600/700/300` | `#ff2d87` … | **Primary brand.** `-600` is the a11y-safe text weight on white. |
-| `--color-orange` / `--color-orange-500` | `#ff7a1a` | **Secondary brand.** Gradient tail, ratings. |
-| `--color-paper` | `#ffffff` | Page background |
-| `--color-card` | `#ffffff` | Raised surfaces |
-| `--color-panel` | `#f4f4f7` | Chips, hovers, inset form fields |
-| `--color-mist` | `#f7f7f9` | Alternating tinted sections |
-| `--color-track` | `#ececf1` | Progress / slider track |
-| `--color-line` | `#e7e7ee` | Hairline borders |
-| `--color-heading` | `#0e0e14` | Headings, strong text |
-| `--color-muted` | `#5f5f6b` | Secondary body text |
-| `--color-ink` | `#0b0b11` | Dark accent (scrims, image chips, final CTA) |
-| `--color-success` / `-600` | `#12a150` | Positive status |
-| `--color-warning` / `-600` | `#c2410c` | Caution status |
-| `--color-error` / `-600` | `#dc2626` | Error status / danger button |
-| `--color-live` | `#e11d48` | "Draw is live" pulse |
+| `--color-gold` | `#d4a62a` | **Primary brand.** Accent text, icons, CTA fill (paired with `text-ink`). |
+| `--color-gold-light` | `#e5b93f` | Hover / brighter gold, gradient mid-stop. |
+| `--color-gold-pale` | `#f5d77a` | Champagne — lightest gold, gradient tail, glow accents. |
+| `--color-gold-700` | `#b3860f` | Deep gold — pressed/strong-hover state, ~6:1 on dark surfaces. |
+| `--color-paper` | `#0a0a0a` | Page background |
+| `--color-card` | `#111111` | Raised surfaces |
+| `--color-panel` | `#161511` | Chips, hovers, inset form fields |
+| `--color-mist` | `#0d0c09` | Alternating tinted sections |
+| `--color-track` | `#262420` | Progress / slider track |
+| `--color-line` | `rgba(212,166,42,0.16)` | Hairline borders — subtle dark-gold/champagne |
+| `--color-heading` | `#f7f3ea` | Headings, strong text (warm cream) |
+| `--color-muted` | `#9a9a9a` | Secondary body text (~7:1 on dark surfaces) |
+| `--color-muted-600` | `#6f6f6f` | Tertiary — large text / icons only (~4:1) |
+| `--color-ink` | `#050505` | Deepest black (scrims, image chips, text-on-gold) |
+| `--color-success` / `-600` / `-700` | `#22c55e` / `#16a34a` / `#15803d` | Positive status. `-700` is for solid fills needing white text. |
+| `--color-warning` / `-600` | `#f59e0b` / `#d97706` | Caution status |
+| `--color-error` / `-600` / `-700` | `#f87171` / `#ef4444` / `#b91c1c` | Error status. `-700` is for solid fills (e.g. `danger` button) needing white text. |
+| `--color-live` | `#fb3a63` | "Draw is live" pulse |
 
-Gradient + text-gradient: `.brand-gradient`, `.text-gradient` (pink → pink-600 → orange).
-Status is **never colour-only** — every badge/message carries an icon or label.
+Gradient + text-gradient: `.brand-gradient`, `.text-gradient` (gold-light →
+gold → champagne). Anything painted with `.brand-gradient` carries
+**`text-ink`**, never `text-white` — gold is too light for white text to
+meet contrast. Status is **never colour-only** — every badge/message carries
+an icon or label.
 
 ### Typography
 
@@ -171,4 +178,6 @@ success / disabled states.
   `focus-visible` ring, and uses correct semantics (`<button>` vs `<a>`).
   Mobile menu closes on `Escape` and locks body scroll.
 - `prefers-reduced-motion` honoured globally.
-- Contrast: brand text on white uses `--color-pink-600`, not `--color-pink`.
+- Contrast: the site is dark-theme-first — `--color-gold` on `--color-paper`/
+  `--color-card` clears 8:1+. Text painted *on top of* a gold fill
+  (`.brand-gradient`, `bg-gold`) must use `text-ink`, never `text-white`.

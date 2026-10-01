@@ -26,15 +26,15 @@ type BadgeProps = {
 /* Gradient tones carry no border (pixel-identical to the approved cards);
    tinted/neutral tones add a 1px border. */
 const tones: Record<BadgeTone, string> = {
-  brand: "brand-gradient text-white",
+  brand: "brand-gradient text-ink",
   neutral:
-    "border border-line bg-white/90 text-heading shadow-sm backdrop-blur-md",
-  featured: "brand-gradient text-white",
-  "ending-soon": "border border-orange/25 bg-orange/12 text-orange-500",
+    "border border-line bg-card/90 text-heading shadow-sm backdrop-blur-md",
+  featured: "brand-gradient text-ink",
+  "ending-soon": "border border-gold-light/30 bg-gold-light/12 text-gold-light",
   live: "border border-live/30 bg-live/12 text-live",
   "sold-out": "border border-line bg-panel text-muted",
   new: "border border-success/25 bg-success/12 text-success-600",
-  winner: "brand-gradient text-white",
+  winner: "brand-gradient text-ink",
   success: "border border-success/25 bg-success/12 text-success-600",
   warning: "border border-warning/25 bg-warning/12 text-warning",
   error: "border border-error/25 bg-error/12 text-error-600",

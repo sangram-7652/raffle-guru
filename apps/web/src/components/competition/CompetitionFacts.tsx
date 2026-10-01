@@ -36,7 +36,7 @@ export default function CompetitionFacts({
       {facts.map((f) => (
         <div key={f.label} className="bg-card p-4">
           <dt className="flex items-center gap-1.5 text-xs text-muted">
-            <Icon name={f.icon} className="h-3.5 w-3.5 text-pink-600" />
+            <Icon name={f.icon} className="h-3.5 w-3.5 text-gold" />
             {f.label}
           </dt>
           <dd className="mt-1 font-display text-sm font-extrabold text-heading">

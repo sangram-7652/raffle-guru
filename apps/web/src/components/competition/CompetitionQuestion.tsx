@@ -34,7 +34,7 @@ export default function CompetitionQuestion({
   return (
     <fieldset className="rounded-2xl border border-line bg-card p-5">
       <legend className="flex items-center gap-2 px-1 font-display text-sm font-bold tracking-tight text-heading">
-        <Icon name="spark" className="h-4 w-4 text-pink-600" />
+        <Icon name="spark" className="h-4 w-4 text-gold" />
         Entry question
       </legend>
       <p className="mt-1 text-sm text-muted">{question.prompt}</p>
@@ -47,8 +47,8 @@ export default function CompetitionQuestion({
               key={opt}
               className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-sm transition-colors ${
                 active
-                  ? "border-pink-600 bg-pink-600/5 text-heading"
-                  : "border-line text-muted hover:border-pink/40"
+                  ? "border-gold bg-gold/5 text-heading"
+                  : "border-line text-muted hover:border-gold/40"
               }`}
             >
               <input
@@ -56,7 +56,7 @@ export default function CompetitionQuestion({
                 name={name}
                 checked={active}
                 onChange={() => choose(i)}
-                className="h-4 w-4 accent-pink-600"
+                className="h-4 w-4 accent-gold"
               />
               {opt}
             </label>

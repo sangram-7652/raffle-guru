@@ -64,7 +64,7 @@ export default function HeroBanner() {
             <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-ink/10" />
 
             <div className="relative flex h-full flex-col justify-center gap-3 px-6 pb-16 pt-8 sm:px-10 sm:py-6 lg:px-14">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-pink-300">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-gold-pale">
                 {slide.eyebrow}
               </span>
               <h2 className="max-w-xl font-display text-2xl font-extrabold leading-tight tracking-tight text-white sm:text-3xl lg:text-4xl">
@@ -76,7 +76,7 @@ export default function HeroBanner() {
               <a
                 href={slide.ctaHref}
                 tabIndex={i === active ? 0 : -1}
-                className="mt-2 inline-flex w-fit items-center gap-2 rounded-full brand-gradient px-5 py-2.5 font-display text-sm font-bold tracking-tight text-white transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
+                className="mt-2 inline-flex w-fit items-center gap-2 rounded-full brand-gradient px-5 py-2.5 font-display text-sm font-bold tracking-tight text-ink transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70 focus-visible:ring-offset-2 focus-visible:ring-offset-ink"
               >
                 {slide.ctaLabel}
                 <Icon name="arrow" className="h-4 w-4" />
@@ -91,7 +91,7 @@ export default function HeroBanner() {
         type="button"
         onClick={() => go(active - 1)}
         aria-label="Previous slide"
-        className="absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-ink/50 text-white backdrop-blur transition-colors hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70"
+        className="absolute left-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-ink/50 text-white backdrop-blur transition-colors hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
       >
         <Icon name="arrow" className="h-4 w-4 rotate-180" />
       </button>
@@ -99,7 +99,7 @@ export default function HeroBanner() {
         type="button"
         onClick={() => go(active + 1)}
         aria-label="Next slide"
-        className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-ink/50 text-white backdrop-blur transition-colors hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70"
+        className="absolute right-3 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-ink/50 text-white backdrop-blur transition-colors hover:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
       >
         <Icon name="arrow" className="h-4 w-4" />
       </button>

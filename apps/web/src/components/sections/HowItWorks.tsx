@@ -27,7 +27,7 @@ export default function HowItWorks() {
           >
             <span
               aria-hidden
-              className="font-display text-6xl font-extrabold leading-none text-muted/25 transition-colors duration-300 group-hover:text-pink-600"
+              className="font-display text-6xl font-extrabold leading-none text-muted/25 transition-colors duration-300 group-hover:text-gold"
             >
               {step.number}
             </span>

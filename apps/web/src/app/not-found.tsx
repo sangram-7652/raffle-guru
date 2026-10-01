@@ -6,7 +6,7 @@ import { routes } from "@/lib/routes";
 export default function NotFound() {
   return (
     <Container className="flex min-h-[60vh] flex-col items-center justify-center py-20 text-center">
-      <span className="t-eyebrow text-pink-600">404</span>
+      <span className="t-eyebrow text-gold">404</span>
       <h1 className="mt-3 t-h1 text-heading">This page has been drawn away</h1>
       <p className="mt-3 max-w-md t-body text-muted">
         The page you&apos;re after doesn&apos;t exist or has moved. Let&apos;s

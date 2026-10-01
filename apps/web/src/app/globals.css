@@ -15,37 +15,37 @@
 
 @theme {
   /* ---- Surfaces ------------------------------------------- */
-  --color-paper: #ffffff; /* page background */
-  --color-card: #ffffff; /* raised cards */
-  --color-panel: #f4f4f7; /* chips / hovers / inset fields */
-  --color-mist: #f7f7f9; /* tinted alternating sections */
-  --color-track: #ececf1; /* progress / slider track */
-  --color-line: #e7e7ee; /* hairline borders */
+  --color-paper: #0a0a0a; /* page background */
+  --color-card: #111111; /* raised cards */
+  --color-panel: #161511; /* chips / hovers / inset fields */
+  --color-mist: #0d0c09; /* tinted alternating sections */
+  --color-track: #262420; /* progress / slider track */
+  --color-line: rgba(212, 166, 42, 0.16); /* hairline borders — subtle dark-gold */
 
   /* ---- Text --------------------------------------------- */
-  --color-heading: #0e0e14; /* headings + strong text */
-  --color-muted: #5f5f6b; /* secondary body text */
+  --color-heading: #f7f3ea; /* headings + strong text — warm cream */
+  --color-muted: #9a9a9a; /* secondary body text */
+  --color-muted-600: #6f6f6f; /* tertiary — large text / icons only */
 
   /* ---- Dark accent (scrims, image chips, final CTA) ----- */
-  --color-ink: #0b0b11;
+  --color-ink: #050505;
 
-  /* ---- Brand palette (from the RaffleGuru logo) --------- */
-  --color-pink: #ff2d87; /* hot pink / magenta — primary */
-  --color-pink-600: #d81b6f; /* accessible pink on white */
-  --color-pink-700: #b3145a;
-  --color-pink-300: #ff8dc0;
-
-  --color-orange: #ff7a1a; /* brand orange — secondary */
-  --color-orange-500: #ef6a00;
+  /* ---- Brand palette (from the RaffleGuru Gold logo) ---- */
+  --color-gold: #d4a62a; /* primary gold — accent, text, CTA fill */
+  --color-gold-light: #e5b93f; /* hover / brighter gold */
+  --color-gold-pale: #f5d77a; /* champagne — lightest, gradient tail */
+  --color-gold-700: #b3860f; /* deep gold — pressed / strong hover state */
 
   /* ---- Status ------------------------------------------- */
-  --color-success: #12a150;
-  --color-success-600: #0f8a44;
-  --color-warning: #c2410c;
-  --color-warning-600: #9a3412;
-  --color-error: #dc2626;
-  --color-error-600: #b91c1c;
-  --color-live: #e11d48; /* "draw is live" pulse */
+  --color-success: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d; /* solid-fill icons/buttons needing white text */
+  --color-warning: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-error: #f87171;
+  --color-error-600: #ef4444;
+  --color-error-700: #b91c1c; /* solid-fill buttons needing white text */
+  --color-live: #fb3a63; /* "draw is live" pulse */
 
   /* ---- Typography families ----------------------------- */
   --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
@@ -64,8 +64,8 @@
   --shadow-e2: 0 2px 4px rgba(15, 15, 28, 0.05),
     0 30px 60px -22px rgba(15, 15, 28, 0.22);
   --shadow-e3: 0 34px 80px -30px rgba(15, 15, 28, 0.30);
-  --shadow-glow: 0 30px 60px -22px rgba(255, 45, 135, 0.28);
-  --shadow-cta: 0 10px 30px -10px var(--color-pink);
+  --shadow-glow: 0 30px 60px -22px rgba(212, 166, 42, 0.28);
+  --shadow-cta: 0 10px 30px -10px var(--color-gold);
   --shadow-ink: 0 16px 40px -12px rgba(0, 0, 0, 0.5);
 
   /* ---- Motion tokens ---------------------------------- */
@@ -137,7 +137,7 @@
    ============================================================ */
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 html {
@@ -153,8 +153,8 @@ body {
 }
 
 ::selection {
-  background: var(--color-pink);
-  color: #fff;
+  background: var(--color-gold);
+  color: var(--color-ink);
 }
 
 /* ============================================================
@@ -303,29 +303,29 @@ body {
   letter-spacing: -0.02em;
 }
 
-/* Brand gradient — used sparingly for emphasis only */
+/* Brand gradient — used sparingly for emphasis only (gold → champagne) */
 .brand-gradient {
   background-image: linear-gradient(
     100deg,
-    var(--color-pink) 0%,
-    var(--color-pink-600) 42%,
-    var(--color-orange) 100%
+    var(--color-gold-light) 0%,
+    var(--color-gold) 48%,
+    var(--color-gold-pale) 100%
   );
 }
 
 .text-gradient {
   background-image: linear-gradient(
     100deg,
-    var(--color-pink-600) 0%,
-    var(--color-pink) 42%,
-    var(--color-orange-500) 100%
+    var(--color-gold) 0%,
+    var(--color-gold-light) 48%,
+    var(--color-gold-pale) 100%
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
 
-/* Soft brand wash behind the hero / dark sections */
+/* Soft brand wash behind the hero / dark sections — black → dark gold */
 .brand-glow::before {
   content: "";
   position: absolute;
@@ -333,12 +333,12 @@ body {
   background:
     radial-gradient(
       44rem 32rem at 82% 6%,
-      color-mix(in srgb, var(--color-pink) 16%, transparent),
+      color-mix(in srgb, var(--color-gold) 14%, transparent),
       transparent 70%
     ),
     radial-gradient(
       38rem 30rem at 4% 96%,
-      color-mix(in srgb, var(--color-orange) 13%, transparent),
+      color-mix(in srgb, var(--color-gold-700) 11%, transparent),
       transparent 70%
     );
   pointer-events: none;
@@ -366,7 +366,7 @@ body {
   background-image: linear-gradient(
     90deg,
     transparent 0%,
-    color-mix(in srgb, var(--color-pink) 55%, transparent) 50%,
+    color-mix(in srgb, var(--color-gold) 55%, transparent) 50%,
     transparent 100%
   );
   background-size: 200% 100%;

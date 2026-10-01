@@ -50,7 +50,7 @@ export default function LegalArticle({ page }: { page: LegalPage }) {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="-ml-px block border-l border-transparent py-1 pl-4 text-sm text-muted transition-colors hover:border-pink-600 hover:text-heading"
+                    className="-ml-px block border-l border-transparent py-1 pl-4 text-sm text-muted transition-colors hover:border-gold hover:text-heading"
                   >
                     {s.heading}
                   </a>
@@ -87,7 +87,7 @@ export default function LegalArticle({ page }: { page: LegalPage }) {
               Questions about this page?{" "}
               <Link
                 href={routes.contact}
-                className="font-medium text-pink-700 underline underline-offset-2 hover:text-pink-600"
+                className="font-medium text-gold-700 underline underline-offset-2 hover:text-gold"
               >
                 Contact our team
               </Link>

@@ -56,7 +56,7 @@ export default function ContactForm() {
         role="status"
         className="flex flex-col items-center rounded-card border border-success/30 bg-success/10 px-6 py-12 text-center"
       >
-        <span className="grid h-14 w-14 place-items-center rounded-full bg-success text-white">
+        <span className="grid h-14 w-14 place-items-center rounded-full bg-success-700 text-white">
           <Icon name="check" className="h-6 w-6" />
         </span>
         <h2 className="mt-5 font-display text-xl font-extrabold tracking-tight text-heading">

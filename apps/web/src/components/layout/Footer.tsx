@@ -20,6 +20,9 @@ export default function Footer() {
               A premium UK competition platform. Incredible prizes, transparent
               draws and real winners — every single week.
             </p>
+            <p className="mt-2 text-sm font-semibold text-gold">
+              raffleguru.co.uk
+            </p>
             <SocialLinks className="mt-6" />
           </div>
 
@@ -40,7 +43,7 @@ export default function Footer() {
         <div className="mt-14 flex flex-col gap-4 border-t border-line pt-8 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} RaffleGuru. All rights reserved.</p>
           <p className="flex items-center gap-2">
-            <Icon name="shield" className="h-3.5 w-3.5 text-pink-600" />
+            <Icon name="shield" className="h-3.5 w-3.5 text-gold" />
             18+ only. Please play responsibly. Full terms apply.
           </p>
         </div>

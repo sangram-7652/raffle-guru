@@ -7,20 +7,19 @@ type LogoProps = {
 
 /**
  * RaffleGuru brand logo (client-supplied asset).
- * Source: public/raffleguru-logo-original.jpeg — the background was removed
- * to a transparent PNG (public/raffleguru-logo.png) so it sits cleanly on
- * the light theme. Swap the PNG if the client provides an official
- * transparent/vector version.
+ * Source: public/brand/raffle-guru-gold.png — the black + gold mark that
+ * anchors the current brand identity. Its own background is solid black,
+ * so it sits flush against the site's dark surfaces without a cutout.
  */
 export default function Logo({ className = "h-10 w-auto", priority = false }: LogoProps) {
   return (
     <Image
-      src="/raffleguru-logo.png"
+      src="/brand/raffle-guru-gold.png"
       alt="RaffleGuru"
-      width={1466}
-      height={788}
+      width={1844}
+      height={853}
       priority={priority}
-      sizes="(max-width: 640px) 160px, 220px"
+      sizes="(max-width: 640px) 180px, 240px"
       className={className}
     />
   );

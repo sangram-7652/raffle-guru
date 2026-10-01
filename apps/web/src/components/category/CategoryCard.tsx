@@ -17,7 +17,7 @@ export default function CategoryCard({
   return (
     <Link
       href={`${routes.competitions}?category=${encodeURIComponent(category.name)}`}
-      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/60 ${
+      className={`group relative flex w-full overflow-hidden rounded-card border border-line bg-card card-shadow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/60 ${
         featured ? "min-h-[16rem] lg:min-h-[22rem]" : "min-h-[14rem]"
       }`}
     >
@@ -37,7 +37,7 @@ export default function CategoryCard({
 
       <div className="relative z-10 mt-auto flex w-full items-end justify-between gap-3 p-5">
         <div>
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-pink-300">
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gold-pale">
             {category.count}
           </span>
           <h3 className="mt-1 font-display text-xl font-extrabold tracking-tight text-white sm:text-2xl">

@@ -9,8 +9,8 @@ const AUTOPLAY_MS = 6000;
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <div
-      className="flex gap-0.5"
+    <span
+      className="inline-flex gap-0.5"
       role="img"
       aria-label={`Rated ${rating} out of 5`}
     >
@@ -18,14 +18,14 @@ function Stars({ rating }: { rating: number }) {
         <svg
           key={i}
           viewBox="0 0 24 24"
-          className={`h-4 w-4 ${i < rating ? "text-orange" : "text-track"}`}
+          className={`h-4 w-4 ${i < rating ? "text-gold-light" : "text-track"}`}
           fill="currentColor"
           aria-hidden="true"
         >
           <path d="M12 2.5l2.9 6.06 6.6.83-4.86 4.53 1.24 6.58L12 17.9l-5.88 3.11 1.24-6.58L2.5 9.39l6.6-.83L12 2.5z" />
         </svg>
       ))}
-    </div>
+    </span>
   );
 }
 
@@ -123,7 +123,7 @@ export default function ReviewsSection() {
                             {review.location}
                           </span>
                         </span>
-                        <span className="block text-xs font-semibold text-pink-600">
+                        <span className="block text-xs font-semibold text-gold">
                           {review.prize}
                         </span>
                       </span>
@@ -139,7 +139,7 @@ export default function ReviewsSection() {
               type="button"
               onClick={() => go(active - 1)}
               aria-label="Previous review"
-              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-pink/60 hover:text-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70"
+              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -166,7 +166,7 @@ export default function ReviewsSection() {
                   className={`h-2 rounded-full transition-all ${
                     i === active
                       ? "w-6 brand-gradient"
-                      : "w-2 bg-track hover:bg-pink-300"
+                      : "w-2 bg-track hover:bg-gold-pale"
                   }`}
                 />
               ))}
@@ -176,7 +176,7 @@ export default function ReviewsSection() {
               type="button"
               onClick={() => go(active + 1)}
               aria-label="Next review"
-              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-pink/60 hover:text-pink-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/70"
+              className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 hover:text-gold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/70"
             >
               <svg
                 viewBox="0 0 24 24"

@@ -45,7 +45,7 @@ export default function HowItWorksPage() {
                 >
                   {step.number}
                 </span>
-                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line bg-panel text-pink-600">
+                <span className="grid h-11 w-11 place-items-center rounded-2xl border border-line bg-panel text-gold">
                   <Icon name={step.icon} className="h-5 w-5" />
                 </span>
                 <h2 className="font-display text-xl font-extrabold uppercase tracking-tight text-heading">
@@ -72,7 +72,7 @@ export default function HowItWorksPage() {
         <ol className="mt-12 space-y-6 border-l border-line pl-6">
           {drawFlow.map((stage, i) => (
             <li key={stage.title} className="relative">
-              <span className="absolute -left-[1.9rem] grid h-6 w-6 place-items-center rounded-full brand-gradient text-[11px] font-bold text-white ring-4 ring-mist">
+              <span className="absolute -left-[1.9rem] grid h-6 w-6 place-items-center rounded-full brand-gradient text-[11px] font-bold text-ink ring-4 ring-mist">
                 {i + 1}
               </span>
               <h3 className="font-display text-base font-extrabold tracking-tight text-heading">

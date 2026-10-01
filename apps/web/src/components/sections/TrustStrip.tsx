@@ -15,7 +15,7 @@ export default function TrustStrip() {
             delay={i * 70}
             className="flex items-start gap-3"
           >
-            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-panel text-pink-600">
+            <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-line bg-panel text-gold">
               <Icon name={icons[i]} className="h-[18px] w-[18px]" />
             </span>
             <div>

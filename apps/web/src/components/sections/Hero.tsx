@@ -73,7 +73,7 @@ export default function Hero() {
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-paper/90 via-paper/10 to-transparent" />
 
             <div
-              className="absolute right-4 top-4 rounded-2xl border border-line bg-white/85 px-4 py-2.5 text-center shadow-lg backdrop-blur-md"
+              className="absolute right-4 top-4 rounded-2xl border border-gold/25 bg-card/90 px-4 py-2.5 text-center shadow-lg backdrop-blur-md"
               style={{ animation: "var(--animate-float)" }}
             >
               <p className="font-display text-lg font-extrabold leading-none text-heading">

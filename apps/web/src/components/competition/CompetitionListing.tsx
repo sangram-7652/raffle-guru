@@ -278,7 +278,7 @@ export default function CompetitionListing({
         processed and entries aren&apos;t recorded yet.{" "}
         <a
           href={routes.competitionRules}
-          className="font-medium text-pink-700 underline underline-offset-2"
+          className="font-medium text-gold-700 underline underline-offset-2"
         >
           Competition Rules
         </a>

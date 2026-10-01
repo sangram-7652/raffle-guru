@@ -54,7 +54,7 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             <h3 className="font-display text-sm font-extrabold leading-snug tracking-tight text-heading">
               <Link
                 href={routes.competition(item.slug)}
-                className="hover:text-pink-700 focus-visible:outline-none focus-visible:underline"
+                className="hover:text-gold-700 focus-visible:outline-none focus-visible:underline"
               >
                 {item.title}
               </Link>
@@ -67,7 +67,7 @@ export default function CartLineItem({ item }: { item: CartItem }) {
             type="button"
             onClick={onRemove}
             aria-label={`Remove ${item.title}`}
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-error-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50"
+            className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-panel hover:text-error-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
           >
             <Icon name="close" className="h-4 w-4" />
           </button>

@@ -22,7 +22,7 @@ export default function NavigationItem({
           active ? "text-heading" : "text-muted"
         }`
       : `border-b border-line py-4 font-display text-2xl font-bold tracking-tight ${
-          active ? "text-pink-600" : "text-heading"
+          active ? "text-gold" : "text-heading"
         }`;
   return (
     <Link

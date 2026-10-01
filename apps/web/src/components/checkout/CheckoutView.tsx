@@ -284,14 +284,14 @@ export default function CheckoutView() {
                   I confirm I am 18 or over and accept the{" "}
                   <Link
                     href={routes.terms}
-                    className="font-medium text-pink-700 underline underline-offset-2"
+                    className="font-medium text-gold-700 underline underline-offset-2"
                   >
                     Terms
                   </Link>{" "}
                   and{" "}
                   <Link
                     href={routes.competitionRules}
-                    className="font-medium text-pink-700 underline underline-offset-2"
+                    className="font-medium text-gold-700 underline underline-offset-2"
                   >
                     Competition Rules
                   </Link>
@@ -310,7 +310,7 @@ export default function CheckoutView() {
 
         {order && (
           <p className="flex items-center gap-1.5 rounded-xl border border-line bg-panel px-3.5 py-3 text-sm text-muted">
-            <Icon name="check" className="h-4 w-4 shrink-0 text-pink-600" />
+            <Icon name="check" className="h-4 w-4 shrink-0 text-gold" />
             Order {order.reference} created — payment pending.
           </p>
         )}
@@ -402,11 +402,11 @@ function PaymentActions({
       </Button>
       <ul className="space-y-1.5 text-xs text-muted">
         <li className="flex items-center gap-1.5">
-          <Icon name="lock" className="h-3.5 w-3.5 text-pink-600" />
+          <Icon name="lock" className="h-3.5 w-3.5 text-gold" />
           Secure checkout via Razorpay — card details never touch our servers
         </li>
         <li className="flex items-center gap-1.5">
-          <Icon name="shield" className="h-3.5 w-3.5 text-pink-600" />
+          <Icon name="shield" className="h-3.5 w-3.5 text-gold" />
           Your order isn&apos;t marked paid until payment is verified
         </li>
       </ul>

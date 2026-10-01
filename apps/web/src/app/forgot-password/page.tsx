@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
           Remembered it after all?{" "}
           <Link
             href={routes.login}
-            className="font-semibold text-pink-700 hover:text-pink-600"
+            className="font-semibold text-gold-700 hover:text-gold"
           >
             Sign in
           </Link>

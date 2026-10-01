@@ -46,7 +46,7 @@ export default function MobileNavigation({
     <div className="lg:hidden">
       <div
         id="mobile-menu"
-        className="fixed inset-0 top-[64px] z-30 bg-white/95 backdrop-blur-xl"
+        className="fixed inset-0 top-[64px] z-30 bg-paper/97 backdrop-blur-xl"
         style={{ animation: "var(--animate-fade)" }}
       >
         <nav

@@ -47,9 +47,9 @@ function StatusStepper({ status }: { status: ApiWinnerStatus }) {
             <span
               className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border text-[11px] font-bold ${
                 done
-                  ? "border-emerald-500 bg-emerald-500 text-white"
+                  ? "border-success-700 bg-success-700 text-white"
                   : active
-                    ? "border-pink-600 bg-pink-600 text-white"
+                    ? "border-gold bg-gold text-ink"
                     : "border-line bg-mist text-muted"
               }`}
             >
@@ -124,7 +124,7 @@ function ClaimSection({ winner, onSubmitted }: { winner: ApiWinner; onSubmitted:
         onChange={(e) => setNotes(e.target.value)}
         rows={4}
         maxLength={2000}
-        className="mt-3 w-full rounded-lg border border-line bg-paper p-3 text-sm text-heading outline-none focus:border-pink-500"
+        className="mt-3 w-full rounded-lg border border-line bg-paper p-3 text-sm text-heading outline-none focus:border-gold"
         placeholder="Optional notes"
       />
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -141,7 +141,7 @@ function WinnerCard({ winner: initial }: { winner: ApiWinner }) {
   return (
     <div className="max-w-2xl rounded-card border border-line bg-card p-6 card-shadow">
       <div className="flex items-start gap-4">
-        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-line bg-mist text-pink-600">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl border border-line bg-mist text-gold">
           <Icon name="trophy" className="h-6 w-6" />
         </span>
         <div className="min-w-0">

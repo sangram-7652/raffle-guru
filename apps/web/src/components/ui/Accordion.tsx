@@ -55,7 +55,7 @@ export default function Accordion({
           <div
             key={item.id}
             className={`overflow-hidden rounded-2xl border bg-card transition-colors ${
-              isOpen ? "border-pink/30" : "border-line"
+              isOpen ? "border-gold/30" : "border-line"
             }`}
           >
             <Heading className="m-0">
@@ -65,12 +65,12 @@ export default function Accordion({
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 onClick={() => toggle(item.id)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display text-base font-bold tracking-tight text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-pink/50"
+                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-display text-base font-bold tracking-tight text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-gold/50"
               >
                 {item.title}
                 <span
                   aria-hidden
-                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-pink-600 transition-transform duration-300 ${
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-gold transition-transform duration-300 ${
                     isOpen ? "rotate-45" : ""
                   }`}
                 >

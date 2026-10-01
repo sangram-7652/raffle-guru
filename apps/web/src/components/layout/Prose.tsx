@@ -21,8 +21,8 @@ export default function Prose({
         [&_p]:t-body [&_p]:mb-4
         [&_ul]:mb-4 [&_ul]:mt-1 [&_ul]:list-disc [&_ul]:space-y-2 [&_ul]:pl-5
         [&_ol]:mb-4 [&_ol]:mt-1 [&_ol]:list-decimal [&_ol]:space-y-2 [&_ol]:pl-5
-        [&_li]:t-body [&_li]:marker:text-pink-300
-        [&_a]:font-medium [&_a]:text-pink-700 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-pink-600
+        [&_li]:t-body [&_li]:marker:text-gold-pale
+        [&_a]:font-medium [&_a]:text-gold-700 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-gold
         [&_strong]:font-semibold [&_strong]:text-heading
         ${className}
       `}

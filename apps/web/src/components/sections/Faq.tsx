@@ -36,10 +36,10 @@ export default function Faq() {
       <div className="mt-10 space-y-3">
         {faqs.map((item, i) => (
           <Reveal key={item.q} delay={i * 60}>
-            <details className="group rounded-2xl border border-line bg-card px-5 open:border-pink/30">
+            <details className="group rounded-2xl border border-line bg-card px-5 open:border-gold/30">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-display text-base font-bold tracking-tight text-heading marker:hidden">
                 {item.q}
-                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-pink-600 transition-transform duration-300 group-open:rotate-45">
+                <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full border border-line text-gold transition-transform duration-300 group-open:rotate-45">
                   +
                 </span>
               </summary>

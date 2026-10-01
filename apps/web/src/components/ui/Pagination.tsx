@@ -40,7 +40,7 @@ export default function Pagination({
         onClick={() => onChange(page - 1)}
         disabled={page <= 1}
         aria-label="Previous page"
-        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-pink/60 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50"
+        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
       >
         <Icon name="arrow" className="h-4 w-4 rotate-180" />
       </button>
@@ -60,10 +60,10 @@ export default function Pagination({
             type="button"
             onClick={() => onChange(p)}
             aria-current={p === page ? "page" : undefined}
-            className={`grid h-10 min-w-10 place-items-center rounded-full px-3 font-display text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50 ${
+            className={`grid h-10 min-w-10 place-items-center rounded-full px-3 font-display text-sm font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
               p === page
-                ? "brand-gradient text-white"
-                : "border border-line bg-card text-heading hover:border-pink/60"
+                ? "brand-gradient text-ink"
+                : "border border-line bg-card text-heading hover:border-gold/60"
             }`}
           >
             {p}
@@ -76,7 +76,7 @@ export default function Pagination({
         onClick={() => onChange(page + 1)}
         disabled={page >= pageCount}
         aria-label="Next page"
-        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-pink/60 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50"
+        className="grid h-10 w-10 place-items-center rounded-full border border-line bg-card text-heading transition-colors hover:border-gold/60 disabled:opacity-30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50"
       >
         <Icon name="arrow" className="h-4 w-4" />
       </button>

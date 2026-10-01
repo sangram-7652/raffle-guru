@@ -32,7 +32,7 @@ export default function StickyEnterBar({
 
   return (
     <div
-      className={`fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 backdrop-blur-xl transition-transform duration-300 lg:hidden ${
+      className={`fixed inset-x-0 bottom-0 z-40 border-t border-line bg-paper/95 backdrop-blur-xl transition-transform duration-300 lg:hidden ${
         show ? "translate-y-0" : "translate-y-full"
       }`}
     >
@@ -47,8 +47,10 @@ export default function StickyEnterBar({
         </div>
         <a
           href="#enter"
-          className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-6 font-display text-sm font-bold tracking-tight text-white transition-transform active:scale-[0.98] ${
-            soldOut ? "bg-heading/60" : "brand-gradient hover:-translate-y-0.5"
+          className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-6 font-display text-sm font-bold tracking-tight transition-transform active:scale-[0.98] ${
+            soldOut
+              ? "bg-panel text-muted"
+              : "brand-gradient text-ink hover:-translate-y-0.5"
           }`}
           aria-disabled={soldOut || undefined}
         >

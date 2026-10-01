@@ -39,7 +39,7 @@ export default function CompetitionCard({
   const soldOut = soldPct >= 100;
 
   return (
-    <article className="group flex h-full flex-col overflow-hidden rounded-card border border-line bg-card card-shadow transition-all duration-300 hover:-translate-y-1 hover:border-pink/40 hover:shadow-[var(--shadow-glow)]">
+    <article className="group flex h-full flex-col overflow-hidden rounded-card border border-line bg-card card-shadow transition-all duration-300 hover:-translate-y-1 hover:border-gold/40 hover:shadow-[var(--shadow-glow)]">
       <div className="relative">
         <Link href={href} tabIndex={-1} aria-hidden className="block">
           <ImageFrame
@@ -56,7 +56,7 @@ export default function CompetitionCard({
           className="absolute left-3 top-3"
           icon={
             soldOut ? undefined : (
-              <Icon name="spark" className="h-3 w-3 text-pink-600" />
+              <Icon name="spark" className="h-3 w-3 text-gold" />
             )
           }
         >
@@ -68,7 +68,7 @@ export default function CompetitionCard({
         <h3 className="t-h4 text-heading">
           <Link
             href={href}
-            className="rounded outline-none transition-colors hover:text-pink-700 focus-visible:ring-2 focus-visible:ring-pink/50"
+            className="rounded outline-none transition-colors hover:text-gold-700 focus-visible:ring-2 focus-visible:ring-gold/50"
           >
             {title}
           </Link>
@@ -81,7 +81,7 @@ export default function CompetitionCard({
           </span>
           <span className="text-xs text-muted">per entry</span>
           {cashAlternative && (
-            <span className="ml-auto text-xs font-medium text-pink-600">
+            <span className="ml-auto text-xs font-medium text-gold">
               {cashAlternative}
             </span>
           )}

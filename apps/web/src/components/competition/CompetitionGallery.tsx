@@ -39,9 +39,9 @@ export default function CompetitionGallery({
                 aria-label={`Show image ${i + 1}`}
                 aria-current={i === active}
                 onClick={() => setActive(i)}
-                className={`relative block h-16 w-24 overflow-hidden rounded-lg border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-pink/50 ${
+                className={`relative block h-16 w-24 overflow-hidden rounded-lg border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold/50 ${
                   i === active
-                    ? "border-pink-600"
+                    ? "border-gold"
                     : "border-transparent hover:border-line"
                 }`}
               >
