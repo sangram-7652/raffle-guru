@@ -62,6 +62,8 @@ export type HeroBannerSlide = {
   ctaLabel: string;
   ctaHref: string;
   image: string;
+  /** Optional object-position override (Tailwind object-* classes) for slides whose source image needs a non-centered crop. */
+  imagePositionClassName?: string;
 };
 
 export const heroBannerSlides: HeroBannerSlide[] = [
@@ -72,7 +74,8 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     subtitle: "Or take £62,000 tax-free cash. Entries from £0.99 — draw live Sunday 9PM.",
     ctaLabel: "Enter the car draw",
     ctaHref: "/competitions",
-    image: U("1503376780353-7e6692767b70", 1600),
+    image: "/hero/raffle-guru-hero-1.jpg",
+    imagePositionClassName: "object-[75%_50%] sm:object-[50%_80%]",
   },
   {
     id: "b-cash",

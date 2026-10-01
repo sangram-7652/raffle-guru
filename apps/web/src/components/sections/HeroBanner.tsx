@@ -59,7 +59,7 @@ export default function HeroBanner() {
               fill
               priority={i === 0}
               sizes="(max-width: 1280px) 100vw, 1200px"
-              className="object-cover"
+              className={`object-cover ${slide.imagePositionClassName ?? ""}`}
             />
             <div className="absolute inset-0 bg-gradient-to-r from-ink via-ink/70 to-ink/10" />
 
