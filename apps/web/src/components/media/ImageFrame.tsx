@@ -1,4 +1,5 @@
 import Image, { type ImageProps } from "next/image";
+import Icon from "../ui/Icon";
 
 export type ImageRatio = "4/3" | "5/4" | "16/9" | "3/2" | "1/1" | "21/9";
 export type ImageRadius = "none" | "card" | "panel" | "full";
@@ -54,6 +55,21 @@ export default function ImageFrame({
   className = "",
   ...rest
 }: ImageFrameProps) {
+  if (!src) {
+    // No image supplied (e.g. an admin-created competition with no images).
+    // next/image cannot render an empty src, so show a neutral frame with
+    // the same ratio instead of failing the whole page.
+    return (
+      <div
+        role="img"
+        aria-label={alt}
+        className={`grid w-full place-items-center overflow-hidden bg-mist text-gold-700 ${ratioClass[ratio]} ${radiusClass[radius]} ${className}`}
+      >
+        <Icon name="trophy" className="h-8 w-8" />
+      </div>
+    );
+  }
+
   return (
     <div
       className={`relative w-full overflow-hidden ${ratioClass[ratio]} ${radiusClass[radius]} ${className}`}

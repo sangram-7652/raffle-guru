@@ -6,27 +6,13 @@
  * Swap this file for real data sources when the platform is built.
  */
 
-export type Competition = {
-  id: string;
-  /** links the homepage card to its detail page in `@/data/competitions` */
-  slug?: string;
-  title: string;
-  blurb: string;
-  image: string;
-  badge: string;
-  category: string;
-  entryPrice: number; // GBP
-  cashAlternative?: string;
-  soldPct: number; // 0 - 100
-  drawLabel: string; // e.g. "Sunday 9PM"
-};
-
 export type Category = {
   id: string;
   name: string;
   tagline: string;
   image: string;
-  count: string;
+  /** Not shown: there is no per-category total in the public API. */
+  count?: string;
 };
 
 export type Step = {
@@ -97,62 +83,11 @@ export const heroBannerSlides: HeroBannerSlide[] = [
   },
 ];
 
-export const heroFeatured = {
-  badge: "Featured Competition",
-  title: "Win a Premium Performance Car",
-  model: "718 Cayman GTS 4.0 — or £62,000 tax-free cash",
-  entryLabel: "Entries from £0.99",
-  soldPct: 46,
-  drawLabel: "Draw live Sunday 9PM",
-  image: U("1503376780353-7e6692767b70", 1400),
-};
-
 export const trustPoints = [
   { label: "Limited Entries", detail: "Every competition has a capped ticket count." },
   { label: "Secure Checkout", detail: "Encrypted payments, no card details stored." },
   { label: "Transparent Draws", detail: "Every winner drawn live on camera." },
   { label: "Real Winners", detail: "Thousands of prizes paid out and rising." },
-];
-
-export const endingSoon: Competition[] = [
-  {
-    id: "bmw-m4",
-    slug: "bmw-m4",
-    title: "Win a BMW M4 Competition",
-    blurb: "510bhp twin-turbo coupé in Isle of Man Green. Fully road legal, delivered to your door.",
-    image: U("1555215695-3004980ad54e"),
-    badge: "Ending Soon",
-    category: "Cars & Bikes",
-    entryPrice: 0.99,
-    cashAlternative: "or £58,000 cash",
-    soldPct: 32,
-    drawLabel: "Sunday 9PM",
-  },
-  {
-    id: "cash-25k",
-    slug: "cash-25k",
-    title: "£25,000 Tax-Free Cash",
-    blurb: "No strings. Straight to your bank account within 48 hours of the live draw.",
-    image: U("1554224155-6726b3ff858f"),
-    badge: "Ending Soon",
-    category: "Cash",
-    entryPrice: 0.79,
-    soldPct: 71,
-    drawLabel: "Friday 8PM",
-  },
-  {
-    id: "rolex-sub",
-    slug: "rolex-submariner",
-    title: "Rolex Submariner Date",
-    blurb: "Oystersteel, 41mm, black Cerachrom bezel. Full set with box and papers.",
-    image: U("1523275335684-37898b6baf30"),
-    badge: "Ending Soon",
-    category: "Luxury",
-    entryPrice: 1.49,
-    cashAlternative: "or £11,500 cash",
-    soldPct: 58,
-    drawLabel: "Saturday 7PM",
-  },
 ];
 
 export const categories: Category[] = [
@@ -161,88 +96,30 @@ export const categories: Category[] = [
     name: "Cars & Bikes",
     tagline: "Performance, prestige, delivered.",
     image: U("1502877338535-766e1452684a"),
-    count: "12 live",
   },
   {
     id: "cash",
     name: "Cash",
     tagline: "Tax-free, straight to your account.",
     image: U("1554224155-6726b3ff858f"),
-    count: "8 live",
   },
   {
     id: "luxury",
     name: "Luxury",
     tagline: "Watches, jewellery and icons.",
     image: U("1523275335684-37898b6baf30"),
-    count: "9 live",
   },
   {
     id: "tech",
     name: "Tech",
     tagline: "The latest kit, fully loaded.",
     image: U("1517336714731-489689fd1ca8"),
-    count: "14 live",
   },
   {
     id: "lifestyle",
     name: "Lifestyle",
     tagline: "Getaways, experiences and more.",
     image: U("1441984904996-e0b6ba687e04"),
-    count: "6 live",
-  },
-];
-
-export const featuredCompetitions: Competition[] = [
-  {
-    id: "f-bmw-m4",
-    slug: "bmw-m4",
-    title: "BMW M4 Competition",
-    blurb: "510bhp coupé, road legal and ready to drive away.",
-    image: U("1555215695-3004980ad54e"),
-    badge: "The Big Prizes",
-    category: "Cars & Bikes",
-    entryPrice: 0.99,
-    cashAlternative: "or £58,000 cash",
-    soldPct: 41,
-    drawLabel: "Sun 9PM",
-  },
-  {
-    id: "f-cash-25k",
-    slug: "cash-25k",
-    title: "£25,000 Cash",
-    blurb: "Life-changing money, paid within 48 hours.",
-    image: U("1554224155-6726b3ff858f"),
-    badge: "The Big Prizes",
-    category: "Cash",
-    entryPrice: 0.79,
-    soldPct: 63,
-    drawLabel: "Fri 8PM",
-  },
-  {
-    id: "f-rolex",
-    slug: "rolex-datejust",
-    title: "Rolex Datejust 41",
-    blurb: "Fluted bezel, jubilee bracelet, full set.",
-    image: U("1524805444758-089113d48a6d"),
-    badge: "The Big Prizes",
-    category: "Luxury",
-    entryPrice: 1.29,
-    cashAlternative: "or £9,750 cash",
-    soldPct: 55,
-    drawLabel: "Sat 7PM",
-  },
-  {
-    id: "f-tech",
-    slug: "tech-bundle",
-    title: "Luxury Tech Bundle",
-    blurb: "MacBook Pro, iPhone, iPad, AirPods Max & more.",
-    image: U("1517336714731-489689fd1ca8"),
-    badge: "The Big Prizes",
-    category: "Tech",
-    entryPrice: 0.49,
-    soldPct: 78,
-    drawLabel: "Thu 8PM",
   },
 ];
 
@@ -339,8 +216,3 @@ export const reviewSummary = {
 };
 
 
-export const stats = [
-  { value: "£4.2M+", label: "Prizes paid out" },
-  { value: "31,000+", label: "Winners so far" },
-  { value: "4.9/5", label: "Rated by players" },
-];
