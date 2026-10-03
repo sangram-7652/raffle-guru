@@ -82,6 +82,19 @@ export function adaptCompetition(api: ApiCompetition): Competition {
     cashAlternativeValue,
     images: api.images ?? [],
     totalEntries: api.max_entries,
+    maxEntriesPerUser: api.max_entries_per_user,
+    // Every prize, not just the first: the API returns a collection and the
+    // UI renders all of it. prize/prizeValue above stay as the headline prize.
+    prizes: api.prizes.map((prize) => ({
+      id: prize.id,
+      title: prize.title,
+      description: prize.description ?? [],
+      value: prize.value / 100,
+      cashAlternativeValue: prize.cash_alternative_value
+        ? prize.cash_alternative_value / 100
+        : undefined,
+      quantity: prize.quantity,
+    })),
     drawDate: api.draw_at ?? new Date().toISOString(),
     status,
     featured: api.is_featured,

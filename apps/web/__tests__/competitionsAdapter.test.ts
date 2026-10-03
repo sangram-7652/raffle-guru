@@ -75,3 +75,30 @@ describe("adaptCompetition — P8 lifecycle status mapping", () => {
     expect(adaptCompetition(apiCompetition("draw_pending")).winningTicketNumber).toBeUndefined();
   });
 });
+
+describe("adaptCompetition — prize collection and per-customer limit", () => {
+  test("maps every prize from the API, converting pence to pounds", () => {
+    const competition = adaptCompetition({
+      ...apiCompetition("active"),
+      max_entries_per_user: 25,
+      prizes: [
+        { id: 1, title: "BMW M4", description: ["Insured"], value: 6000000, cash_alternative_value: 5000000, currency: "GBP", quantity: 1 },
+        { id: 2, title: "Watch", description: [], value: 150000, cash_alternative_value: null, currency: "GBP", quantity: 2 },
+      ],
+    });
+
+    expect(competition.prizes).toEqual([
+      { id: 1, title: "BMW M4", description: ["Insured"], value: 60000, cashAlternativeValue: 50000, quantity: 1 },
+      { id: 2, title: "Watch", description: [], value: 1500, cashAlternativeValue: undefined, quantity: 2 },
+    ]);
+    expect(competition.prize).toBe("BMW M4");
+    expect(competition.maxEntriesPerUser).toBe(25);
+  });
+
+  test("a competition with no prizes and no limit maps to an empty collection and null", () => {
+    const competition = adaptCompetition(apiCompetition("active"));
+
+    expect(competition.prizes).toEqual([]);
+    expect(competition.maxEntriesPerUser).toBeNull();
+  });
+});

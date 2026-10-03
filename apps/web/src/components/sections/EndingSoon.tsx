@@ -1,11 +1,14 @@
 import Button from "../ui/Button";
 import Section from "../layout/Section";
 import SectionHeading from "../layout/SectionHeading";
-import CompetitionGrid from "../competition/CompetitionGrid";
-import { endingSoon } from "@/data/homepageMockData";
+import CompetitionSectionBody from "./CompetitionSectionBody";
+import { loadHomepageCompetitions, endingSoonSectionParams } from "@/lib/competitions/homepage";
 import { routes } from "@/lib/routes";
 
-export default function EndingSoon() {
+/** Server component: live competitions closing soonest, from the public API. */
+export default async function EndingSoon() {
+  const result = await loadHomepageCompetitions(endingSoonSectionParams);
+
   return (
     <Section id="ending-soon" className="scroll-mt-24">
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -20,7 +23,7 @@ export default function EndingSoon() {
       </div>
 
       <div className="mt-12">
-        <CompetitionGrid competitions={endingSoon} columns={3} />
+        <CompetitionSectionBody result={result} columns={3} />
       </div>
     </Section>
   );

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Competition } from "@/data/homepageMockData";
+import type { Competition } from "@/data/competitions";
 import { gbp } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import Badge from "../ui/Badge";

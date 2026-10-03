@@ -22,11 +22,23 @@ export default function CompetitionInfo({
       id: "prize",
       title: "Prize details",
       content: (
-        <ul className="list-disc space-y-1.5 pl-5 marker:text-gold-700">
-          {competition.prizeDetails.map((d, i) => (
-            <li key={i}>{d}</li>
+        <div className="space-y-6">
+          {competition.prizes.map((prize) => (
+            <div key={prize.id} className="space-y-3">
+              {competition.prizes.length > 1 && (
+                <p className="font-semibold text-heading">
+                  {prize.title}
+                  {prize.quantity > 1 && <> × {prize.quantity}</>}
+                </p>
+              )}
+              <ul className="list-disc space-y-1.5 pl-5 marker:text-gold-700">
+                {(prize.description.length > 0 ? prize.description : [prize.title]).map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
           ))}
-        </ul>
+        </div>
       ),
     },
     {

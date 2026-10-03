@@ -35,6 +35,8 @@ const competition: Competition = {
   prizeValue: 60000,
   images: [],
   totalEntries: 10000,
+  maxEntriesPerUser: null,
+  prizes: [],
   drawDate: "2026-10-01T20:00:00Z",
   status: "live",
   featured: false,

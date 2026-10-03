@@ -1,4 +1,4 @@
-import type { Competition } from "@/data/homepageMockData";
+import type { Competition } from "@/data/competitions";
 import CompetitionCard from "./CompetitionCard";
 import Reveal from "../ui/Reveal";
 

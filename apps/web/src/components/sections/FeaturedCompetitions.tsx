@@ -2,11 +2,14 @@ import Button from "../ui/Button";
 import Icon from "../ui/Icon";
 import Section from "../layout/Section";
 import SectionHeading from "../layout/SectionHeading";
-import CompetitionGrid from "../competition/CompetitionGrid";
-import { featuredCompetitions } from "@/data/homepageMockData";
+import CompetitionSectionBody from "./CompetitionSectionBody";
+import { loadHomepageCompetitions, featuredSectionParams } from "@/lib/competitions/homepage";
 import { routes } from "@/lib/routes";
 
-export default function FeaturedCompetitions() {
+/** Server component: live featured competitions from the public API. */
+export default async function FeaturedCompetitions() {
+  const result = await loadHomepageCompetitions(featuredSectionParams);
+
   return (
     <Section id="featured" className="scroll-mt-24">
       <SectionHeading
@@ -18,7 +21,7 @@ export default function FeaturedCompetitions() {
       />
 
       <div className="mt-12">
-        <CompetitionGrid competitions={featuredCompetitions} columns={4} />
+        <CompetitionSectionBody result={result} columns={4} />
       </div>
 
       <div className="mt-12 flex justify-center">

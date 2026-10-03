@@ -35,6 +35,16 @@ export type CompetitionQuestion = {
   answerIndex: number;
 };
 
+/** One prize, in pounds — the adapter converts from the API's pence. */
+export type CompetitionPrize = {
+  id: number;
+  title: string;
+  description: string[];
+  value: number;
+  cashAlternativeValue?: number;
+  quantity: number;
+};
+
 export type Competition = {
   // ---- fields shared with the homepage card ----
   id: string;
@@ -52,8 +62,12 @@ export type Competition = {
   prize: string;
   prizeValue: number;
   cashAlternativeValue?: number;
+  /** Every prize attached to the competition, in the API's order. */
+  prizes: CompetitionPrize[];
   images: string[];
   totalEntries: number;
+  /** null when the competition sets no per-customer limit. */
+  maxEntriesPerUser: number | null;
   drawDate: string; // ISO 8601
   status: CompetitionStatus;
   featured: boolean;
