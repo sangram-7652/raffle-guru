@@ -25,6 +25,7 @@ export const routes = {
   resetPassword: "/reset-password",
   verifyEmail: "/verify-email",
   account: "/account",
+  accountDetails: "/account/details",
   accountEntries: "/account/entries",
   accountWinner: "/account/winner",
 } as const;

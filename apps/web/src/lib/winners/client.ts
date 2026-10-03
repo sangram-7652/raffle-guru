@@ -3,7 +3,11 @@
  * /api/v1/account/win*. Mirrors @/lib/entries/client's shape.
  */
 import { apiRequest } from "@/lib/api/http";
-import type { ApiWinner, ApiWinnerClaim, SingleResponse } from "./types";
+import type { ApiWinner, ApiWinnerClaim, PaginatedResponse, SingleResponse } from "./types";
+
+export function listWinners(page = 1): Promise<PaginatedResponse<ApiWinner>> {
+  return apiRequest<PaginatedResponse<ApiWinner>>(`/v1/account/winners?page=${page}`);
+}
 
 export async function getCurrentWinner(): Promise<ApiWinner | null> {
   const response = await apiRequest<SingleResponse<ApiWinner | null>>("/v1/account/winner");
