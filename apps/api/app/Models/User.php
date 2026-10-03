@@ -58,6 +58,17 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Every ticket allocated to this user (P7). Read-only from the
+     * admin customer view — ticket numbers are immutable.
+     *
+     * @return HasMany<Ticket, $this>
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
+    }
+
+    /**
      * Every competition this user has ever won (P10) — see
      * docs/WINNER_CLAIM_P10.md. Usually empty or a single row.
      *
