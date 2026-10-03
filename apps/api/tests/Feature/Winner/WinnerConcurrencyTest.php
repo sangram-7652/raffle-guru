@@ -5,8 +5,10 @@ namespace Tests\Feature\Winner;
 use App\Enums\CompetitionStatus;
 use App\Enums\DrawStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PrizeDeliveryStatus;
 use App\Enums\WinnerClaimStatus;
 use App\Enums\WinnerStatus;
+use App\Models\Admin;
 use App\Models\Competition;
 use App\Models\Draw;
 use App\Models\DrawResult;
@@ -14,11 +16,13 @@ use App\Models\Entry;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Prize;
+use App\Models\PrizeDelivery;
 use App\Models\Ticket;
 use App\Models\User;
 use App\Models\Winner;
 use App\Services\Winner\PrizeFulfilmentService;
 use App\Services\Winner\WinnerClaimService;
+use App\Services\Winner\WinnerException;
 use App\Services\Winner\WinnerLifecycleService;
 use App\Services\Winner\WinnerService;
 use Illuminate\Support\Facades\Config;
@@ -334,5 +338,101 @@ class WinnerConcurrencyTest extends TestCase
         $this->assertSame($outcomeA['delivery_id'], $outcomeB['delivery_id'], 'Both attempts must resolve to the SAME delivery.');
 
         $this->assertSame(1, DB::connection('mysql')->table('prize_deliveries')->where('winner_id', $winner->id)->count());
+    }
+
+    /**
+     * P11.10 — two admins press "Start fulfilment" for the same approved winner
+     * at the same time. Expected: one delivery, the winner delivery_pending, and
+     * both requests resolve to that same delivery (the second is a safe no-op).
+     */
+    public function test_two_concurrent_start_fulfilment_requests_produce_one_delivery(): void
+    {
+        ['competition' => $competition] = $this->makeDrawnCompetitionWithPrize();
+        $winner = app(WinnerService::class)->createFromDrawResult($competition->fresh());
+        app(WinnerLifecycleService::class)->transition($winner, WinnerStatus::Contacted, 'test setup');
+        app(WinnerClaimService::class)->submit($winner->fresh(), null);
+        $claim = $winner->fresh()->claim;
+        app(WinnerClaimService::class)->transition($claim, WinnerClaimStatus::VerificationPending, 'test');
+        app(WinnerClaimService::class)->transition($claim->fresh(), WinnerClaimStatus::Verified, 'test');
+        app(WinnerClaimService::class)->transition($claim->fresh(), WinnerClaimStatus::Approved, 'test');
+        $admin = Admin::factory()->create();
+
+        $resultA = sys_get_temp_dir().'/p11_10_concurrency_'.uniqid().'_a.json';
+        $resultB = sys_get_temp_dir().'/p11_10_concurrency_'.uniqid().'_b.json';
+
+        $work = function () use ($winner, $admin): array {
+            $freshWinner = Winner::query()->findOrFail($winner->id);
+            $delivery = app(PrizeFulfilmentService::class)->startFulfilment($freshWinner, $admin->id, 'race');
+
+            return ['ok' => true, 'delivery_id' => $delivery->id];
+        };
+
+        $pidA = $this->fork($winner->id, $resultA, $work);
+        $pidB = $this->fork($winner->id, $resultB, $work);
+        pcntl_waitpid($pidA, $statusA);
+        pcntl_waitpid($pidB, $statusB);
+
+        $outcomeA = json_decode(file_get_contents($resultA), true);
+        $outcomeB = json_decode(file_get_contents($resultB), true);
+        @unlink($resultA);
+        @unlink($resultB);
+
+        $this->assertTrue($outcomeA['ok'], json_encode($outcomeA));
+        $this->assertTrue($outcomeB['ok'], json_encode($outcomeB));
+        $this->assertSame($outcomeA['delivery_id'], $outcomeB['delivery_id']);
+        $this->assertSame(1, DB::connection('mysql')->table('prize_deliveries')->where('winner_id', $winner->id)->count());
+        $this->assertSame('delivery_pending', DB::connection('mysql')->table('winners')->where('id', $winner->id)->value('status'));
+    }
+
+    /**
+     * P11.10 — two admins move the same delivery to "processing" at once.
+     * Expected: exactly one move applies; the other is refused cleanly, and the
+     * audit trail records a single transition.
+     */
+    public function test_two_concurrent_delivery_moves_apply_exactly_once(): void
+    {
+        ['competition' => $competition] = $this->makeDrawnCompetitionWithPrize();
+        $winner = app(WinnerService::class)->createFromDrawResult($competition->fresh());
+        app(WinnerLifecycleService::class)->transition($winner, WinnerStatus::Contacted, 'test setup');
+        app(WinnerClaimService::class)->submit($winner->fresh(), null);
+        $claim = $winner->fresh()->claim;
+        app(WinnerClaimService::class)->transition($claim, WinnerClaimStatus::VerificationPending, 'test');
+        app(WinnerClaimService::class)->transition($claim->fresh(), WinnerClaimStatus::Verified, 'test');
+        app(WinnerClaimService::class)->transition($claim->fresh(), WinnerClaimStatus::Approved, 'test');
+        $admin = Admin::factory()->create();
+        $delivery = app(PrizeFulfilmentService::class)->startFulfilment($winner->fresh(), $admin->id, 'start');
+
+        $resultA = sys_get_temp_dir().'/p11_10_concurrency_'.uniqid().'_a.json';
+        $resultB = sys_get_temp_dir().'/p11_10_concurrency_'.uniqid().'_b.json';
+
+        $work = function () use ($delivery, $admin): array {
+            $fresh = PrizeDelivery::query()->findOrFail($delivery->id);
+            try {
+                app(PrizeFulfilmentService::class)->advance($fresh, PrizeDeliveryStatus::Processing, 'race', actorId: $admin->id);
+
+                return ['ok' => true];
+            } catch (WinnerException $e) {
+                return ['ok' => false, 'refused' => true, 'error' => $e->getMessage()];
+            }
+        };
+
+        $pidA = $this->fork($delivery->id, $resultA, $work);
+        $pidB = $this->fork($delivery->id, $resultB, $work);
+        pcntl_waitpid($pidA, $statusA);
+        pcntl_waitpid($pidB, $statusB);
+
+        $outcomes = [
+            json_decode(file_get_contents($resultA), true),
+            json_decode(file_get_contents($resultB), true),
+        ];
+        @unlink($resultA);
+        @unlink($resultB);
+
+        $applied = array_filter($outcomes, fn (array $o): bool => $o['ok'] === true);
+        $this->assertCount(1, $applied, 'Exactly one racing move may apply: '.json_encode($outcomes));
+
+        $this->assertSame('processing', DB::connection('mysql')->table('prize_deliveries')->where('id', $delivery->id)->value('status'));
+        $this->assertSame(1, DB::connection('mysql')->table('winner_audit_logs')
+            ->where('winner_id', $winner->id)->where('event', 'delivery_status_changed')->where('to_status', 'processing')->count());
     }
 }

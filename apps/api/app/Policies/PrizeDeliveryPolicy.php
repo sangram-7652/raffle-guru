@@ -35,6 +35,12 @@ class PrizeDeliveryPolicy
         return $admin->hasAbility(AdminAbility::FulfilmentAdvance);
     }
 
+    /** Starting fulfilment (claim_approved -> delivery_pending + the delivery). */
+    public function start(Admin $admin): bool
+    {
+        return $admin->hasAbility(AdminAbility::FulfilmentAdvance);
+    }
+
     public function assignPrize(Admin $admin): bool
     {
         return $admin->hasAbility(AdminAbility::FulfilmentAssignPrize);
