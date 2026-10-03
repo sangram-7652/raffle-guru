@@ -13,7 +13,12 @@ type IconName =
   | "instagram"
   | "facebook"
   | "tiktok"
-  | "youtube";
+  | "youtube"
+  | "grid"
+  | "user"
+  | "pin"
+  | "bell"
+  | "logout";
 
 type IconProps = {
   name: IconName;
@@ -46,6 +51,11 @@ const paths: Record<IconName, React.ReactNode> = {
   youtube: (
     <path d="M3 8a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM10 9l5 3-5 3z" />
   ),
+  grid: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />,
+  user: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0" />,
+  pin: <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" />,
+  bell: <path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4zM10 21h4" />,
+  logout: <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h11" />,
 };
 
 export default function Icon({ name, className = "h-5 w-5" }: IconProps) {

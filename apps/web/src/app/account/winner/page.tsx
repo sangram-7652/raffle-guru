@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Container, PageHeader } from "@/components/layout";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import EmptyState from "@/components/ui/EmptyState";
+import { Textarea } from "@/components/ui/form";
 import RequireAuth from "@/components/auth/RequireAuth";
+import AccountPageHeading from "@/components/account/AccountPageHeading";
 import { getCurrentWinner, submitWinnerClaim } from "@/lib/winners/client";
 import type { ApiWinner, ApiWinnerStatus } from "@/lib/winners/types";
 import { ApiValidationError } from "@/lib/api/http";
@@ -119,12 +120,12 @@ function ClaimSection({ winner, onSubmitted }: { winner: ApiWinner; onSubmitted:
       <p className="mt-1 text-sm text-muted">
         Add anything you&apos;d like us to know (best way to reach you, delivery notes, etc.) — optional.
       </p>
-      <textarea
+      <Textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
         rows={4}
         maxLength={2000}
-        className="mt-3 w-full rounded-lg border border-line bg-paper p-3 text-sm text-heading outline-none focus:border-gold"
+        className="mt-3"
         placeholder="Optional notes"
       />
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
@@ -197,7 +198,7 @@ function WinnerContent() {
   }, []);
 
   if (state.kind === "loading") {
-    return <div className="h-40 max-w-2xl rounded-card border border-line bg-mist" />;
+    return <div className="h-40 max-w-2xl animate-pulse rounded-card bg-mist" aria-hidden="true" />;
   }
 
   if (state.kind === "error") {
@@ -232,17 +233,14 @@ function WinnerContent() {
 export default function AccountWinnerPage() {
   return (
     <RequireAuth>
-      <PageHeader
-        eyebrow="Account"
-        title="My win"
-        breadcrumbs={[
-          { label: "Account", href: routes.account },
-          { label: "My win" },
-        ]}
-      />
-      <Container className="pb-16">
+      <div className="space-y-8">
+        <AccountPageHeading
+          eyebrow="Account"
+          title="My wins"
+          lede="Prize status and claim details for any competition you win."
+        />
         <WinnerContent />
-      </Container>
+      </div>
     </RequireAuth>
   );
 }

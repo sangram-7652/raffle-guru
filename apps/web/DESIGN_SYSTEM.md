@@ -133,6 +133,8 @@ src/components/
   competition/   CompetitionCard, CompetitionGrid
   category/      CategoryCard
   winner/        WinnerCard, WinnerSection
+  account/       AccountShell, AccountNav, AccountPageHeading, SummaryCard,
+                 ActiveCompetitionCard, UpcomingDrawsList, AccountStatusCard, VerificationBanner
   sections/      Homepage section compositions (Hero, TrustStrip, …)
 ```
 

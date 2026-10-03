@@ -1,182 +1,214 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Container, PageHeader } from "@/components/layout";
+import Link from "next/link";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
+import EmptyState from "@/components/ui/EmptyState";
 import RequireAuth from "@/components/auth/RequireAuth";
+import AccountPageHeading from "@/components/account/AccountPageHeading";
+import AccountStatusCard from "@/components/account/AccountStatusCard";
+import ActiveCompetitionCard from "@/components/account/ActiveCompetitionCard";
+import SummaryCard from "@/components/account/SummaryCard";
+import UpcomingDrawsList from "@/components/account/UpcomingDrawsList";
+import VerificationBanner from "@/components/account/VerificationBanner";
 import { useAuth } from "@/lib/auth/AuthContext";
-import { resendVerification } from "@/lib/auth/client";
-import { listOrders } from "@/lib/orders/client";
-import type { ApiOrder } from "@/lib/orders/types";
-import { gbp } from "@/lib/format";
+import { orderStatusLabel } from "@/lib/account/summary";
+import {
+  useAccountOverview,
+  type AccountOverview,
+  type AccountOverviewState,
+} from "@/lib/account/useAccountOverview";
+import { useResendVerification } from "@/lib/account/useResendVerification";
+import { dateMedium, gbp } from "@/lib/format";
 import { routes } from "@/lib/routes";
 
-const STATUS_LABEL: Record<ApiOrder["status"], string> = {
-  pending: "Payment pending",
-  payment_pending: "Payment pending",
-  paid: "Paid",
-  processing: "Processing",
-  completed: "Completed",
-  cancelled: "Cancelled",
-  failed: "Failed",
-  refunded: "Refunded",
-};
+const DASH = "—";
 
-/**
- * Account landing page (P3) plus a compact recent-orders section (P5) —
- * full order history/filtering is out of scope here, this only surfaces
- * the customer's most recent orders. Entries (P7) and winner/claim
- * status (P10) live on their own dedicated pages, linked below.
- */
-function RecentOrders() {
-  const [orders, setOrders] = useState<ApiOrder[] | null>(null);
+function Skeleton({ className = "" }: { className?: string }) {
+  return <div className={`animate-pulse rounded-card bg-mist ${className}`} aria-hidden="true" />;
+}
 
-  useEffect(() => {
-    listOrders(1)
-      .then((res) => setOrders(res.data))
-      .catch(() => setOrders([]));
-  }, []);
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="font-display text-lg font-extrabold tracking-tight text-heading">{children}</h2>
+  );
+}
 
-  if (orders === null) {
-    return <div className="mt-6 h-24 rounded-card border border-line bg-mist" />;
+/** A summary figure: the real value once loaded, a dash if the load
+ * failed (never a fabricated zero), a skeleton while it is in flight. */
+function metric(state: AccountOverviewState, pick: (data: AccountOverview) => React.ReactNode) {
+  if (state.kind === "ready") return pick(state.data);
+  if (state.kind === "error") return DASH;
+  return <Skeleton className="h-9 w-12" />;
+}
+
+function ActiveCompetitions({ state }: { state: AccountOverviewState }) {
+  if (state.kind === "loading") {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Skeleton className="h-72" />
+        <Skeleton className="h-72" />
+      </div>
+    );
   }
 
-  if (orders.length === 0) {
-    return null;
+  if (state.kind === "error") {
+    return (
+      <EmptyState
+        icon="ticket"
+        title="Couldn't load your entries"
+        description="Something went wrong reaching the server. Please try again."
+        action={
+          <Button variant="secondary" onClick={() => window.location.reload()}>
+            Retry
+          </Button>
+        }
+      />
+    );
+  }
+
+  const { activeCompetitions } = state.data.summary;
+
+  if (activeCompetitions.length === 0) {
+    return (
+      <EmptyState
+        icon="ticket"
+        title="No active entries yet"
+        description="Enter a competition and your tickets will appear here."
+        action={<Button href={routes.competitions}>Browse competitions</Button>}
+      />
+    );
   }
 
   return (
-    <div className="mt-6 max-w-lg rounded-card border border-line bg-card p-6 card-shadow">
-      <h2 className="font-display text-sm font-extrabold tracking-tight text-heading">
-        Recent orders
-      </h2>
-      <ul className="mt-4 divide-y divide-line">
-        {orders.slice(0, 5).map((order) => (
-          <li key={order.id} className="flex items-center justify-between gap-3 py-3 text-sm">
-            <div className="min-w-0">
-              <p className="font-medium text-heading">{order.reference}</p>
-              <p className="text-xs text-muted">{STATUS_LABEL[order.status]}</p>
-            </div>
-            <span className="shrink-0 tabular-nums text-heading">
-              {gbp(order.total / 100)}
-            </span>
-          </li>
-        ))}
-      </ul>
+    <div className="grid gap-4 sm:grid-cols-2">
+      {activeCompetitions.map((competition) => (
+        <ActiveCompetitionCard key={competition.id} competition={competition} />
+      ))}
     </div>
   );
 }
 
-function AccountContent() {
-  const { user, logout } = useAuth();
-  const router = useRouter();
-  const [loggingOut, setLoggingOut] = useState(false);
-  const [resending, setResending] = useState(false);
-  const [resent, setResent] = useState(false);
-
-  async function onLogout() {
-    setLoggingOut(true);
-    try {
-      await logout();
-      router.push(routes.home);
-    } finally {
-      setLoggingOut(false);
-    }
+function RecentActivity({ state }: { state: AccountOverviewState }) {
+  if (state.kind === "loading") {
+    return <Skeleton className="h-40" />;
   }
 
-  async function onResend() {
-    setResending(true);
-    try {
-      await resendVerification();
-      setResent(true);
-    } finally {
-      setResending(false);
-    }
+  const orders = state.kind === "ready" ? state.data.recentOrders : null;
+
+  if (state.kind === "error" || orders === null) {
+    return <p className="text-sm text-muted">Recent activity couldn&apos;t be loaded right now.</p>;
   }
+
+  if (orders.length === 0) {
+    return <p className="text-sm text-muted">Your orders and entry updates will appear here.</p>;
+  }
+
+  return (
+    <ul className="divide-y divide-line">
+      {orders.slice(0, 5).map((order) => (
+        <li key={order.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+          <div className="min-w-0">
+            <p className="truncate text-sm font-semibold text-heading">Order {order.reference}</p>
+            <p className="mt-0.5 text-xs text-muted">
+              {orderStatusLabel(order.status)}
+              {order.created_at && <> · {dateMedium(order.created_at)}</>}
+            </p>
+          </div>
+          <span className="shrink-0 text-sm font-semibold tabular-nums text-heading">
+            {gbp(order.total / 100)}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function OverviewContent() {
+  const { user } = useAuth();
+  const overview = useAccountOverview();
+  const resend = useResendVerification();
 
   if (!user) return null;
 
+  const firstName = user.name.split(" ")[0];
+  const ready = overview.kind === "ready" ? overview.data : null;
+  const isVerified = Boolean(user.email_verified_at);
+
   return (
-    <>
-      <PageHeader eyebrow="Account" title={`Welcome back, ${user.name}`} />
-      <Container className="pb-16">
-        <div className="max-w-lg rounded-card border border-line bg-card p-6 card-shadow">
-          {!user.email_verified_at && (
-            <div className="mb-5 flex items-start gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4">
-              <Icon name="lock" className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-              <div className="text-sm text-amber-900">
-                <p className="font-semibold">Please verify your email</p>
-                <p className="mt-1">
-                  {resent
-                    ? "A new verification link has been sent — check your inbox."
-                    : "Check your inbox for a verification link, or resend it below."}
-                </p>
-                {!resent && (
-                  <button
-                    type="button"
-                    onClick={onResend}
-                    disabled={resending}
-                    className="mt-2 text-sm font-semibold text-gold-700 hover:text-gold-700 disabled:opacity-50"
-                  >
-                    {resending ? "Sending…" : "Resend verification email"}
-                  </button>
-                )}
-              </div>
-            </div>
-          )}
+    <div className="space-y-8">
+      <AccountPageHeading
+        eyebrow="Account overview"
+        title={`Welcome back, ${firstName}`}
+        lede="Track your entries, tickets and upcoming draws."
+      />
 
-          <dl className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Name</dt>
-              <dd className="font-medium text-heading">{user.name}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Email</dt>
-              <dd className="font-medium text-heading">{user.email}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted">Email verified</dt>
-              <dd className="font-medium text-heading">
-                {user.email_verified_at ? "Yes" : "Not yet"}
-              </dd>
-            </div>
-          </dl>
+      {!isVerified && (
+        <VerificationBanner sending={resend.sending} sent={resend.sent} onResend={resend.resend} />
+      )}
 
-          <Button
-            onClick={onLogout}
-            loading={loggingOut}
-            disabled={loggingOut}
-            variant="secondary"
-            block
-            className="mt-6"
-          >
-            Sign out
-          </Button>
+      <section aria-label="Summary" className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
+        <SummaryCard label="My entries" icon="ticket" value={metric(overview, (d) => d.summary.entryCount)} />
+        <SummaryCard label="My tickets" icon="ticket" value={metric(overview, (d) => d.summary.ticketCount)} />
+        <SummaryCard
+          label="Upcoming draws"
+          icon="clock"
+          value={metric(overview, (d) => d.summary.upcomingDraws.length)}
+        />
+        <SummaryCard label="My wins" icon="trophy" value={metric(overview, (d) => d.winCount ?? DASH)} />
+      </section>
+
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+        <div className="space-y-5">
+          <div className="flex items-center justify-between gap-4">
+            <SectionTitle>Active competitions</SectionTitle>
+            {ready && ready.summary.entryCount > 0 && (
+              <Link
+                href={routes.accountEntries}
+                className="text-sm font-semibold text-gold-700 transition-colors hover:text-heading focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gold-700/60"
+              >
+                All entries
+              </Link>
+            )}
+          </div>
+          <ActiveCompetitions state={overview} />
         </div>
 
-        <div className="mt-6 flex max-w-lg flex-wrap gap-3">
-          <Button href={routes.accountEntries} variant="secondary">
-            <Icon name="ticket" className="h-4 w-4" />
-            My entries
-          </Button>
-          <Button href={routes.accountWinner} variant="secondary">
-            <Icon name="trophy" className="h-4 w-4" />
-            My win
-          </Button>
-        </div>
+        <div className="space-y-6">
+          <AccountStatusCard name={user.name} email={user.email} verified={isVerified} />
 
-        <RecentOrders />
-      </Container>
-    </>
+          <section className="rounded-card border border-line bg-card p-5 card-shadow sm:p-6">
+            <div className="flex items-center gap-2">
+              <Icon name="clock" className="h-4 w-4 text-gold-700" />
+              <SectionTitle>Upcoming draws</SectionTitle>
+            </div>
+            <div className="mt-4">
+              {overview.kind === "loading" ? (
+                <Skeleton className="h-24" />
+              ) : overview.kind === "error" ? (
+                <p className="text-sm text-muted">Upcoming draws couldn&apos;t be loaded right now.</p>
+              ) : (
+                <UpcomingDrawsList draws={overview.data.summary.upcomingDraws} />
+              )}
+            </div>
+          </section>
+
+          <section className="rounded-card border border-line bg-card p-5 card-shadow sm:p-6">
+            <SectionTitle>Recent activity</SectionTitle>
+            <div className="mt-4">
+              <RecentActivity state={overview} />
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
 
 export default function AccountPage() {
   return (
     <RequireAuth>
-      <AccountContent />
+      <OverviewContent />
     </RequireAuth>
   );
 }

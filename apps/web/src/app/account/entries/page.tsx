@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Container, PageHeader } from "@/components/layout";
 import Button from "@/components/ui/Button";
 import Icon from "@/components/ui/Icon";
 import EmptyState from "@/components/ui/EmptyState";
 import RequireAuth from "@/components/auth/RequireAuth";
+import AccountPageHeading from "@/components/account/AccountPageHeading";
 import { listEntries } from "@/lib/entries/client";
 import type { ApiEntry } from "@/lib/entries/types";
 import { toDisplayStatus } from "@/lib/competitions/adapter";
@@ -40,9 +40,9 @@ function EntriesList() {
 
   if (state.kind === "loading") {
     return (
-      <div className="space-y-3">
-        <div className="h-24 rounded-card border border-line bg-mist" />
-        <div className="h-24 rounded-card border border-line bg-mist" />
+      <div className="space-y-3" aria-hidden="true">
+        <div className="h-24 animate-pulse rounded-card bg-mist" />
+        <div className="h-24 animate-pulse rounded-card bg-mist" />
       </div>
     );
   }
@@ -74,34 +74,37 @@ function EntriesList() {
   }
 
   return (
-    <ul className="divide-y divide-line rounded-card border border-line bg-card">
+    <ul className="divide-y divide-line overflow-hidden rounded-card border border-line bg-card card-shadow">
       {state.entries.map((entry) => {
         const displayStatus = toDisplayStatus(entry.competition.status);
         const availability = competitionAvailability(displayStatus);
 
         return (
-        <li key={entry.id} className="flex flex-wrap items-center justify-between gap-3 p-5">
-          <div className="min-w-0">
-            <p className="font-display text-sm font-extrabold tracking-tight text-heading">
-              {entry.competition.title}
-              {!availability.purchasable && (
-                <span className="ml-2 rounded-full bg-mist px-2 py-0.5 text-[11px] font-medium text-muted">
-                  {availability.label}
-                </span>
-              )}
-            </p>
-            <p className="mt-1 text-xs text-muted">
-              Order {entry.order_reference}
-              {entry.allocated_at && <> · Allocated {dateMedium(entry.allocated_at)}</>}
-            </p>
-          </div>
-          <div className="flex items-center gap-1.5 text-sm">
-            <Icon name="ticket" className="h-4 w-4 shrink-0 text-gold-700" />
-            <span className="font-medium text-heading">
-              {entry.ticket_numbers.map((n) => `#${n}`).join(", ")}
-            </span>
-          </div>
-        </li>
+          <li key={entry.id} className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-display text-base font-extrabold tracking-tight text-heading">
+                  {entry.competition.title}
+                </p>
+                {!availability.purchasable && (
+                  <span className="rounded-full border border-line bg-panel px-2.5 py-0.5 t-caption font-semibold text-muted">
+                    {availability.label}
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-xs text-muted">
+                Order {entry.order_reference}
+                {entry.allocated_at && <> · Allocated {dateMedium(entry.allocated_at)}</>}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 rounded-lg border border-gold/30 bg-mist px-3 py-2 text-sm sm:shrink-0">
+              <Icon name="ticket" className="h-4 w-4 shrink-0 text-gold-700" />
+              <span className="font-semibold tabular-nums text-heading">
+                {entry.ticket_numbers.map((n) => `#${n}`).join(", ")}
+              </span>
+            </div>
+          </li>
         );
       })}
     </ul>
@@ -111,17 +114,14 @@ function EntriesList() {
 export default function AccountEntriesPage() {
   return (
     <RequireAuth>
-      <PageHeader
-        eyebrow="Account"
-        title="My entries"
-        breadcrumbs={[
-          { label: "Account", href: routes.account },
-          { label: "My entries" },
-        ]}
-      />
-      <Container className="pb-16">
+      <div className="space-y-8">
+        <AccountPageHeading
+          eyebrow="Account"
+          title="My entries"
+          lede="Every competition you've entered, with the ticket numbers allocated to you."
+        />
         <EntriesList />
-      </Container>
+      </div>
     </RequireAuth>
   );
 }
