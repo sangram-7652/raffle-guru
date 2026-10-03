@@ -70,7 +70,7 @@ class WinnerResource extends Resource
             'competition' => fn ($q) => $q->withTrashed()->select(['id', 'title', 'slug', 'status']),
             'ticket' => fn ($q) => $q->select(['id', 'ticket_number', 'order_id']),
             'claim' => fn ($q) => $q->select(['id', 'winner_id', 'status', 'submitted_at']),
-            'delivery' => fn ($q) => $q->select(['id', 'winner_id', 'prize_id', 'status']),
+            'delivery' => fn ($q) => $q->select(['id', 'winner_id', 'prize_id', 'status', 'delivery_method', 'tracking_reference', 'shipped_at', 'delivered_at', 'notes']),
             'delivery.prize' => fn ($q) => $q->withTrashed()->select(['id', 'title']),
         ]);
     }

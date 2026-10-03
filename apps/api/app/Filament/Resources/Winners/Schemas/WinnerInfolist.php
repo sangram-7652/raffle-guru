@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Winners\Schemas;
 
+use App\Enums\AdminAbility;
 use App\Enums\WinnerClaimStatus;
 use App\Enums\WinnerStatus;
 use App\Filament\Resources\Competitions\CompetitionResource;
@@ -9,13 +10,16 @@ use App\Filament\Resources\Draws\DrawResource;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Tickets\TicketResource;
 use App\Filament\Resources\WinnerClaims\WinnerClaimResource;
+use App\Filament\Support\PrizeDeliveryStatusBadge;
 use App\Filament\Support\WinnerAuditTrail;
 use App\Filament\Support\WinnerClaimStatusBadge;
 use App\Filament\Support\WinnerStatusBadge;
+use App\Models\Admin;
 use App\Models\Winner;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Read-only. Identity comes from the draw (competition, draw, winning
@@ -103,7 +107,34 @@ class WinnerInfolist
                         TextEntry::make('completed_at')->label('Completed')->dateTime()->placeholder('—'),
                     ]),
 
+                Section::make('Fulfilment')
+                    ->columnSpanFull()
+                    ->columns(3)
+                    ->visible(fn (): bool => self::canViewFulfilment())
+                    ->components([
+                        TextEntry::make('delivery.status')
+                            ->label('Delivery status')
+                            ->badge()
+                            ->formatStateUsing(fn ($state): ?string => PrizeDeliveryStatusBadge::label($state))
+                            ->color(fn ($state): string => PrizeDeliveryStatusBadge::color($state))
+                            ->placeholder('No delivery yet'),
+                        TextEntry::make('delivery.delivery_method')->label('Delivery method')->placeholder('—'),
+                        TextEntry::make('delivery.tracking_reference')->label('Tracking reference')->copyable()->placeholder('—'),
+                        TextEntry::make('delivery.shipped_at')->label('Shipped')->dateTime()->placeholder('—'),
+                        TextEntry::make('delivery.delivered_at')->label('Delivered (prize)')->dateTime()->placeholder('—'),
+                        TextEntry::make('delivery.notes')->label('Internal notes')->placeholder('—')->columnSpanFull(),
+                    ]),
+
                 WinnerAuditTrail::section(fn (Winner $record): int => $record->id),
             ]);
+    }
+
+    /** Fulfilment details are operational data; gated on fulfilment.view. */
+    private static function canViewFulfilment(): bool
+    {
+        /** @var Admin|null $admin */
+        $admin = Auth::guard('admin')->user();
+
+        return $admin !== null && $admin->hasAbility(AdminAbility::FulfilmentView);
     }
 }
