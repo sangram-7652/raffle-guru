@@ -34,9 +34,8 @@ use Illuminate\Support\Facades\Auth;
  * offered: reaching it is how App\Listeners\DispatchDrawExecution
  * enqueues the real draw, so it is the legitimate way for an admin to
  * start a draw early, and additionally requires DrawPolicy::run.
- * `draft` has no outgoing edge in the matrix at all
- * (docs/COMPETITION_LIFECYCLE_P8.md: publishing a draft is out of P8's
- * scope), so a draft competition shows no action.
+ * `draft` has exactly one outgoing edge: draft -> scheduled (P11.9), the
+ * editorial publish. It is not public until scheduled -> active.
  */
 class TransitionStatusAction
 {
@@ -44,6 +43,7 @@ class TransitionStatusAction
      * @var list<CompetitionStatus>
      */
     private const MANUALLY_REACHABLE = [
+        CompetitionStatus::Scheduled,
         CompetitionStatus::Active,
         CompetitionStatus::SoldOut,
         CompetitionStatus::Closed,

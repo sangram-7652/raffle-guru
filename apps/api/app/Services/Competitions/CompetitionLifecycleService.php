@@ -27,6 +27,11 @@ class CompetitionLifecycleService
      * @var array<string, list<CompetitionStatus>>
      */
     private const MATRIX = [
+        // P11.9 — the only admin-initiated way out of draft: an editorial
+        // publish that schedules the competition (not yet public). Public
+        // visibility still only comes from scheduled -> active, either at
+        // starts_at (CompetitionLifecycleCommand) or by an admin action.
+        CompetitionStatus::Draft->value => [CompetitionStatus::Scheduled],
         CompetitionStatus::Scheduled->value => [CompetitionStatus::Active],
         CompetitionStatus::Active->value => [CompetitionStatus::SoldOut, CompetitionStatus::Closed],
         CompetitionStatus::SoldOut->value => [CompetitionStatus::Closed],

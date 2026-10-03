@@ -110,16 +110,65 @@ class CompetitionLifecycleActionTest extends TestCase
         $this->assertSame(0, CompetitionLifecycleEvent::query()->count());
     }
 
+    public function test_draft_offers_only_scheduled_as_its_publish_target(): void
+    {
+        $this->actingAs(Admin::factory()->create(), 'admin');
+        $competition = Competition::factory()->withStatus(CompetitionStatus::Draft)->create();
+
+        $this->viewPage($competition)
+            ->mountAction('transitionStatus')
+            ->assertFormFieldExists('to_status', function ($field): bool {
+                return array_keys($field->getOptions()) === [CompetitionStatus::Scheduled->value];
+            });
+    }
+
+    public function test_publishing_a_draft_schedules_it_through_the_service_with_an_audit_event(): void
+    {
+        $operations = Admin::factory()->create();
+        $competition = Competition::factory()->withStatus(CompetitionStatus::Draft)->create();
+        $this->actingAs($operations, 'admin');
+
+        $this->viewPage($competition)
+            ->callAction('transitionStatus', data: [
+                'to_status' => CompetitionStatus::Scheduled->value,
+                'reason' => 'Ready for launch',
+            ])
+            ->assertHasNoActionErrors();
+
+        $this->assertSame(CompetitionStatus::Scheduled, $competition->fresh()->status);
+
+        $events = CompetitionLifecycleEvent::query()->where('competition_id', $competition->id)->get();
+        $this->assertCount(1, $events);
+        $this->assertSame(CompetitionStatus::Draft->value, $events[0]->from_status);
+        $this->assertSame(CompetitionStatus::Scheduled->value, $events[0]->to_status);
+        $this->assertSame("Admin #{$operations->id}: Ready for launch", $events[0]->reason);
+    }
+
+    public function test_a_draft_cannot_be_crafted_straight_to_active(): void
+    {
+        $this->actingAs(Admin::factory()->superAdmin()->create(), 'admin');
+        $competition = Competition::factory()->withStatus(CompetitionStatus::Draft)->create();
+
+        $this->viewPage($competition)
+            ->callAction('transitionStatus', data: [
+                'to_status' => CompetitionStatus::Active->value,
+                'reason' => 'Skipping the schedule',
+            ])
+            ->assertHasActionErrors(['to_status']);
+
+        $this->assertSame(CompetitionStatus::Draft, $competition->fresh()->status);
+        $this->assertSame(0, CompetitionLifecycleEvent::query()->count());
+    }
+
     public function test_action_is_hidden_when_no_manual_transition_exists(): void
     {
         $this->actingAs(Admin::factory()->superAdmin()->create(), 'admin');
 
-        // draft: no outgoing edge in the service matrix at all.
         // draw_pending/draw_in_progress/drawn: only DrawService/
         // PrizeFulfilmentService may move these on.
         // completed: terminal.
+        // (draft is not here: P11.9 gave it one manual edge, to scheduled.)
         foreach ([
-            CompetitionStatus::Draft,
             CompetitionStatus::DrawPending,
             CompetitionStatus::DrawInProgress,
             CompetitionStatus::Drawn,

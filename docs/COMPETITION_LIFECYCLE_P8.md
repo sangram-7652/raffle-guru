@@ -32,8 +32,11 @@ below has no path to any of them.
 Every other `(from, to)` pair — including anything targeting
 `draw_in_progress`, `drawn`, or `completed`, and anything moving
 *backwards* (e.g. `closed → active`) — is rejected. `draft` has no
-automatic transition at all (publishing a draft is an editorial
-decision outside this phase's scope, same as P4 left it).
+automatic transition at all. Its only edge is the editorial publish
+`draft → scheduled` (P11.9), initiated by an admin through the
+"Transition status" action and recorded in the same audit log. A draft
+can never reach `active` directly, and `scheduled` is not publicly
+visible: public visibility begins at `scheduled → active`.
 
 ### Why `sold_out` and `closed` are separate, and why `sold_out → closed` is unconditional
 

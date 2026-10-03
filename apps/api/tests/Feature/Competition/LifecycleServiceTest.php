@@ -83,6 +83,14 @@ class LifecycleServiceTest extends TestCase
 
     // -- P10 addition (winner/claim/fulfilment engine owns this edge) --------
 
+    public function test_draft_transitions_to_scheduled(): void
+    {
+        $competition = Competition::factory()->withStatus(CompetitionStatus::Draft)->create();
+
+        $this->assertTrue($this->service()->transition($competition, CompetitionStatus::Scheduled, 'publish'));
+        $this->assertSame(CompetitionStatus::Scheduled, $competition->fresh()->status);
+    }
+
     public function test_drawn_transitions_to_completed(): void
     {
         $competition = Competition::factory()->withStatus(CompetitionStatus::Drawn)->create();
