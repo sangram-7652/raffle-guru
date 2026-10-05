@@ -8,6 +8,7 @@ use App\Models\AdminAuditLog;
 use App\Services\Admin\AdminManagementService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -245,5 +246,92 @@ class AdminManagementConcurrencyTest extends TestCase
         }
 
         $this->assertSame($roleChange !== null, $outcomes[1]['ok'], json_encode($outcomes));
+    }
+
+    /**
+     * Two SuperAdmins reset the same target at once. Both resets commit, one
+     * after the other, so the target ends with a temporary password and the
+     * session version moves by exactly two.
+     */
+    public function test_concurrent_password_resets_of_the_same_admin_serialize(): void
+    {
+        $a = $this->makeAdmin(AdminRole::SuperAdmin, name: 'Reset-A');
+        $b = $this->makeAdmin(AdminRole::SuperAdmin, name: 'Reset-B');
+        $target = $this->makeAdmin(AdminRole::Operations, name: 'Reset-Target');
+        $before = (int) DB::connection('mysql')->table('admins')->where('id', $target->id)->value('session_version');
+
+        $outcomes = $this->raceAll([
+            fn () => app(AdminManagementService::class)->resetPassword($a, $target, 'Temp-Pass-A-11', 'Race reset A'),
+            fn () => app(AdminManagementService::class)->resetPassword($b, $target, 'Temp-Pass-B-22', 'Race reset B'),
+        ]);
+
+        $this->assertSame(2, collect($outcomes)->where('ok', true)->count(), json_encode($outcomes));
+
+        $row = DB::connection('mysql')->table('admins')->where('id', $target->id)->first();
+        $this->assertTrue((bool) $row->must_change_password);
+        $this->assertSame($before + 2, (int) $row->session_version, 'Each reset must invalidate sessions once.');
+        $this->assertSame(
+            2,
+            AdminAuditLog::query()->where('event', AdminAuditLog::EVENT_PASSWORD_RESET)->where('target_admin_id', $target->id)->count(),
+        );
+    }
+
+    /**
+     * Two requests try to complete the same forced change with the same
+     * temporary password and different new passwords. Exactly one may win;
+     * the stored hash must match the winner.
+     */
+    public function test_concurrent_forced_changes_for_one_admin_let_exactly_one_win(): void
+    {
+        $actor = $this->makeAdmin(AdminRole::SuperAdmin, name: 'Forced-Actor');
+        $target = $this->makeAdmin(AdminRole::Operations, name: 'Forced-Target');
+        app(AdminManagementService::class)->resetPassword($actor, $target, 'Temp-Forced-33', 'Setup reset');
+
+        $outcomes = $this->raceAll([
+            fn () => app(AdminManagementService::class)->completeForcedPasswordChange($target, 'Temp-Forced-33', 'New-Pass-One-44')->id,
+            fn () => app(AdminManagementService::class)->completeForcedPasswordChange($target, 'Temp-Forced-33', 'New-Pass-Two-55')->id,
+        ]);
+
+        $this->assertSame(1, collect($outcomes)->where('ok', true)->count(), json_encode($outcomes));
+
+        $row = DB::connection('mysql')->table('admins')->where('id', $target->id)->first();
+        $this->assertFalse((bool) $row->must_change_password);
+
+        $winnerPassword = $outcomes[0]['ok'] ? 'New-Pass-One-44' : 'New-Pass-Two-55';
+        $this->assertTrue(Hash::check($winnerPassword, $row->password), 'The stored hash must belong to the winning request.');
+        $this->assertSame(
+            1,
+            AdminAuditLog::query()->where('event', AdminAuditLog::EVENT_PASSWORD_CHANGED)->where('target_admin_id', $target->id)->count(),
+        );
+    }
+
+    /**
+     * A SuperAdmin resets the password while the target completes the forced
+     * change with the temporary password. Whichever commits first, the final
+     * state must be consistent: a required change always pairs with the reset
+     * password, and a completed change never leaves the flag set.
+     */
+    public function test_a_reset_racing_a_forced_change_leaves_a_consistent_state(): void
+    {
+        $actor = $this->makeAdmin(AdminRole::SuperAdmin, name: 'Mix-Actor');
+        $target = $this->makeAdmin(AdminRole::Operations, name: 'Mix-Target');
+        app(AdminManagementService::class)->resetPassword($actor, $target, 'Temp-Mix-66', 'Setup reset');
+
+        $outcomes = $this->raceAll([
+            fn () => app(AdminManagementService::class)->completeForcedPasswordChange($target, 'Temp-Mix-66', 'Changed-Mix-77')->id,
+            fn () => app(AdminManagementService::class)->resetPassword($actor, $target, 'Second-Mix-88', 'Race reset')->id,
+        ]);
+
+        $row = DB::connection('mysql')->table('admins')->where('id', $target->id)->first();
+
+        if ((bool) $row->must_change_password) {
+            // The reset committed last: the temporary password it set must be the stored one.
+            $this->assertTrue(Hash::check('Second-Mix-88', $row->password), json_encode($outcomes));
+        } else {
+            // The forced change committed last: it must be the stored password.
+            $this->assertTrue(Hash::check('Changed-Mix-77', $row->password), json_encode($outcomes));
+        }
+
+        $this->assertTrue($outcomes[1]['ok'], 'The reset is authorized and must always succeed.');
     }
 }
