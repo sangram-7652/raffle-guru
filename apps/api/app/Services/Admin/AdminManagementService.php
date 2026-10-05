@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -162,9 +163,12 @@ class AdminManagementService
         });
     }
 
-    public function activate(Admin $actor, Admin $target, ?string $reason = null): Admin
+    /**
+     * Reactivation requires a reason, recorded in the audit trail.
+     */
+    public function activate(Admin $actor, Admin $target, string $reason): Admin
     {
-        $reason = $this->optionalReason($reason);
+        $reason = $this->reason($reason);
 
         return DB::transaction(function () use ($actor, $target, $reason): Admin {
             [$freshActor, $locked] = $this->lockFor($actor, $target);
@@ -178,9 +182,7 @@ class AdminManagementService
             $locked->is_active = true;
             $locked->save();
 
-            $this->audit($freshActor, $locked, AdminAuditLog::EVENT_ACTIVATED, array_filter([
-                'reason' => $reason,
-            ]));
+            $this->audit($freshActor, $locked, AdminAuditLog::EVENT_ACTIVATED, ['reason' => $reason]);
 
             return $locked;
         });
@@ -208,11 +210,93 @@ class AdminManagementService
             }
 
             $locked->is_active = false;
+            // Invalidates every session issued before this point, including
+            // those that would otherwise resume if the admin is reactivated.
+            $locked->session_version++;
             $locked->save();
 
             $this->audit($freshActor, $locked, AdminAuditLog::EVENT_DEACTIVATED, ['reason' => $reason]);
 
             return $locked;
+        });
+    }
+
+    /**
+     * A SuperAdmin sets a temporary password for another admin. The target
+     * must change it at their next authenticated request, and every session
+     * they hold stops working now.
+     *
+     * The temporary password is validated, hashed by the Admin model, and
+     * never stored in plaintext, audited, logged, or returned.
+     */
+    public function resetPassword(Admin $actor, Admin $target, string $temporaryPassword, string $reason): Admin
+    {
+        $temporaryPassword = $this->validatedPassword($temporaryPassword);
+        $reason = $this->reason($reason);
+
+        return DB::transaction(function () use ($actor, $target, $temporaryPassword, $reason): Admin {
+            [$freshActor, $locked] = $this->lockFor($actor, $target);
+
+            // The policy refuses self-reset: no path to change your own
+            // password through this operation.
+            Gate::forUser($freshActor)->authorize('resetPassword', $locked);
+
+            $locked->password = $temporaryPassword;
+            $locked->must_change_password = true;
+            $locked->session_version++;
+            $locked->save();
+
+            $this->audit($freshActor, $locked, AdminAuditLog::EVENT_PASSWORD_RESET, ['reason' => $reason]);
+
+            return $locked;
+        });
+    }
+
+    /**
+     * An admin who was given a temporary password completes the forced change.
+     * The current password must match, the new one must differ from it, and
+     * the admin's sessions are all invalidated, including this one. The admin
+     * then signs in again with the new password.
+     */
+    public function completeForcedPasswordChange(Admin $admin, string $currentPassword, string $newPassword): Admin
+    {
+        $newPassword = $this->validatedPassword($newPassword);
+
+        return DB::transaction(function () use ($admin, $currentPassword, $newPassword): Admin {
+            [$freshAdmin] = $this->lockAll($admin);
+
+            if (! $freshAdmin->is_active) {
+                throw new AuthorizationException('This account is no longer active.');
+            }
+
+            if (! $freshAdmin->must_change_password) {
+                throw new AdminManagementException('A password change is not required for this account.');
+            }
+
+            // Read the hash under the row lock; it is never loaded into the
+            // model state the rest of the service works with.
+            $currentHash = Admin::query()->whereKey($freshAdmin->getKey())->value('password');
+
+            if (! Hash::check($currentPassword, (string) $currentHash)) {
+                throw ValidationException::withMessages([
+                    'current_password' => 'The current password is incorrect.',
+                ]);
+            }
+
+            if (Hash::check($newPassword, (string) $currentHash)) {
+                throw ValidationException::withMessages([
+                    'password' => 'The new password must be different from the current one.',
+                ]);
+            }
+
+            $freshAdmin->password = $newPassword;
+            $freshAdmin->must_change_password = false;
+            $freshAdmin->session_version++;
+            $freshAdmin->save();
+
+            $this->audit($freshAdmin, $freshAdmin, AdminAuditLog::EVENT_PASSWORD_CHANGED);
+
+            return $freshAdmin;
         });
     }
 
@@ -242,7 +326,7 @@ class AdminManagementService
     {
         /** @var Collection<int, Admin> $admins */
         $admins = Admin::query()
-            ->select(['id', 'name', 'email', 'role', 'is_active'])
+            ->select(['id', 'name', 'email', 'role', 'is_active', 'must_change_password', 'session_version'])
             ->orderBy('id')
             ->lockForUpdate()
             ->get()
@@ -291,6 +375,13 @@ class AdminManagementService
                 'email' => 'An admin with this email address already exists.',
             ]);
         }
+    }
+
+    private function validatedPassword(string $password): string
+    {
+        return Validator::make(['password' => $password], [
+            'password' => ['required', 'string', Password::defaults()],
+        ])->validate()['password'];
     }
 
     private function reason(string $reason): string

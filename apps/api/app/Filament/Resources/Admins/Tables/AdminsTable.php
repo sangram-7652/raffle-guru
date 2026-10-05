@@ -48,6 +48,11 @@ class AdminsTable
                     ->badge()
                     ->formatStateUsing(fn (bool $state): string => $state ? 'Active' : 'Inactive')
                     ->color(fn (bool $state): string => $state ? 'success' : 'gray'),
+                TextColumn::make('must_change_password')
+                    ->label('Password')
+                    ->badge()
+                    ->formatStateUsing(fn (bool $state): string => $state ? 'Change required' : 'Set')
+                    ->color(fn (bool $state): string => $state ? 'warning' : 'gray'),
                 TextColumn::make('last_login_at')
                     ->label('Last login')
                     ->dateTime()

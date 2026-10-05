@@ -56,4 +56,14 @@ class AdminPolicy
     {
         return $admin->hasAbility(AdminAbility::AdminManage);
     }
+
+    /**
+     * Setting another admin's temporary password (AdminManage). Never your
+     * own: there is no self-service password reset through this path.
+     */
+    public function resetPassword(Admin $admin, Admin $target): bool
+    {
+        return $admin->hasAbility(AdminAbility::AdminManage)
+            && $admin->getKey() !== $target->getKey();
+    }
 }

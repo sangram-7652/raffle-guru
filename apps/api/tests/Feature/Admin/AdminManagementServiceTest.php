@@ -290,7 +290,7 @@ class AdminManagementServiceTest extends TestCase
     {
         $this->expectException(AdminManagementException::class);
 
-        $this->service->activate($this->superAdmin(), $this->operations());
+        $this->service->activate($this->superAdmin(), $this->operations(), 'Already on');
     }
 
     public function test_deactivating_an_already_inactive_admin_is_refused(): void
@@ -312,7 +312,7 @@ class AdminManagementServiceTest extends TestCase
         }
 
         try {
-            $this->service->activate($this->operations(), $inactive);
+            $this->service->activate($this->operations(), $inactive, 'Attempt without rights');
             $this->fail('Operations must not activate.');
         } catch (AuthorizationException) {
         }
@@ -504,7 +504,7 @@ class AdminManagementServiceTest extends TestCase
         $this->service->updateProfile($actor, $target, ['name' => 'Changed', 'email' => $target->email]);
         $this->service->changeRole($actor, $target, AdminRole::SuperAdmin, 'Promotion reason');
         $this->service->deactivate($actor, $target, 'Off reason');
-        $this->service->activate($actor, $target);
+        $this->service->activate($actor, $target, 'Reinstated');
 
         $logs = AdminAuditLog::query()->where('target_admin_id', $target->id)->orderBy('id')->get();
         $this->assertSame(
