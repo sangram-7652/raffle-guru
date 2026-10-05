@@ -13,15 +13,10 @@ use App\Policies\Concerns\GuardsAdminActor;
  * all (see AdminRole::abilities()), so every method below denies
  * Operations outright rather than needing a per-method role check.
  *
- * Deliberately NOT implemented here: a "last remaining active Super
- * Admin can't be demoted/deactivated" safeguard. P11.2 is authorization
- * only — no admin-management mutation code path exists yet (no
- * Filament AdminResource, no AdminManagementService) for such a
- * safeguard to attach to, and building one now would mean inventing
- * untested mutation infrastructure ahead of its own milestone. This
- * belongs in whichever future milestone adds the actual mutation
- * (as a domain/service-level check, not a Filament confirmation
- * modal), tracked as a known limitation below.
+ * The last-active-SuperAdmin invariant is NOT enforced here. Policies
+ * answer "may this actor attempt it"; App\Services\Admin\
+ * AdminManagementService owns the invariant (under a row lock) so that
+ * it holds for every caller, including crafted requests.
  */
 class AdminPolicy
 {

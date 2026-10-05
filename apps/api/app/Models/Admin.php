@@ -10,6 +10,7 @@ use Filament\Panel;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -39,6 +40,26 @@ class Admin extends Authenticatable implements FilamentUser
             'is_active' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Admin-account audit events where this admin is the subject (P11.12).
+     *
+     * @return HasMany<AdminAuditLog, $this>
+     */
+    public function auditLogsAsTarget(): HasMany
+    {
+        return $this->hasMany(AdminAuditLog::class, 'target_admin_id');
+    }
+
+    /**
+     * Admin-account audit events this admin performed (P11.12).
+     *
+     * @return HasMany<AdminAuditLog, $this>
+     */
+    public function auditLogsAsActor(): HasMany
+    {
+        return $this->hasMany(AdminAuditLog::class, 'actor_admin_id');
     }
 
     /**
