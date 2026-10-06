@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -213,6 +214,7 @@ class AdminManagementService
             // Invalidates every session issued before this point, including
             // those that would otherwise resume if the admin is reactivated.
             $locked->session_version++;
+            $this->rotateRememberToken($locked);
             $locked->save();
 
             $this->audit($freshActor, $locked, AdminAuditLog::EVENT_DEACTIVATED, ['reason' => $reason]);
@@ -244,6 +246,7 @@ class AdminManagementService
             $locked->password = $temporaryPassword;
             $locked->must_change_password = true;
             $locked->session_version++;
+            $this->rotateRememberToken($locked);
             $locked->save();
 
             $this->audit($freshActor, $locked, AdminAuditLog::EVENT_PASSWORD_RESET, ['reason' => $reason]);
@@ -292,6 +295,7 @@ class AdminManagementService
             $freshAdmin->password = $newPassword;
             $freshAdmin->must_change_password = false;
             $freshAdmin->session_version++;
+            $this->rotateRememberToken($freshAdmin);
             $freshAdmin->save();
 
             $this->audit($freshAdmin, $freshAdmin, AdminAuditLog::EVENT_PASSWORD_CHANGED);
@@ -375,6 +379,17 @@ class AdminManagementService
                 'email' => 'An admin with this email address already exists.',
             ]);
         }
+    }
+
+    /**
+     * Replaces the admin's remember-me token. A remember cookie holds the old
+     * token, so once it is replaced that cookie can no longer restore the
+     * admin, even without a session. Set in the same transaction as the change
+     * that revokes access.
+     */
+    private function rotateRememberToken(Admin $admin): void
+    {
+        $admin->setRememberToken(Str::random(60));
     }
 
     private function validatedPassword(string $password): string
