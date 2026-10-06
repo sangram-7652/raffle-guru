@@ -26,8 +26,10 @@ class ActivateAdminAction
             ->modalSubmitActionLabel('Activate')
             ->schema([
                 Textarea::make('reason')
-                    ->label('Reason (optional)')
+                    ->label('Reason')
                     ->helperText('Recorded in the admin audit log with your admin ID.')
+                    ->required()
+                    ->minLength(5)
                     ->maxLength(500),
             ])
             ->action(function (Admin $record, array $data): void {
@@ -35,7 +37,7 @@ class ActivateAdminAction
                 $actor = Auth::guard('admin')->user();
 
                 try {
-                    app(AdminManagementService::class)->activate($actor, $record, $data['reason'] ?? null);
+                    app(AdminManagementService::class)->activate($actor, $record, trim($data['reason']));
                 } catch (AdminManagementException $e) {
                     Notification::make()->title('Not activated')->body($e->getMessage())->danger()->send();
 

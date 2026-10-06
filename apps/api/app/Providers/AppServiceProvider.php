@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\Admin\EnforceAdminSession;
+use App\Listeners\Admin\RecordAdminLogin;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Auth\Middleware\Authenticate;
@@ -9,8 +12,10 @@ use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -37,6 +42,16 @@ class AppServiceProvider extends ServiceProvider
         // registering it again here would double-dispatch the allocation
         // job. See docs/TICKET_ENGINE_DESIGN_P7.md "Order/payment handoff".
         Event::listen(Registered::class, SendEmailVerificationNotification::class);
+        Event::listen(Login::class, RecordAdminLogin::class);
+
+        // Livewire's update endpoint sits outside /admin, so the panel's
+        // middleware never sees it. Every admin component action and render
+        // goes through here, so the same session and forced-change checks
+        // apply to it. `web` comes first so the session exists when the
+        // check runs.
+        Livewire::setUpdateRoute(fn ($handle, $path) => Route::post($path, $handle)
+            ->middleware(['web', EnforceAdminSession::class])
+            ->name('default-livewire.update'));
 
         // The frontend (apps/web), not a Laravel Blade view, renders the
         // reset-password screen — point the emailed link there instead of

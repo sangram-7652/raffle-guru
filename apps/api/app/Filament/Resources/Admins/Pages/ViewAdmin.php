@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Admins\Pages;
 use App\Filament\Resources\Admins\Actions\ActivateAdminAction;
 use App\Filament\Resources\Admins\Actions\ChangeAdminRoleAction;
 use App\Filament\Resources\Admins\Actions\DeactivateAdminAction;
+use App\Filament\Resources\Admins\Actions\ResetAdminPasswordAction;
 use App\Filament\Resources\Admins\AdminResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -18,6 +19,7 @@ class ViewAdmin extends ViewRecord
         return [
             EditAction::make(),
             ChangeAdminRoleAction::make(),
+            ResetAdminPasswordAction::make(),
             ActivateAdminAction::make(),
             DeactivateAdminAction::make(),
         ];

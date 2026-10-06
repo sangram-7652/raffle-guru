@@ -14,6 +14,7 @@ Decided only by `AdminPolicy`, using existing abilities. No ability was added.
 | Edit name and email | `admin.manage` | yes | no |
 | Change role | `admin.manage` (`updateRole`) | yes | no |
 | Activate / deactivate | `admin.manage` | yes | no |
+| Reset another admin's password | `admin.manage` (`resetPassword`) | yes | no |
 | See admin audit history | `audit.view` | yes | no |
 
 Filament hides controls the policy denies. Hiding is never the security
@@ -48,34 +49,62 @@ fail; with it, they pass consistently.
 
 `admin_audit_logs` is append-only (no `updated_at`, and the model refuses
 update and delete). Events: `admin.created`, `admin.updated`,
-`admin.role_changed`, `admin.activated`, `admin.deactivated`. Each row
+`admin.role_changed`, `admin.activated`, `admin.deactivated`,
+`admin.password_reset`, `admin.password_changed`. Each row
 records the actor, the target, and safe metadata only: changed field
 names, role from/to, and the operator's reason. Passwords, hashes, tokens
 and session values are never recorded.
 
 ## Passwords
 
-- Set at creation only, through the Admin model's `hashed` cast and
-  `Password::defaults()` (minimum 8).
-- Not changeable by anyone through this phase. There is no admin reset
-  flow, so a forgotten password currently needs a database-level fix.
-  See the product decisions below.
+- At creation: set through the Admin model's `hashed` cast and
+  `Password::defaults()`.
+- Reset by a SuperAdmin: `AdminManagementService::resetPassword()` sets a
+  temporary password, sets `must_change_password`, and bumps
+  `session_version`. Needs `admin.manage` (`AdminPolicy::resetPassword`).
+  Refused on your own account. The reason is required.
+- The temporary password can be typed or generated in the form. It is
+  never stored in plaintext, audited, logged, or shown after submission.
+  Share it through a secure channel.
+- Forced change: while `must_change_password` is set, the admin can sign
+  in but can reach only `ChangeAdminPassword`. Completing the change
+  requires the temporary password, rejects reusing it, and rate-limits
+  attempts (5 per minute per admin). The admin is then signed out and
+  signs in again.
+- No email reset exists. The customer password broker is not used.
 
 ## Sessions
 
-Deactivation takes effect on the next request, because panel access and
-every ability re-check `is_active`. Existing session records are **not**
-destroyed: admin sessions aren't tracked per account, so there's nothing
-to revoke by admin ID.
+- Each admin has a `session_version`. Sign-in stamps the session with it.
+  `EnforceAdminSession` compares the two on every admin request, including
+  Livewire updates.
+- The version is bumped on deactivation, password reset, and forced change.
+  Any session stamped with an older version is signed out.
+- Reactivation does not revive old sessions, because the version has moved.
+- A session with no stamp is refused. Sign-in always writes one.
+- Account state is also checked centrally on every request. An admin who
+  can't access the panel is signed out with 403.
+- A forced-change admin gets no abilities (`Admin::hasAbility()` returns
+  false), so no policy can grant anything before the change is made.
+
+## Sign-in and `last_login_at`
+
+- `RecordAdminLogin` listens to Laravel's `Login` event for the `admin`
+  guard. Filament fires it only after its own panel-access check, so an
+  inactive admin never reaches it.
+- A successful sign-in sets `last_login_at` and writes the session stamp.
+  A failed attempt writes nothing.
+
+## Reasons
+
+Activation, deactivation, role change, and password reset all require a
+reason of 5 to 500 characters. The reason is stored in the audit metadata.
 
 ## Product decisions still open
 
-1. **Admin password reset.** Options: a SuperAdmin sets a temporary
-   password plus a `must_change_password` flag (needs a migration), or an
-   email reset (needs mail configured; `MAIL_MAILER=log` today).
-2. **Session revocation.** Add a per-admin `session_version` checked on
-   every admin request, or accept the current limitation.
-3. **Self-management.** Currently self-deactivation and self-demotion are
-   always refused. Relaxing that is a product decision.
-4. **`last_login_at`.** The column exists but nothing writes it, so the
-   list shows "Never recorded". Recording it means changing sign-in.
+1. **Self-management.** Self-deactivation and self-demotion are always
+   refused. Relaxing that is a product decision.
+2. **Pre-deploy sessions.** Admin sessions created before the session
+   stamp existed are refused, so every admin signs in once after deploy.
+   This is intended, but operators should expect it.
+3. **Browser verification** is pending (see the phase report).

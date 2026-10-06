@@ -38,9 +38,17 @@ class Admin extends Authenticatable implements FilamentUser
             'password' => 'hashed',
             'role' => AdminRole::class,
             'is_active' => 'boolean',
+            'must_change_password' => 'boolean',
+            'session_version' => 'integer',
             'last_login_at' => 'datetime',
         ];
     }
+
+    /**
+     * Session key holding the session_version an admin signed in under.
+     * Written at login; compared on every admin request.
+     */
+    public const SESSION_VERSION_KEY = 'admin_session_version';
 
     /**
      * Admin-account audit events where this admin is the subject (P11.12).
@@ -100,6 +108,11 @@ class Admin extends Authenticatable implements FilamentUser
      */
     public function hasAbility(AdminAbility $ability): bool
     {
-        return $this->is_active && in_array($ability, $this->role->abilities(), true);
+        // A forced password change fails closed for every ability. The only
+        // thing such an admin may do is complete that change (see
+        // EnforceAdminSession), so no policy can grant anything in the meantime.
+        return $this->is_active
+            && ! $this->must_change_password
+            && in_array($ability, $this->role->abilities(), true);
     }
 }

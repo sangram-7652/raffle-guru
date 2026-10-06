@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Models\Admin;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -49,6 +51,35 @@ abstract class TestCase extends BaseTestCase
         }
 
         return $app;
+    }
+
+    /**
+     * An admin session must carry the admin's current session_version, the
+     * way a real sign-in stamps it (RecordAdminLogin). Stamping it here keeps
+     * every admin test on the same session path the application uses, and a
+     * revocation test can still change the version afterwards.
+     */
+    public function actingAs(Authenticatable $user, $guard = null)
+    {
+        parent::actingAs($user, $guard);
+
+        if ($guard === 'admin') {
+            // Written and saved to the session handler, not just the in-memory
+            // store: the next request reloads the stored session, which would
+            // otherwise overwrite the stamp with one left by an earlier request.
+            $session = $this->app['session.store'];
+
+            if (! $session->isStarted()) {
+                $session->start();
+            }
+
+            $session->put(Admin::SESSION_VERSION_KEY, (int) DB::table('admins')
+                ->where('id', $user->getAuthIdentifier())
+                ->value('session_version'));
+            $session->save();
+        }
+
+        return $this;
     }
 
     /**

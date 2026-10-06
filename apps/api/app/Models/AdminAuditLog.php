@@ -28,6 +28,10 @@ class AdminAuditLog extends Model
 
     public const EVENT_DEACTIVATED = 'admin.deactivated';
 
+    public const EVENT_PASSWORD_RESET = 'admin.password_reset';
+
+    public const EVENT_PASSWORD_CHANGED = 'admin.password_changed';
+
     public const UPDATED_AT = null;
 
     protected static function booted(): void
