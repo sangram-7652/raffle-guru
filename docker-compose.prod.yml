@@ -5,6 +5,22 @@
 #
 # Usage: docker compose -f docker-compose.prod.yml up --build -d
 
+# P12.1 — every service's own stdout/stderr is rotated by Docker itself
+# (the engine default `json-file` driver otherwise grows that file
+# forever — there is no built-in cap). Applies regardless of what each
+# service actually writes to stdout/stderr: Laravel's `stderr` log
+# channel (api/queue/scheduler, see apps/api/.env.example), Nginx's
+# access/error log, Next.js's own output, MySQL/Redis's own logging —
+# all of it goes through the SAME container log file this caps, not
+# just the Laravel-specific pieces. LOG_MAX_SIZE/LOG_MAX_FILES are
+# overridable from the root .env for an operator who wants more/less
+# retention without editing this file.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "${LOG_MAX_SIZE:-10m}"
+    max-file: "${LOG_MAX_FILES:-5}"
+
 services:
   mysql:
     image: mysql:8.4
@@ -21,6 +37,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    logging: *default-logging
     # Intentionally no ports: — not reachable outside the compose network.
 
   redis:
@@ -33,6 +50,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    logging: *default-logging
     # Intentionally no ports: — not reachable outside the compose network.
 
   api:
@@ -65,6 +83,7 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+    logging: *default-logging
 
   queue:
     build:
@@ -88,6 +107,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging: *default-logging
 
   scheduler:
     build:
@@ -111,6 +131,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    logging: *default-logging
 
   web:
     build:
@@ -124,6 +145,7 @@ services:
       # to the API; nginx proxies it the same way for internal and
       # external callers.
       API_INTERNAL_URL: http://nginx/api
+    logging: *default-logging
 
   nginx:
     build:
@@ -145,6 +167,7 @@ services:
         condition: service_started
       api:
         condition: service_healthy
+    logging: *default-logging
 
 volumes:
   mysql-data:

@@ -107,6 +107,50 @@ bootstrap" — rather than any direct DB/tinker intervention.
   `up`/`down` booleans only (no credentials, no raw exception text; `503`
   when degraded). Useful for container health checks / uptime monitors.
 
+## Observability (P12.1)
+
+- **Error tracking: Sentry**, via the official `sentry/sentry-laravel`
+  package — already named as the intended choice in
+  [`ROADMAP.md`](ROADMAP.md)'s P12 entry, has first-class Laravel 13
+  support, and needs nothing custom-built: wired into
+  `bootstrap/app.php`'s `withExceptions()` via
+  `Sentry\Laravel\Integration::handles($exceptions)`, one more
+  `reportable()` callback alongside Laravel's own — additive only,
+  never touches `shouldRenderJsonWhen` or any HTTP response shape, and
+  runs through Laravel's existing `$dontReport` rules, so expected
+  `ValidationException`/`AuthorizationException`/404s etc. are never
+  sent as if they were crashes.
+- **Disabled by default everywhere except where explicitly
+  configured.** `SENTRY_LARAVEL_DSN` (`apps/api/.env.example`) is empty
+  by default; an empty DSN means the SDK makes zero network calls at
+  all — not "configured to be quiet", genuinely inert. Only set a real
+  DSN for the environment that should actually report (normally
+  production only). `SENTRY_ENVIRONMENT` is deliberately left unset —
+  the SDK falls back to `app()->environment()` on its own
+  (`vendor/sentry/sentry-laravel`'s `ServiceProvider`), so there is no
+  second place environment is configured.
+- **No PII by default.** The published `config/sentry.php`'s
+  `send_default_pii` defaults to `false` (`SENTRY_SEND_DEFAULT_PII`) —
+  Sentry does not auto-attach request IPs/cookies/headers/user data.
+  Not changed from the package's own safe default.
+- **Log rotation: Docker, not Laravel's file rotation.** Production's
+  `api`/`queue`/`scheduler` containers are immutable with no log
+  volume (see "Local development vs. production" above) — a request
+  to use Laravel's own `daily`/`monthly` file channels would rotate
+  logs that are destroyed on every redeploy anyway, inside a container
+  filesystem that was never meant to hold anything durable. Instead:
+  production should set `LOG_CHANNEL=stderr` (`apps/api/.env.example`;
+  already a stock Laravel channel, no new code), and every service in
+  `docker-compose.prod.yml` — not just the Laravel ones — gets a
+  `logging: *default-logging` block capping Docker's own `json-file`
+  driver (otherwise unbounded by default) via `LOG_MAX_SIZE`/
+  `LOG_MAX_FILES` (defaults: 10MB × 5 files per container). This is
+  genuinely the one log rotation mechanism in play here, not an
+  additional one layered on top of a file-based one.
+- Production should also raise `LOG_LEVEL` above the dev default of
+  `debug` (e.g. `warning`) to avoid high-volume, low-signal logs — a
+  config/env change on deploy, not a code change.
+
 ## Database schema (P2)
 
 Core relational foundation is in place: `users`, `competitions`, `prizes`
