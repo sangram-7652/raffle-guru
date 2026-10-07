@@ -154,7 +154,10 @@ raw webhook body, so the whole initiate → verify → webhook flow can be
 driven by hand (e.g. via `curl`) without a real Razorpay account or
 without exercising Razorpay's own Checkout.js in a browser. Always set
 `PAYMENT_GATEWAY` back to `razorpay` (or unset it) before deploying —
-never `fake` in production.
+never `fake` in production. This is no longer just a convention to
+remember: `App\Providers\PaymentServiceProvider` (P11.16) refuses to
+boot at all — `APP_ENV=production` with `PAYMENT_GATEWAY=fake` throws
+`PaymentGatewayConfigurationException` before any request is served.
 
 ## Idempotency & failure/retry behavior
 
