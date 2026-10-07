@@ -12,6 +12,7 @@ use App\Services\Competitions\CompetitionLifecycleService;
 use App\Services\Tickets\TicketAllocationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -26,7 +27,10 @@ use Tests\TestCase;
  * Deliberately does NOT use RefreshDatabase — switches the app's
  * default connection to 'mysql' for its own duration, creates its own
  * fixtures, cleans them up explicitly in tearDown.
+ *
+ * #[Group('mysql')] (P11.13): see AdminManagementConcurrencyTest.
  */
+#[Group('mysql')]
 class LifecycleConcurrencyTest extends TestCase
 {
     /** @var array<int, int> */

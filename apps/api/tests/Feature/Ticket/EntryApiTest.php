@@ -86,9 +86,25 @@ class EntryApiTest extends TestCase
 
     public function test_entry_resource_never_exposes_another_users_data_or_internal_ticket_ids(): void
     {
+        // ticket_number is scoped per competition and always starts at 1
+        // for a fresh one (see allocatedEntryFor), so the entry under test
+        // below will always have ticket_numbers {1, 2, 3} regardless of
+        // which database engine runs this test. tickets.id is a single
+        // global autoincrement, so it is NOT scoped per competition — this
+        // decoy allocation claims the first three global ticket ids before
+        // the real entry is created, guaranteeing the real entry's internal
+        // ticket ids land outside {1, 2, 3} on every engine. Without this,
+        // a fresh SQLite :memory: database (where the real entry's tickets
+        // would otherwise also get global ids 1-3) makes the assertion
+        // below pass by numeric coincidence rather than by actually
+        // distinguishing "internal id" from "public ticket number".
+        $this->allocatedEntryFor(User::factory()->create());
+
         $user = User::factory()->create();
         $entry = $this->allocatedEntryFor($user);
         $ticketId = Ticket::query()->where('entry_id', $entry->id)->first()->id;
+
+        $this->assertNotContains($ticketId, [1, 2, 3], 'Fixture setup must keep the internal ticket id outside the public ticket-number range — otherwise this test cannot detect a real leak.');
 
         $response = $this->actingAs($user)->getJson("/api/v1/entries/{$entry->id}");
 

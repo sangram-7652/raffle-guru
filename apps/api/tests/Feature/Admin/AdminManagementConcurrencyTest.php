@@ -9,6 +9,7 @@ use App\Services\Admin\AdminManagementService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use PHPUnit\Framework\Attributes\Group;
 use RuntimeException;
 use Tests\TestCase;
 
@@ -20,7 +21,13 @@ use Tests\TestCase;
  *
  * Only ever runs against the isolated `raffleguru_testing` database; the
  * guard below refuses to touch anything else.
+ *
+ * #[Group('mysql')] (P11.13) lets CI run this against a real MySQL
+ * service and exclude it from the fast SQLite job, where forked
+ * children never share a connection with the parent's `:memory:`
+ * database and the row-locking this test exists to verify cannot occur.
  */
+#[Group('mysql')]
 class AdminManagementConcurrencyTest extends TestCase
 {
     private const MYSQL_TEST_DATABASE_NAME = 'raffleguru_testing';

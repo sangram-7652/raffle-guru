@@ -27,6 +27,7 @@ use App\Services\Winner\WinnerLifecycleService;
 use App\Services\Winner\WinnerService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -42,7 +43,10 @@ use Tests\TestCase;
  * WinnerLifecycleServiceTest/WinnerClaimTest — the row lock inside
  * WinnerLifecycleService::transition() is the single serialization
  * point for every status change, verification and completion included.
+ *
+ * #[Group('mysql')] (P11.13): see AdminManagementConcurrencyTest.
  */
+#[Group('mysql')]
 class WinnerConcurrencyTest extends TestCase
 {
     /** @var array<int, int> */
