@@ -80,6 +80,11 @@ default to the real gateway):
 default   => new RazorpayPaymentGateway($keyId, $keySecret, $webhookSecret),
 ```
 
+P11.16: before any of the above, `PaymentServiceProvider::register()`
+refuses to run at all when `app()->environment('production')` and
+`config('services.payment_gateway') === 'fake'` — see
+`docs/PAYMENTS_API.md` "Verifying without real credentials".
+
 ### Test gateway
 
 `PAYMENT_GATEWAY=fake` (env var, defaults to `razorpay`) swaps the
