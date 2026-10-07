@@ -3,10 +3,12 @@
 namespace Tests\Feature\Competition;
 
 use App\Enums\CompetitionStatus;
+use App\Events\CompetitionDrawPending;
 use App\Models\Competition;
 use App\Models\CompetitionLifecycleEvent;
 use App\Services\Competitions\CompetitionLifecycleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
@@ -57,6 +59,14 @@ class LifecycleServiceTest extends TestCase
 
     public function test_closed_transitions_to_draw_pending(): void
     {
+        // Real P9 handoff fires DispatchDrawExecution -> DrawCompetitionJob,
+        // which runs inline under the test env's QUEUE_CONNECTION=sync and
+        // carries the competition past draw_pending into draw_in_progress —
+        // this test only verifies the transition the service itself makes,
+        // same isolation CompetitionLifecycleActionTest already uses for the
+        // identical transition.
+        Event::fake([CompetitionDrawPending::class]);
+
         $competition = Competition::factory()->withStatus(CompetitionStatus::Closed)->create();
 
         $this->assertTrue($this->service()->transition($competition, CompetitionStatus::DrawPending, 'draw_at reached'));

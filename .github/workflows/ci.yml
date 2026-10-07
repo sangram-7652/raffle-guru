@@ -62,6 +62,108 @@ jobs:
 
       # `php artisan test` is unavailable — nunomaduro/collision registers it
       # via a deferred provider whose boot() (where it adds the command)
-      # never fires for a plain console command. vendor/bin/phpunit runs the
-      # identical suite.
-      - run: vendor/bin/phpunit
+      # never fires for a plain execution command. vendor/bin/phpunit runs
+      # the identical suite.
+      #
+      # --exclude-group mysql skips the real-concurrency tests (see the
+      # `mysql` backend job below): they pcntl_fork() real child processes
+      # expecting InnoDB row-locking across separate connections, which
+      # SQLite's per-connection :memory: database cannot provide — a
+      # forked child never sees the parent's uncommitted/committed rows,
+      # so these fail for a reason that has nothing to do with the code
+      # under test. See docs/CI_TEST_INFRASTRUCTURE.md.
+      - run: vendor/bin/phpunit --exclude-group mysql
+
+  mysql:
+    name: Backend (Laravel, MySQL concurrency)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    services:
+      # Ephemeral, container-local MySQL — exists only for this job's
+      # lifetime, never the development/production `raffleguru` database.
+      # No real secrets involved: this password is thrown away with the
+      # runner. MYSQL_USER/MYSQL_PASSWORD (not root) make the official
+      # image create a user whose grants are scoped to MYSQL_DATABASE
+      # only — least privilege, same pattern as the local one-time setup
+      # documented on TestCase::MYSQL_TEST_DATABASE.
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: raffleguru_testing
+          MYSQL_USER: raffleguru_ci
+          MYSQL_PASSWORD: ci_test_password
+          MYSQL_ALLOW_EMPTY_PASSWORD: "no"
+          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uraffleguru_ci -pci_test_password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: mbstring, bcmath, intl, zip, pcntl, pdo_mysql, pdo_sqlite
+          coverage: none
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Install Composer dependencies
+        uses: ramsey/composer-install@v3
+        with:
+          working-directory: apps/api
+
+      - run: php artisan key:generate
+
+      - name: Configure MySQL for CI
+        run: |
+          echo "DB_CONNECTION=mysql" >> .env
+          echo "DB_HOST=127.0.0.1" >> .env
+          echo "DB_PORT=3306" >> .env
+          echo "DB_DATABASE=raffleguru_testing" >> .env
+          echo "DB_USERNAME=raffleguru_ci" >> .env
+          echo "DB_PASSWORD=ci_test_password" >> .env
+          echo "CACHE_STORE=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
+
+      # The `services:` healthcheck above already waits for `mysqladmin
+      # ping`, but that only proves the server accepts TCP connections —
+      # not that our migrations can run yet. A short explicit wait keeps
+      # this job from flaking on a slow runner without inventing a second
+      # healthcheck mechanism.
+      - name: Wait for MySQL to accept connections
+        run: |
+          for i in $(seq 1 30); do
+            mysqladmin ping -h127.0.0.1 -P3306 -uraffleguru_ci -pci_test_password --silent && break
+            sleep 2
+          done
+
+      # TestCase::createApplication() (tests/bootstrap.php) refuses to run
+      # against anything except SQLite :memory: or a MySQL database whose
+      # name ends in `_testing` — raffleguru_testing, created by the
+      # `services:` block above, qualifies. migrate (not migrate:fresh)
+      # is enough since the service container's database starts empty.
+      - name: Migrate the isolated MySQL test database
+        env:
+          TESTING_DB: mysql
+        run: php artisan migrate --force
+
+      # Only the tests tagged #[Group('mysql')] — the real pcntl_fork()
+      # concurrency suites — run here. Running the full 848-test suite a
+      # second time against MySQL would roughly double this workflow's
+      # cost for tests the SQLite job above already covers just as well;
+      # scoping to the group that specifically needs MySQL semantics is
+      # the whole point of splitting the job out. See
+      # docs/CI_TEST_INFRASTRUCTURE.md.
+      - name: Run MySQL concurrency tests
+        env:
+          TESTING_DB: mysql
+        run: vendor/bin/phpunit --group mysql

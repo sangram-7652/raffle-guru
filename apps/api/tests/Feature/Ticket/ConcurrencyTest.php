@@ -9,9 +9,12 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Ticket;
 use App\Models\User;
+use App\Services\Tickets\CapacityExceededException;
+use App\Services\Tickets\PerUserLimitExceededException;
 use App\Services\Tickets\TicketAllocationService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -27,7 +30,10 @@ use Tests\TestCase;
  * the app's default connection to the real 'mysql' one for its own
  * duration, creates its own fixtures, and cleans them up explicitly in
  * tearDown.
+ *
+ * #[Group('mysql')] (P11.13): see AdminManagementConcurrencyTest.
  */
+#[Group('mysql')]
 class ConcurrencyTest extends TestCase
 {
     /** @var array<int, int> */
@@ -157,7 +163,7 @@ class ConcurrencyTest extends TestCase
         $this->assertCount(1, $successes, 'Exactly one of the two concurrent allocations should succeed.');
         $this->assertCount(1, $failures, 'Exactly one of the two concurrent allocations should fail.');
         $this->assertSame(
-            \App\Services\Tickets\CapacityExceededException::class,
+            CapacityExceededException::class,
             array_values($failures)[0]['exception'],
         );
         $this->assertSame(6, $ticketCount);
@@ -232,7 +238,7 @@ class ConcurrencyTest extends TestCase
         $this->assertCount(1, $successes, 'Exactly one of the two concurrent allocations should succeed.');
         $this->assertCount(1, $failures, 'Exactly one of the two concurrent allocations should fail.');
         $this->assertSame(
-            \App\Services\Tickets\PerUserLimitExceededException::class,
+            PerUserLimitExceededException::class,
             array_values($failures)[0]['exception'],
         );
         $this->assertSame(6, $ticketCount);

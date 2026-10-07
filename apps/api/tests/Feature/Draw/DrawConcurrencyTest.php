@@ -16,6 +16,7 @@ use App\Services\Competitions\CompetitionLifecycleService;
 use App\Services\Draw\DrawService;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
+use PHPUnit\Framework\Attributes\Group;
 use Tests\TestCase;
 
 /**
@@ -25,7 +26,10 @@ use Tests\TestCase;
  * a genuinely concurrent race cannot be exercised within one
  * single-threaded PHP process, and sequential calls prove nothing
  * about the row-lock strategy. Test matrix items 27-29.
+ *
+ * #[Group('mysql')] (P11.13): see AdminManagementConcurrencyTest.
  */
+#[Group('mysql')]
 class DrawConcurrencyTest extends TestCase
 {
     /** @var array<int, int> */
@@ -47,6 +51,23 @@ class DrawConcurrencyTest extends TestCase
 
     protected function tearDown(): void
     {
+        // A completed draw fires CompetitionDrawn synchronously under the
+        // test env's QUEUE_CONNECTION=sync, so CreateWinnerJob has already
+        // created a `winners` row (plus its audit log) by the time this
+        // runs. winners.draw_result_id, winner_audit_logs.winner_id,
+        // winner_claims.winner_id, and prize_deliveries.winner_id are all
+        // restrictOnDelete(), so every dependent row must be cleaned up
+        // before draw_results/winners or this delete fails with a foreign
+        // key violation (P11.13 fix). winner_claims/prize_deliveries are
+        // never populated within this test's own scope (no claim or
+        // fulfilment action runs here) but are included for the same
+        // reason winner_audit_logs was missed: silence here, not an
+        // assertion failure, is how this bug stayed invisible.
+        $winnerIds = DB::connection('mysql')->table('winners')->whereIn('competition_id', $this->createdCompetitionIds)->pluck('id');
+        DB::connection('mysql')->table('winner_claims')->whereIn('winner_id', $winnerIds)->delete();
+        DB::connection('mysql')->table('prize_deliveries')->whereIn('winner_id', $winnerIds)->delete();
+        DB::connection('mysql')->table('winner_audit_logs')->whereIn('winner_id', $winnerIds)->delete();
+        DB::connection('mysql')->table('winners')->whereIn('competition_id', $this->createdCompetitionIds)->delete();
         DB::connection('mysql')->table('draw_audit_logs')->whereIn('competition_id', $this->createdCompetitionIds)->delete();
         DB::connection('mysql')->table('draw_results')->whereIn('competition_id', $this->createdCompetitionIds)->delete();
         DB::connection('mysql')->table('draws')->whereIn('competition_id', $this->createdCompetitionIds)->delete();

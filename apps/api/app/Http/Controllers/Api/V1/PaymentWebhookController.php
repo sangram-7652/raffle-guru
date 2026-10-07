@@ -67,9 +67,15 @@ class PaymentWebhookController extends Controller
                 ],
             ]);
         } catch (QueryException $e) {
-            if (str_contains($e->getMessage(), 'payment_webhooks_gateway_event_id_unique')) {
-                // Already processed this exact delivery — acknowledge
-                // without reprocessing.
+            // SQLSTATE 23000 is the ANSI-standard "integrity constraint
+            // violation" class, reported identically by every PDO driver
+            // (MySQL and SQLite alike) — unlike the underlying message text,
+            // which is driver-specific (MySQL names the violated index;
+            // SQLite names the columns instead) and must never be matched
+            // on. This insert has exactly one constraint that can produce
+            // it: the (gateway, event_id) unique index above, so a 23000
+            // here always means this exact delivery was already claimed.
+            if ($e->getCode() === '23000') {
                 return response()->json(['status' => 'ok']);
             }
 

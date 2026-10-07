@@ -3,9 +3,11 @@
 namespace Tests\Feature\Competition;
 
 use App\Enums\CompetitionStatus;
+use App\Events\CompetitionDrawPending;
 use App\Models\Competition;
 use App\Models\CompetitionLifecycleEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class LifecycleCommandTest extends TestCase
@@ -129,6 +131,17 @@ class LifecycleCommandTest extends TestCase
 
     public function test_closed_competition_past_draw_at_becomes_draw_pending(): void
     {
+        // The real P9 handoff (CompetitionDrawPending -> DispatchDrawExecution
+        // -> DrawCompetitionJob) is QUEUE_CONNECTION=sync in tests, so without
+        // this it runs the draw inline and carries the competition straight
+        // past draw_pending into draw_in_progress before the assertion below
+        // runs — this test's job is to verify the lifecycle command reaches
+        // draw_pending, not to re-exercise the draw engine (that's
+        // DrawConcurrencyTest/DrawServiceTest/DrawHandoffTest's job). Same
+        // isolation CompetitionLifecycleActionTest already uses for the
+        // identical transition.
+        Event::fake([CompetitionDrawPending::class]);
+
         $competition = Competition::factory()->withStatus(CompetitionStatus::Closed)->create([
             'draw_at' => now()->subMinute(),
         ]);
@@ -181,6 +194,10 @@ class LifecycleCommandTest extends TestCase
         // queries within the same command invocation; a competition
         // already past its draw_at when it's swept should reach
         // draw_pending in one command run, not require three.
+        // See test_closed_competition_past_draw_at_becomes_draw_pending above
+        // for why this is needed — same sync-queue draw-chain isolation.
+        Event::fake([CompetitionDrawPending::class]);
+
         $competition = Competition::factory()->withStatus(CompetitionStatus::SoldOut)->create([
             'draw_at' => now()->subMinute(),
         ]);
