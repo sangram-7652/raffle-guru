@@ -35,7 +35,13 @@ next.
   `infrastructure/nginx/dev.conf`/`prod.conf` — so Nginx doesn't need
   either container to already be up when it starts, and keeps routing
   correctly after `web`/`api` are recreated with a new address, without a
-  manual Nginx restart.
+  manual Nginx restart. The one exception to "Nginx only proxies" is
+  Filament's published static assets (CSS/JS/fonts, P11.15) — php-fpm's
+  fastcgi has no equivalent of a dev server's "serve the real file if one
+  exists" fallback, so those are baked directly into the production
+  Nginx image at build time instead (see the `nginx` stage in
+  `infrastructure/docker/php/Dockerfile`, built from the exact same
+  `base` stage that publishes them, so the two can't drift apart).
 - **Next.js** (`apps/web`) renders the customer-facing site. In production
   it runs as a standalone Node server (`next build` with `output:
   "standalone"`), not `next dev`.
