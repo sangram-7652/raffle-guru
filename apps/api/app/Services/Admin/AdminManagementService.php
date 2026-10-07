@@ -90,6 +90,80 @@ class AdminManagementService
     }
 
     /**
+     * P11.14 — the one legitimate way to create the very first SuperAdmin,
+     * when no acting admin exists to authorize anything. Deliberately
+     * takes no $actor: every other method on this service represents a
+     * real admin doing something, and inventing a fake one (id 1, a
+     * system user, ...) here would be worse than having none. The new
+     * SuperAdmin is recorded as both actor and target of its own
+     * `admin.created` audit row instead — the same self-referential shape
+     * completeForcedPasswordChange() already uses when an admin's only
+     * legitimate actor is themselves.
+     *
+     * Concurrency: a full, unfiltered lockForUpdate() scan, the same
+     * locking statement shape lockAll() uses for every other mutation.
+     * On MySQL/InnoDB (the only engine this is verified against — see
+     * AdminBootstrapConcurrencyTest; SQLite's per-connection :memory:
+     * database can't exercise real cross-connection locking at all) this
+     * takes a lock on the gap after the last row even when `admins` is
+     * completely empty, so two concurrent bootstrap calls still
+     * serialize: whichever commits first wins, and the second re-reads
+     * under its own lock and sees the new SuperAdmin already present.
+     * A row-scoped lock (e.g. `WHERE role = 'super_admin' FOR UPDATE`, as
+     * every other method's lockFor()/lockAll() effectively narrows to)
+     * cannot provide this guarantee — it can only lock a row that
+     * already exists, and on the very first bootstrap there isn't one.
+     *
+     * @param  array{name: string, email: string, password: string}  $data
+     */
+    public function bootstrapSuperAdmin(array $data): Admin
+    {
+        $validated = Validator::make($data, [
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255'],
+            'password' => ['required', 'string', Password::defaults()],
+        ])->validate();
+
+        $name = trim($validated['name']);
+        $email = trim($validated['email']);
+
+        return DB::transaction(function () use ($name, $email, $validated): Admin {
+            /** @var Collection<int, Admin> $admins */
+            $admins = Admin::query()
+                ->select(['id', 'email', 'role'])
+                ->orderBy('id')
+                ->lockForUpdate()
+                ->get();
+
+            if ($admins->contains(fn (Admin $a): bool => $a->role === AdminRole::SuperAdmin)) {
+                throw new AdminManagementException(
+                    'A Super Admin already exists. Bootstrap has already been completed.',
+                );
+            }
+
+            $this->assertEmailAvailable($admins, $email);
+
+            $admin = Admin::query()->create([
+                'name' => $name,
+                'email' => $email,
+                // Admin's `password` cast hashes this (Laravel's configured
+                // hasher). The plaintext is never audited or returned.
+                'password' => $validated['password'],
+                'role' => AdminRole::SuperAdmin,
+                'is_active' => true,
+            ]);
+
+            $this->audit($admin, $admin, AdminAuditLog::EVENT_CREATED, [
+                'role' => AdminRole::SuperAdmin->value,
+                'is_active' => true,
+                'source' => 'bootstrap_command',
+            ]);
+
+            return $admin;
+        });
+    }
+
+    /**
      * Safe fields only: name and email. Role, status and password have
      * their own operations.
      *

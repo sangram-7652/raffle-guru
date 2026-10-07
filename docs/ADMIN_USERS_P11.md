@@ -100,6 +100,53 @@ and session values are never recorded.
 Activation, deactivation, role change, and password reset all require a
 reason of 5 to 500 characters. The reason is stored in the audit metadata.
 
+## First SuperAdmin bootstrap (P11.14)
+
+Every mutation above assumes an admin is already signed in to act as the
+`$actor`. Before the very first one exists, there is nothing to sign in
+as — so bootstrap needed one deliberate exception, not a second admin-
+management implementation.
+
+```
+php artisan admin:create-super
+```
+
+- Run once, during initial deployment, directly on the server (or inside
+  the `api` container) — never through the web.
+- If no SuperAdmin exists yet, it asks for **name**, **email**, and
+  **password** (entered twice, hidden input, never echoed), then creates
+  an active SuperAdmin with the same validation rules `AdminResource`
+  uses (`Password::defaults()`, a unique email).
+- If a SuperAdmin already exists, it refuses immediately — before asking
+  anything — and exits non-zero. It never modifies an existing admin, and
+  it's safe to run as many times as you like after the first success: every
+  run after the first is a no-op refusal.
+- The one-time invariant it enforces is **"no SuperAdmin exists yet"**,
+  not "no admin exists yet" — a roster that already has Operations staff
+  but no SuperAdmin is still bootstrappable.
+
+Implementation: a thin CLI layer
+(`app/Console/Commands/CreateSuperAdmin.php`) over a dedicated
+`AdminManagementService::bootstrapSuperAdmin()` — the one method on that
+service that takes no acting admin, because none can exist yet. There is
+no fake actor (no `admin_id = 1`, no system user): the new SuperAdmin is
+recorded as both actor and target of its own `admin.created` audit row,
+the same self-referential shape `completeForcedPasswordChange()` already
+uses when an admin's only legitimate actor is themselves.
+
+Concurrency: the method takes an unfiltered `lockForUpdate()` scan of the
+whole `admins` table — the same locking statement shape every other
+mutation here uses — inside one transaction with the "no SuperAdmin"
+check and the insert. On MySQL/InnoDB this takes a lock on the gap after
+the last row even when the table is completely empty, so two operators
+running the command at the same moment still serialize: whichever
+commits first wins, and the second sees the new SuperAdmin under its own
+lock and refuses. Verified against real MySQL with forked racing
+processes (`AdminBootstrapConcurrencyTest`, `#[Group('mysql')]`) — a
+row-scoped lock (locking an admin that already has `role =
+'super_admin'`) cannot provide this guarantee, because on the very first
+bootstrap there is no such row yet to lock.
+
 ## Product decisions still open
 
 1. **Self-management.** Self-deactivation and self-demotion are always
