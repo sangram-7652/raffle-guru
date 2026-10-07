@@ -88,7 +88,10 @@ identical (see `docker-compose.yml` / `docker-compose.prod.yml`):
 For a real deployment: generate a real `APP_KEY` (`php artisan key:generate
 --show`), set `APP_ENV=production`, `APP_DEBUG=false`, and use secrets
 supplied by your deployment platform (see AWS direction below) — never
-commit any of this.
+commit any of this. After the first migration run, create the first
+admin with `php artisan admin:create-super` (P11.14) — see
+[`docs/ADMIN_USERS_P11.md`](ADMIN_USERS_P11.md) "First SuperAdmin
+bootstrap" — rather than any direct DB/tinker intervention.
 
 ## Health checks
 
