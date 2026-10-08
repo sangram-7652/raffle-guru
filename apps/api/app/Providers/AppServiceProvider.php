@@ -80,5 +80,19 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('forgot-password', fn ($request) => Limit::perMinute(3)->by($request->ip().'|'.strtolower((string) $request->input('email'))));
         RateLimiter::for('reset-password', fn ($request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('verification-notification', fn ($request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
+
+        // P12.3 — the one unauthenticated, public POST endpoint in this
+        // whole API (see docs/PAYMENTS_DESIGN_P6.md "Webhook flow");
+        // authenticity comes entirely from the signature check inside
+        // the controller, not from this limit. This exists only to
+        // bound how much CPU/DB load an unauthenticated flood of
+        // garbage (wrong-signature, or well-formed-but-duplicate)
+        // requests can cost — never to throttle a genuine gateway,
+        // which this project has no real delivery-volume data for yet
+        // (documented assumption, see docs/LOAD_AND_CONCURRENCY.md
+        // "Recommended production limits": 120/min/IP is generously
+        // above any plausible real retry burst at this project's
+        // current order volume, while still bounding an attacker).
+        RateLimiter::for('payment-webhook', fn ($request) => Limit::perMinute(120)->by($request->ip()));
     }
 }

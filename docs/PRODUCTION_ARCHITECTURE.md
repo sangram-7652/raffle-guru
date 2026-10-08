@@ -176,6 +176,21 @@ summary:
   implemented — see that doc's "Local backup vs. off-server backup vs.
   disaster recovery".
 
+## Load & concurrency hardening (P12.3)
+
+Full audit, new concurrency tests, and real baseline measurements in
+[`docs/LOAD_AND_CONCURRENCY.md`](LOAD_AND_CONCURRENCY.md) — summary: the
+P7-P11 row-locking/unique-constraint design was already correct under
+real concurrent MySQL load (ticket allocation, payment/webhook
+idempotency, lifecycle, draw, winner/claim/fulfilment, admin
+SuperAdmin invariants) — this phase added the one real gap found (a
+payment/webhook concurrency test), a rate limit on the previously-
+unthrottled public webhook endpoint
+(`throttle:payment-webhook`, 120/min/IP), and a k6-based load-test
+foundation (`load-tests/k6/`) with a hard guard against ever targeting
+production. No new database indexes or caching — neither was justified
+by real evidence at this project's current data volume/traffic.
+
 ## Database schema (P2)
 
 Core relational foundation is in place: `users`, `competitions`, `prizes`
