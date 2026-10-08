@@ -4,9 +4,19 @@
 
 FROM php:8.5-fpm-alpine AS base
 
+# mariadb-client (P12.2, docs/BACKUPS_DISASTER_RECOVERY.md) provides
+# mariadb-dump/mariadb — Alpine's `mysql-client` is just a dummy package
+# pointing at these; the deprecated mysqldump/mysql names are symlinks to
+# them. mariadb-connector-c is needed separately — without it,
+# mariadb-client can't load the caching_sha2_password plugin MySQL 8.4
+# uses by default, and every connection fails before it even gets to
+# authenticating. Confirmed compatible with the mysql:8.4 image used
+# throughout docker-compose*.yml by hand (dump + restore), not assumed.
 RUN apk add --no-cache \
         icu-dev \
         libzip-dev \
+        mariadb-client \
+        mariadb-connector-c \
         oniguruma-dev \
         sqlite-dev \
     && docker-php-ext-install \

@@ -151,6 +151,31 @@ bootstrap" — rather than any direct DB/tinker intervention.
   `debug` (e.g. `warning`) to avoid high-volume, low-signal logs — a
   config/env change on deploy, not a code change.
 
+## Backups & disaster recovery (P12.2)
+
+Full reasoning, operational prerequisites, and the restore procedure in
+[`docs/BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md) —
+summary:
+
+- Daily logical MySQL backup (`backup:run`, scheduled 02:00 alongside
+  the other entries in `routes/console.php`) to `BACKUP_PATH`, a Docker
+  named volume (`backup-data`) — never the scheduler container's own
+  ephemeral filesystem. 14-day retention by default
+  (`BACKUP_RETENTION_DAYS`).
+- `backup:verify` proves a backup is actually restorable by restoring it
+  into a throwaway database and dropping it again — never the live
+  database. Requires a one-time `CREATE`/`DROP DATABASE` grant scoped to
+  this app's own verification-database naming pattern; see that doc.
+- `backup:restore` is manual-only, requires an explicit `--database`
+  with no default, and refuses to target the live database without an
+  additional `--confirm-production-overwrite` flag.
+- **Local backup only as of P12.2** — `backup-data` lives on the same
+  host as `mysql-data`, so this does not yet protect against losing the
+  server itself. Off-server/object-storage sync and a true
+  disaster-recovery rehearsal are the documented next step, not yet
+  implemented — see that doc's "Local backup vs. off-server backup vs.
+  disaster recovery".
+
 ## Database schema (P2)
 
 Core relational foundation is in place: `users`, `competitions`, `prizes`

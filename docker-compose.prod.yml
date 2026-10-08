@@ -69,6 +69,12 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    volumes:
+      # P12.2 — so an operator can run `docker compose exec api php
+      # artisan backup:verify` / `backup:restore` without needing a shell
+      # on the scheduler container specifically. See
+      # docs/BACKUPS_DISASTER_RECOVERY.md.
+      - backup-data:/var/backups/raffleguru
     depends_on:
       mysql:
         condition: service_healthy
@@ -126,6 +132,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    volumes:
+      # P12.2 — the one place `backup:run` actually executes (see
+      # routes/console.php). A named volume, not a bind mount into the
+      # container filesystem: this is what makes a backup survive the
+      # scheduler container being recreated. See
+      # docs/BACKUPS_DISASTER_RECOVERY.md "Local backup vs. off-server
+      # backup" for why this alone is still not a complete disaster
+      # recovery story.
+      - backup-data:/var/backups/raffleguru
     depends_on:
       mysql:
         condition: service_healthy
@@ -172,3 +187,7 @@ services:
 volumes:
   mysql-data:
   redis-data:
+  # P12.2 — local backup storage. Not a substitute for off-server backup
+  # storage: both still live on the same host as mysql-data, so losing the
+  # server loses both. See docs/BACKUPS_DISASTER_RECOVERY.md.
+  backup-data:
