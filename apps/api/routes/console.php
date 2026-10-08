@@ -43,3 +43,16 @@ Schedule::command('competition:draw')
 Schedule::command('winners:reconcile')
     ->everyFiveMinutes()
     ->withoutOverlapping();
+
+// P12.2 — logical MySQL backup + retention cleanup, see
+// docs/BACKUPS_DISASTER_RECOVERY.md. 02:00 is chosen as a low-traffic
+// hour with no evidence either way (no real traffic data yet) — revisit
+// once there is. withoutOverlapping() (same Redis-backed cache mutex as
+// every other entry here) is what keeps this idempotent from the
+// scheduler's own perspective: a backup that's still running when the
+// next tick fires is skipped, not stacked; backup:run's own
+// partial-file-then-rename sequencing (DatabaseBackupService) is what
+// keeps an interrupted run from ever being mistaken for a successful one.
+Schedule::command('backup:run')
+    ->dailyAt('02:00')
+    ->withoutOverlapping();

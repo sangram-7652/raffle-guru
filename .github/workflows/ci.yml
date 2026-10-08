@@ -95,7 +95,13 @@ jobs:
           MYSQL_USER: raffleguru_ci
           MYSQL_PASSWORD: ci_test_password
           MYSQL_ALLOW_EMPTY_PASSWORD: "no"
-          MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+          # A fixed (not random) root password — thrown away with the
+          # runner same as everything else here — so the "Grant backup
+          # verification privilege" step below can connect as root once,
+          # to scope raffleguru_ci's otherwise database-only grant just
+          # wide enough for P12.2's backup:verify/backup:restore tests.
+          # See docs/BACKUPS_DISASTER_RECOVERY.md "Verification".
+          MYSQL_ROOT_PASSWORD: ci_root_password_throwaway
         ports:
           - 3306:3306
         options: >-
@@ -133,6 +139,14 @@ jobs:
           echo "CACHE_STORE=array" >> .env
           echo "SESSION_DRIVER=array" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
+          # P12.2 — this runner has the real Oracle MySQL client (the
+          # `mysqladmin ping` below already proves it's present), not
+          # mariadb-client (that's an Alpine/Docker-image-only detail —
+          # see infrastructure/docker/php/Dockerfile and
+          # docs/BACKUPS_DISASTER_RECOVERY.md). Both flavors accept the
+          # same flags this app's backup commands pass.
+          echo "BACKUP_DUMP_BINARY=mysqldump" >> .env
+          echo "BACKUP_CLIENT_BINARY=mysql" >> .env
 
       # The `services:` healthcheck above already waits for `mysqladmin
       # ping`, but that only proves the server accepts TCP connections —
@@ -145,6 +159,19 @@ jobs:
             mysqladmin ping -h127.0.0.1 -P3306 -uraffleguru_ci -pci_test_password --silent && break
             sleep 2
           done
+
+      # raffleguru_ci is deliberately scoped to raffleguru_testing.* only
+      # (see the `mysql:` service block above) — nowhere near enough to
+      # create the throwaway databases backup:verify/backup:restore use.
+      # One root-authenticated GRANT, scoped by a wildcard to only
+      # databases under this app's own backup-verification naming
+      # prefix, is the CI equivalent of the one-time production grant
+      # documented in docs/BACKUPS_DISASTER_RECOVERY.md "Verification" —
+      # not a blanket superuser grant.
+      - name: Grant backup verification database privilege
+        run: |
+          mysql -h127.0.0.1 -P3306 -uroot -pci_root_password_throwaway -e \
+            "GRANT ALL PRIVILEGES ON \`raffleguru_backup_verify_%\`.* TO 'raffleguru_ci'@'%'; FLUSH PRIVILEGES;"
 
       # TestCase::createApplication() (tests/bootstrap.php) refuses to run
       # against anything except SQLite :memory: or a MySQL database whose
