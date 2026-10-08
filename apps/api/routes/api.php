@@ -82,7 +82,11 @@ Route::prefix('v1')->group(function () {
     // has no customer session; authenticity comes entirely from the
     // webhook signature (verified inside the controller before anything
     // else happens). See docs/PAYMENTS_DESIGN_P6.md "Webhook flow".
-    Route::post('payments/webhook/razorpay', [PaymentWebhookController::class, 'razorpay']);
+    // throttle:payment-webhook (P12.3) bounds abuse of this one
+    // unauthenticated public endpoint — see
+    // docs/LOAD_AND_CONCURRENCY.md "Rate limiting".
+    Route::post('payments/webhook/razorpay', [PaymentWebhookController::class, 'razorpay'])
+        ->middleware('throttle:payment-webhook');
 
     Route::prefix('auth')->group(function () {
         // -- Public --
