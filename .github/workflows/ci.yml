@@ -183,6 +183,17 @@ jobs:
           TESTING_DB: mysql
         run: php artisan migrate --force
 
+      # TEMPORARY DEBUG STEP — diagnosing P12.2 backup:run CI failure,
+      # will be removed before this PR is considered done.
+      - name: DEBUG backup:run
+        env:
+          TESTING_DB: mysql
+        run: |
+          which mysqldump mysql mariadb-dump mariadb || true
+          mysqldump --version || true
+          mysqldump --help 2>&1 | grep -i ssl || true
+          php artisan backup:run -v || true
+
       # Only the tests tagged #[Group('mysql')] — the real pcntl_fork()
       # concurrency suites — run here. Running the full 848-test suite a
       # second time against MySQL would roughly double this workflow's
