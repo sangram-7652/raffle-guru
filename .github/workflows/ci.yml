@@ -139,14 +139,19 @@ jobs:
           echo "CACHE_STORE=array" >> .env
           echo "SESSION_DRIVER=array" >> .env
           echo "QUEUE_CONNECTION=sync" >> .env
-          # P12.2 — this runner has the real Oracle MySQL client (the
+          # P12.2 — this runner has the real Oracle MySQL 8.0 client (the
           # `mysqladmin ping` below already proves it's present), not
           # mariadb-client (that's an Alpine/Docker-image-only detail —
           # see infrastructure/docker/php/Dockerfile and
-          # docs/BACKUPS_DISASTER_RECOVERY.md). Both flavors accept the
-          # same flags this app's backup commands pass.
+          # docs/BACKUPS_DISASTER_RECOVERY.md). Confirmed by hand: Oracle's
+          # client REMOVED the legacy --skip-ssl option entirely (errors
+          # "unknown option '--skip-ssl'") and only accepts --ssl-mode=
+          # DISABLED — unlike mariadb-dump/mariadb, which need --skip-ssl
+          # and don't recognize --ssl-mode. Binary names AND the TLS flag
+          # both differ by client flavor; see config/backup.php.
           echo "BACKUP_DUMP_BINARY=mysqldump" >> .env
           echo "BACKUP_CLIENT_BINARY=mysql" >> .env
+          echo "BACKUP_TLS_DISABLE_FLAG=--ssl-mode=DISABLED" >> .env
 
       # The `services:` healthcheck above already waits for `mysqladmin
       # ping`, but that only proves the server accepts TCP connections —
@@ -182,17 +187,6 @@ jobs:
         env:
           TESTING_DB: mysql
         run: php artisan migrate --force
-
-      # TEMPORARY DEBUG STEP — diagnosing P12.2 backup:run CI failure,
-      # will be removed before this PR is considered done.
-      - name: DEBUG backup:run
-        env:
-          TESTING_DB: mysql
-        run: |
-          which mysqldump mysql mariadb-dump mariadb || true
-          mysqldump --version || true
-          mysqldump --help 2>&1 | grep -i ssl || true
-          php artisan backup:run -v || true
 
       # Only the tests tagged #[Group('mysql')] — the real pcntl_fork()
       # concurrency suites — run here. Running the full 848-test suite a

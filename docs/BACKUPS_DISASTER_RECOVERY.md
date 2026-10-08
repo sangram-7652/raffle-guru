@@ -83,7 +83,8 @@ on this, not assumed:
 2. **TLS.** `mysql:8.4` generates a fresh self-signed certificate on
    every container (re)creation, which `mariadb-client` refuses to trust
    by default. `config/backup.php`'s `skip_tls` (default `true`) passes
-   `--skip-ssl` — safe here because MySQL is never reachable outside the
+   `tls_disable_flag` (default `--skip-ssl`, mariadb-client's legacy
+   boolean) — safe here because MySQL is never reachable outside the
    Docker network (no published ports, see
    [`PRODUCTION_ARCHITECTURE.md`](PRODUCTION_ARCHITECTURE.md)), the same
    trust boundary this project already relies on elsewhere. Revisit if
@@ -91,12 +92,18 @@ on this, not assumed:
 
 CI's `mysql` job (`.github/workflows/ci.yml`) runs directly on the
 GitHub-hosted runner, not inside this project's Docker image, and that
-runner has the **real Oracle MySQL client** (`mysqldump`/`mysql`), not
-`mariadb-client` — confirmed by the job's own pre-existing `mysqladmin
-ping` step, which only works if those tools are already present. Both
-client flavors accept the same flags this app passes, so CI just points
-`BACKUP_DUMP_BINARY`/`BACKUP_CLIENT_BINARY` at the Oracle names instead
-of overriding any command-building logic.
+runner has the **real Oracle MySQL 8.0 client** (`mysqldump`/`mysql`),
+not `mariadb-client` — confirmed by the job's own pre-existing
+`mysqladmin ping` step, which only works if those tools are already
+present. The two client flavors do **not** accept the same TLS-disable
+flag — confirmed by hand, not assumed, after CI's first run failed with
+`mysqldump: [ERROR] unknown option '--skip-ssl'`: Oracle's MySQL 8.0
+client removed that legacy option entirely and only accepts
+`--ssl-mode=DISABLED`. So `BACKUP_TLS_DISABLE_FLAG` is overridden
+per-environment the same way `BACKUP_DUMP_BINARY`/`BACKUP_CLIENT_BINARY`
+are — CI sets `--ssl-mode=DISABLED`, Docker keeps the `--skip-ssl`
+default — rather than the command-building logic trying to detect which
+flavor it's talking to.
 
 ## Retention
 

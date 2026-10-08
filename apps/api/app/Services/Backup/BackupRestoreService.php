@@ -69,7 +69,7 @@ final class BackupRestoreService
         ];
 
         if (config('backup.skip_tls')) {
-            $command[] = '--skip-ssl';
+            $command[] = (string) config('backup.tls_disable_flag');
         }
 
         $command[] = $database;

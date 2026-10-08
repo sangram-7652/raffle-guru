@@ -83,8 +83,19 @@ return [
     | trust boundary the rest of this project already does, not a new one.
     | Revisit if MySQL ever moves outside the Docker network (e.g. RDS).
     |
+    | The actual flag that means "disable TLS" differs by client flavor:
+    | MariaDB's client (mariadb-dump/mariadb — the Docker image, see
+    | infrastructure/docker/php/Dockerfile) uses the legacy boolean
+    | `--skip-ssl`. The real Oracle MySQL 8.0 client (installed in CI,
+    | see .github/workflows/ci.yml) REMOVED that legacy option entirely
+    | — confirmed by hand, it errors "unknown option '--skip-ssl'" — and
+    | only accepts `--ssl-mode=DISABLED`. Rather than guess which flavor
+    | is running, the flag itself is configured per-environment, the
+    | same way the binary names are.
+    |
     */
     'skip_tls' => (bool) env('BACKUP_SKIP_TLS', true),
+    'tls_disable_flag' => env('BACKUP_TLS_DISABLE_FLAG', '--skip-ssl'),
 
     /*
     |--------------------------------------------------------------------------

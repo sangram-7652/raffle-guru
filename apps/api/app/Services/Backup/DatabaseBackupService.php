@@ -66,7 +66,8 @@ final class DatabaseBackupService
             ]);
 
             throw new BackupFailedException(sprintf(
-                'mariadb-dump exited with code %d: %s',
+                '%s exited with code %d: %s',
+                config('backup.dump_binary'),
                 $result->exitCode(),
                 $this->sanitizedStderr($stderr),
             ));
@@ -145,7 +146,7 @@ final class DatabaseBackupService
         ];
 
         if (config('backup.skip_tls')) {
-            $command[] = '--skip-ssl';
+            $command[] = (string) config('backup.tls_disable_flag');
         }
 
         $command[] = (string) $db['database'];
