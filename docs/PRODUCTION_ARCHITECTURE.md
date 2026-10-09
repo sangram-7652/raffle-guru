@@ -254,24 +254,45 @@ load, or multi-region requirements) — not preemptively.
 
 ## Module map
 
-Domain boundaries the future Laravel app should organize around (not yet
-implemented — see [ROADMAP.md](ROADMAP.md)):
+Domain boundaries the Laravel app is organized around — **all
+implemented** as of P12 (updated from this doc's original P1-era
+version, which described these as future work; see
+[`ROADMAP.md`](ROADMAP.md) for exactly which phase built each one):
 
-- **Competition** — listing, lifecycle (draft/live/ending-soon/sold-out/drawn), owns one Prize
-- **Prize** — prize metadata, cash-alternative value
-- **Entry / Ticket** — allocation, reservation, release; the highest-concurrency, highest-risk domain
-- **Order / OrderItem** — purchase transaction grouping tickets
-- **Payment** — provider integration, webhook handling, idempotency
-- **Draw** — eligible-ticket snapshot, winner selection, audit log, idempotent execution
-- **Winner / PrizeClaim** — claim workflow, delivery tracking
-- **Notification** — email/SMS triggered by order/draw/winner events
-- **Promotion** — discount codes
-- **User** — accounts, auth (not yet implemented)
+- **Competition** — listing, lifecycle (draft/scheduled/active/sold_out/closed/draw_pending/draw_in_progress/drawn/completed), owns one or more Prizes (P2/P4/P8)
+- **Prize** — prize metadata, cash-alternative value, stock tracking for fulfilment (P2/P10)
+- **Entry / Ticket** — allocation, concurrency-safe capacity/per-user enforcement (P7)
+- **Order / OrderItem** — purchase transaction grouping tickets (P5)
+- **Payment** — Razorpay integration, webhook handling, idempotency (P6)
+- **Draw** — eligible-ticket snapshot, winner selection, audit log, idempotent execution (P9)
+- **Winner / WinnerClaim / PrizeDelivery** — claim workflow, delivery tracking, fulfilment (P10)
+- **Admin** — staff accounts, roles, audit logging (P11)
+- **User** — customer accounts, Sanctum auth (P3)
 
-## What P1 deliberately did not build
+**Not implemented, and not currently planned:** Notification
+(email/SMS beyond Laravel's own verification/password-reset mail) and
+Promotion (discount codes) — both were speculative module-map entries
+from the original P1 architecture sketch with no corresponding phase
+built; treat them as out of scope unless explicitly requested, not as
+upcoming work.
 
-No Competition/Ticket/Order/Payment/Draw/Winner models, migrations, or
-controllers. No authentication. No payment gateway. No CORS config beyond
-Laravel's default (not needed yet, given same-origin proxying — revisit if
-a separate-origin client, e.g. a mobile app, needs the API directly). See
-the P1 report's Known Limitations for specific rough edges to revisit.
+## Current implementation status (P12.4)
+
+Every domain above is implemented and tested (SQLite + real-MySQL
+concurrency suites, see
+[`LOAD_AND_CONCURRENCY.md`](LOAD_AND_CONCURRENCY.md)). What remains
+genuinely incomplete for a real production launch — not aspirational,
+verified during this phase's audit:
+
+- **No TLS/HTTPS termination in this repository** — see
+  [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §2.
+- **No off-server backup / tested disaster recovery** — see
+  [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md).
+- **No deployment automation** — every production operation is a
+  manual, documented command (`PRODUCTION_DEPLOYMENT.md`).
+- No courier/shipping integration, no KYC provider, no automated
+  refunds — see [`OPERATIONS_RUNBOOK.md`](OPERATIONS_RUNBOOK.md).
+
+See [`GO_LIVE_CHECKLIST.md`](GO_LIVE_CHECKLIST.md) for the full,
+explicit required/optional/not-implemented breakdown before an actual
+go-live.

@@ -81,11 +81,35 @@ ticket allocation is concurrency-safe).
   UI — those are explicitly out of scope; see
   [`WINNER_CLAIM_P10.md`](WINNER_CLAIM_P10.md) §19 for the full P11
   boundary.
-- **P11 — Filament admin**: build out resources once the underlying
-  models are stable.
-- **P12 — Observability + testing hardening**: Sentry/logging, load tests
-  on the ticket engine, concurrency tests on draw execution, the
-  payment/ticket/draw test suite called out in the P0 audit.
+- **P11 — Filament admin** (complete): admin resources for every
+  domain above, built once the underlying models were stable.
+  Sub-phases: P11.9 (competition editorial publish), P11.10 (prize
+  fulfilment admin entry point), P11.12 (admin security hardening —
+  `AdminPolicy`, audit logs, session versioning), P11.13 (CI test
+  infrastructure split — see
+  [`CI_TEST_INFRASTRUCTURE.md`](CI_TEST_INFRASTRUCTURE.md)), P11.14
+  (first SuperAdmin bootstrap), P11.15 (Filament static asset delivery
+  baked into the production image), P11.16 (production guard against
+  `PAYMENT_GATEWAY=fake`). See [`ADMIN_USERS_P11.md`](ADMIN_USERS_P11.md).
+- **P12 — Production hardening** (P12.1-P12.3 complete, P12.4 this
+  phase):
+  - **P12.1 — Observability** (complete): Sentry error tracking, Docker-
+    level log rotation. See "Observability" in
+    [`PRODUCTION_ARCHITECTURE.md`](PRODUCTION_ARCHITECTURE.md).
+  - **P12.2 — Backups & disaster recovery** (complete): daily MySQL
+    backup/retention/verify/restore commands. Local backup only — no
+    off-server copy yet, documented as an open requirement. See
+    [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md).
+  - **P12.3 — Load & concurrency hardening** (complete): full
+    concurrency audit (confirmed the existing P7-P11 row-locking design
+    was already correct), new payment/webhook concurrency tests, a
+    webhook rate limit, and a k6-based load-test baseline. See
+    [`LOAD_AND_CONCURRENCY.md`](LOAD_AND_CONCURRENCY.md).
+  - **P12.4 — Production documentation & go-live runbook** (this
+    phase): the deployment, incident, smoke-test, staging, and go-live
+    documentation this phase added — see
+    [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) and
+    [`GO_LIVE_CHECKLIST.md`](GO_LIVE_CHECKLIST.md).
 
 Legal/compliance rules (age verification, geographic restrictions, consent,
 data retention) are configurable business rules to build alongside the

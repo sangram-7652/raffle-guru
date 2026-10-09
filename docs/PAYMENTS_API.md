@@ -108,6 +108,11 @@ handles a small set of event types:
 Always responds `200` once the signature checks out, even if no
 matching payment is found — see `docs/PAYMENTS_DESIGN_P6.md`.
 
+**Rate limited (P12.3):** `throttle:payment-webhook`, 120 requests/min
+per IP — bounds abuse of this one unauthenticated public endpoint
+independent of signature validity. See
+`docs/LOAD_AND_CONCURRENCY.md` "Rate limiting".
+
 ### `GET /v1/orders/{reference}` / `GET /v1/orders` (P5, extended)
 
 Both now include a `payment` field — the **latest** payment attempt
