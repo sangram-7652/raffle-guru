@@ -21,22 +21,41 @@ need different guarantees from the database underneath them:
   SQLite `:memory:` is enough for that, and it's fast — no container to
   boot, no network round-trip per query.
 - A handful of tests exist specifically to prove row-locking under real
-  concurrent transactions (`AdminManagementConcurrencyTest`,
+  concurrent transactions, or need a real `mariadb-dump`/`mariadb`
+  binary that SQLite has no equivalent of
+  (`AdminBootstrapConcurrencyTest`, `AdminManagementConcurrencyTest`,
   `LifecycleConcurrencyTest`, `DrawConcurrencyTest`,
-  `Ticket\ConcurrencyTest`, `WinnerConcurrencyTest`). Each forks real
+  `Ticket\ConcurrencyTest`, `WinnerConcurrencyTest`,
+  `Payment\PaymentConcurrencyTest` (P12.3), plus three backup command
+  tests that exercise a real dump/restore round-trip
+  (`Backup\DatabaseBackupCommandTest`, `Backup\BackupVerificationCommandTest`,
+  `Backup\BackupRestoreCommandTest`, P12.2) and
+  `Admin\AdminBootstrapCommandTest`). Each concurrency test forks real
   child processes (`pcntl_fork()`), each with its own database
   connection, racing against each other on purpose. SQLite's
   `:memory:` database is private to the connection that created it — a
   forked child never sees the parent's rows, so there is no real lock
   to contend over and the "race" proves nothing. These tests need
-  MySQL's actual InnoDB row-lock behavior, or they aren't testing the
-  thing they claim to test.
+  MySQL's actual InnoDB row-lock behavior (or a real MySQL client
+  binary), or they aren't testing the thing they claim to test.
 
-Running the whole 848-test suite against MySQL just to cover those ~19
-tests would roughly double CI time and runner cost for no additional
-coverage — the other 829 tests pass identically on both engines. Hence
-the split, and hence scoping the `mysql` job to the tagged group instead
-of the full suite.
+As of P12.3: **875 tests** in the SQLite (`backend`) job, **32 tests**
+in the `mysql` job (11 test classes carrying `#[Group('mysql')]`).
+Running the whole SQLite suite against MySQL too would roughly double
+CI time and runner cost for no additional coverage — the other 875
+tests pass identically on both engines. Hence the split, and hence
+scoping the `mysql` job to the tagged group instead of the full suite.
+(These exact counts will drift as the suite grows — treat them as "as
+of P12.4," not a promise; `vendor/bin/phpunit --exclude-group mysql`
+and `--group mysql` are the source of truth, not this paragraph.)
+
+**P12.2 addition:** the `mysql` job also runs a one-time "Grant backup
+verification database privilege" step (root-authenticated, scoped by
+wildcard to `raffleguru_backup_verify_%`) so
+`backup:verify`/`backup:restore`'s real-restore tests can create/drop
+their own throwaway databases — see
+[`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md)
+"Verification" for the equivalent one-time production/local grant.
 
 ## Adding a new MySQL-only test
 
