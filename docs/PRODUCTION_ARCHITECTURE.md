@@ -42,6 +42,19 @@ next.
   Nginx image at build time instead (see the `nginx` stage in
   `infrastructure/docker/php/Dockerfile`, built from the exact same
   `base` stage that publishes them, so the two can't drift apart).
+- **P12.5**: every fastcgi-routed location (`/api`, `/sanctum`,
+  `/admin`, Livewire) now explicitly forwards `X-Forwarded-For/-Proto/-
+  Host` to php-fpm. `fastcgi_pass` forwards nothing by default — unlike
+  the `proxy_pass` block for Next.js, which already set these via
+  `proxy_set_header` — so before this, Laravel's API always saw
+  Nginx's own address and scheme for every request regardless of the
+  real client, silently making per-IP rate limiting
+  (`RateLimiter::for('login'/'payment-webhook', ...)`) share one bucket
+  across every client. `bootstrap/app.php`'s `trustProxies()` is
+  correspondingly narrowed from `'*'` to the RFC1918 ranges Docker's
+  own bridge networks assign from, since Nginx — the only container
+  these headers can meaningfully come from, given nothing else in
+  `docker-compose.prod.yml` publishes a port — always sits on one.
 - **Next.js** (`apps/web`) renders the customer-facing site. In production
   it runs as a standalone Node server (`next build` with `output:
   "standalone"`), not `next dev`.
@@ -284,8 +297,17 @@ concurrency suites, see
 genuinely incomplete for a real production launch — not aspirational,
 verified during this phase's audit:
 
-- **No TLS/HTTPS termination in this repository** — see
-  [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §2.
+- **TLS/HTTPS termination (P12.5)** — an optional `docker-compose.tls.yml`
+  overlay (Nginx + Let's Encrypt via a `certbot` sidecar) now exists for
+  operators terminating TLS directly on this stack's own Nginx; using
+  Cloudflare or an external load balancer instead remains equally valid
+  and needs none of it. Verified locally (nginx config test, a real TLS
+  handshake and HTTP→HTTPS redirect against a self-signed certificate)
+  — **not** verified against a real domain/real Let's Encrypt issuance
+  or across an actual renewal cycle, since no real domain existed for
+  this phase. See [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md)
+  §2 for the full picture, including what remains to be confirmed on an
+  actual go-live.
 - **No off-server backup / tested disaster recovery** — see
   [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md).
 - **No deployment automation** — every production operation is a

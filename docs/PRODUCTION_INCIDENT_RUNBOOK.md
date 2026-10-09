@@ -160,7 +160,8 @@ even though `web`/`api` containers themselves are healthy.
 
 1. **First checks:** `docker compose ps nginx`, `docker compose logs
    --tail=200 nginx`. Common cause: a bad `infrastructure/nginx/prod.conf`
-   edit that doesn't pass `nginx -t`.
+   (or `prod-tls.conf`, if using Option C — see `PRODUCTION_DEPLOYMENT.md`
+   §2) edit that doesn't pass `nginx -t`.
 2. **Safe command:**
    ```sh
    docker compose exec nginx nginx -t
@@ -179,23 +180,36 @@ even though `web`/`api` containers themselves are healthy.
 **Symptoms:** browsers show a certificate error, or the domain doesn't
 resolve at all.
 
-**Important context:** this repository does not terminate TLS itself
-(see `PRODUCTION_DEPLOYMENT.md` §2) — if you're seeing a cert error,
-the problem is in whatever sits in front (Cloudflare, a separate
-reverse proxy, or a certbot setup you added yourself), not in anything
-`docker-compose.prod.yml` controls directly.
+**Important context (P12.5):** whether this repository terminates TLS
+itself depends on which of the three options in
+`PRODUCTION_DEPLOYMENT.md` §2 you're running. Options A (Cloudflare) and
+B (external load balancer) put TLS entirely outside this repo's
+control — a cert error there means a problem in whatever sits in front,
+not in anything `docker-compose.prod.yml` controls directly. **Option
+C** (the optional `docker-compose.tls.yml` overlay) makes this repo
+responsible for its own certificate via a `certbot` sidecar — see
+`OPERATIONS_RUNBOOK.md` "TLS certificate operations" for that case
+specifically before assuming it's an external-provider incident.
 
 1. **First checks:** `dig <your-domain>` / `nslookup <your-domain>` —
    does it resolve to the expected IP (or Cloudflare)? `curl -vI
    https://<your-domain>/` — read the actual TLS error.
 2. **Recovery depends entirely on which TLS option you chose** (see
-   `PRODUCTION_DEPLOYMENT.md` §2) — this repo has no commands for this
-   because it doesn't own this layer. Cloudflare dashboard, your
-   load-balancer's cert management, or your certbot renewal setup.
+   `PRODUCTION_DEPLOYMENT.md` §2):
+   - Options A/B: Cloudflare dashboard, or your load balancer's own
+     cert management — this repo has no commands for this layer.
+   - Option C: see `OPERATIONS_RUNBOOK.md` "TLS certificate operations"
+     — check `docker compose -f docker-compose.prod.yml -f
+     docker-compose.tls.yml exec certbot certbot certificates` for
+     expiry/status, then that same section's renewal-failure steps
+     (most common cause: port 80's ACME challenge path became
+     unreachable from the public internet).
 3. **Verify:** `curl -vI https://<your-domain>/` shows a valid chain.
-4. **Escalate if:** DNS is correct but TLS still fails and you don't
-   control the TLS-terminating layer directly — this is likely an
-   external-provider incident, not something to debug further here.
+4. **Escalate if:** DNS is correct, and either (Options A/B) you don't
+   control the TLS-terminating layer directly, or (Option C) a forced
+   renewal attempt still fails after confirming port 80 is reachable —
+   at that point it's worth checking Let's Encrypt's own status page
+   before continuing to retry.
 
 ## I. Payment gateway failure
 

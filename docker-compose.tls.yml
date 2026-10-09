@@ -1,0 +1,76 @@
+# Optional TLS overlay (P12.5) — layer this on top of
+# docker-compose.prod.yml ONLY if this Nginx is terminating TLS itself
+# (Option C in docs/PRODUCTION_DEPLOYMENT.md §2). Skip this file
+# entirely if you're using Cloudflare (Option A) or an external
+# TLS-terminating load balancer (Option B) in front of this stack —
+# docker-compose.prod.yml alone (plain HTTP on 80) is everything they
+# need; this file adds nothing useful and the certbot service below
+# would just fail to issue a certificate for a domain it can't reach.
+#
+# Requires the one-time bootstrap in PRODUCTION_DEPLOYMENT.md §2
+# (dummy cert so Nginx can start at all, then the real certbot
+# `certonly` run) before the first `up` with this file included.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml up -d
+
+services:
+  nginx:
+    # Compose replaces a service's whole `volumes:` list with the
+    # override's list, rather than merging entry-by-entry — verified
+    # with `docker compose -f docker-compose.prod.yml -f
+    # docker-compose.tls.yml config`. So this has to repeat the conf
+    # mount itself (pointing at prod-tls.conf instead of
+    # docker-compose.prod.yml's prod.conf), not just add the two new
+    # certificate/ACME-webroot volumes on top of the base list.
+    volumes:
+      - ./infrastructure/nginx/prod-tls.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-webroot:/var/www/certbot:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    # Nginx has no built-in "reload when a watched file changes"
+    # mechanism, and the certbot service below has no access to this
+    # container (deliberately — no shared Docker socket, see the
+    # `certbot` service's own comment). A daily graceful reload is cheap
+    # (nginx -s reload drops no connections) and comfortably inside
+    # Let's Encrypt's ~30-day-before-expiry renewal window, so a renewed
+    # certificate is always picked up well before the old one expires
+    # even though nothing explicitly triggers the reload.
+    command: >
+      sh -c "while :; do sleep 24h & wait $${!}; nginx -s reload; done & nginx -g 'daemon off;'"
+
+  # Issues and renews the certificate into the certbot-etc volume that
+  # `nginx` mounts read-only above. Deliberately only RUNS RENEWALS in
+  # steady state (`certbot renew` is a no-op until a cert is within 30
+  # days of expiry) — the first real certificate for your domain is a
+  # separate, one-time, operator-run command (PRODUCTION_DEPLOYMENT.md
+  # §2), same "documented manual step" pattern this repo already uses
+  # for `migrate`/`admin:create-super`, not something this service does
+  # automatically on first start.
+  #
+  # No Docker socket is mounted here on purpose: this container can
+  # write renewed certificates into the shared volume, but it cannot
+  # reach into the `nginx` container to force an immediate reload (the
+  # daily reload loop above is what picks the renewal up) — granting
+  # socket access would let this container control the whole Docker
+  # host, a far bigger blast radius than "reload one service a bit
+  # later than instantly".
+  certbot:
+    image: certbot/certbot:v5.8.0
+    restart: unless-stopped
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: >
+      sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done"
+
+volumes:
+  # Not in docker-compose.prod.yml's `volumes:` block — Compose unions
+  # named volumes declared across all -f files, so adding them here
+  # (rather than editing the base file) is enough; no change to
+  # docker-compose.prod.yml itself is needed for operators who never
+  # include this overlay.
+  certbot-etc:
+  certbot-webroot:

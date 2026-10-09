@@ -34,9 +34,14 @@ specific (DNS, TLS, secrets) for every new environment you deploy to.
 - [ ] 🔴 No secret present in any committed file (see "Security/secret
       scan" in the P12.4 final report — this phase's own docs were
       scanned; re-scan anything new before every future doc change)
-- [ ] 🔴 `SESSION_SECURE_COOKIE=true` — **only once HTTPS is actually
-      live in front** (see item J below; setting this before HTTPS
-      exists breaks login)
+- [ ] 🔴 `SESSION_SECURE_COOKIE=true` — **required once HTTPS is live
+      in front** (see item J below). As of P12.5 this is enforced at
+      boot, not just documented: the app refuses to start at all under
+      `APP_ENV=production` if this isn't `true`
+      (`AppServiceProvider::register()`), so there is no longer a
+      "production but HTTPS isn't ready yet" interim state — HTTPS
+      (one of the three options in item J) must exist before you can
+      set `APP_ENV=production` at all.
 - [ ] ⚠️ No 2FA/MFA on admin accounts — session cookie + password only
       (`ADMIN_USERS_P11.md`)
 - [ ] 🟡 Rotate `RAZORPAY_*`/`APP_KEY`/DB passwords on a periodic
@@ -92,14 +97,29 @@ specific (DNS, TLS, secrets) for every new environment you deploy to.
 
 ## J. HTTPS
 
-- [ ] 🔴 **⚠️ NOT IMPLEMENTED by this repository itself** — see
-      `PRODUCTION_DEPLOYMENT.md` §2. You must provide TLS termination
-      (Cloudflare, a reverse proxy, or added Nginx config) before this
-      item can be checked off; this repo gives you plain HTTP on port
-      80 only.
-- [ ] 🔴 Once TLS exists: certificate valid, auto-renewal in place if
-      using Let's Encrypt-style certs (not this repo's concern, but
-      your go-live blocks on it)
+- [ ] 🔴 Pick exactly one of the three options in
+      `PRODUCTION_DEPLOYMENT.md` §2 and confirm it's live before
+      go-live — **never more than one at once** (e.g. an external load
+      balancer AND this repo's own certbot overlay both terminating
+      TLS):
+      - **Option A** — Cloudflare in front (Full/Full strict mode)
+      - **Option B** — an external TLS-terminating reverse proxy/load
+        balancer
+      - **Option C** — this repo's own `docker-compose.tls.yml` overlay
+        (Nginx + certbot/Let's Encrypt), added in P12.5
+- [ ] 🔴 Certificate valid, auto-renewal in place:
+      - Option A/B: not this repo's concern — verify with whatever
+        terminates TLS there.
+      - Option C: automatic (`certbot` service renews on a loop, Nginx
+        reloads daily — see `PRODUCTION_DEPLOYMENT.md` §2). **Verified
+        in this phase**: nginx config test, a real TLS handshake, and a
+        real HTTP→HTTPS redirect against a locally-generated self-signed
+        certificate. **Not verified**: a full real-domain Let's Encrypt
+        issuance or an actual 90-day renewal cycle — no real domain was
+        available to this phase. Confirm both manually against your
+        real domain before relying on this for go-live.
+- [ ] 🔴 `SESSION_SECURE_COOKIE=true` — see item C; enforced at boot as
+      of P12.5.
 
 ## K. DNS
 

@@ -24,7 +24,21 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // P12.5 — same shape as PaymentServiceProvider's
+        // PAYMENT_GATEWAY=fake guard: fail at boot, unconditionally, not
+        // only once something happens to read config('session.secure')
+        // first. A production deployment without HTTPS in front of it is
+        // already an unsupported configuration (see
+        // docs/PRODUCTION_DEPLOYMENT.md §2 and
+        // docs/GO_LIVE_CHECKLIST.md "J. HTTPS") — this just turns
+        // "forgot to set SESSION_SECURE_COOKIE=true" from a silently
+        // broken login (the cookie never gets sent) into a loud boot
+        // failure instead.
+        if ($this->app->environment('production') && ! config('session.secure')) {
+            throw new \RuntimeException(
+                'SESSION_SECURE_COOKIE must be true in production. See docs/PRODUCTION_DEPLOYMENT.md §2.',
+            );
+        }
     }
 
     /**
