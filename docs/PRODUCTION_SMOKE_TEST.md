@@ -8,8 +8,16 @@ and must never be run as an automated script against production.
 
 - [ ] DNS resolves to the expected target (`dig <domain>`)
 - [ ] HTTPS loads without a certificate warning (`curl -vI
-      https://<domain>/`) — see `PRODUCTION_DEPLOYMENT.md` §2 for what
-      "HTTPS" actually depends on in this stack
+      https://<domain>/`) — see `PRODUCTION_DEPLOYMENT.md` §2 for the
+      three TLS options; whichever one is in use, this check must pass
+      against the real domain
+- [ ] If using Option C (this repo's own `docker-compose.tls.yml`):
+      `docker compose -f docker-compose.prod.yml -f
+      docker-compose.tls.yml exec certbot certbot certificates` reports
+      a certificate that is for the real domain (not the dummy
+      bootstrap cert) and not close to expiry
+- [ ] Plain `http://<domain>/` redirects to `https://` (single 301, not
+      a loop) — `curl -I http://<domain>/`
 - [ ] Nginx responds (`docker compose -f docker-compose.prod.yml ps
       nginx` shows healthy)
 - [ ] Frontend loads: `GET https://<domain>/` returns the homepage

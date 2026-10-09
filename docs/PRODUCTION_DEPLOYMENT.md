@@ -67,44 +67,68 @@ oversights to paper over:
 
 ## 2. DNS, TLS/HTTPS, and the Cloudflare/Nginx relationship
 
-**This is the most important gap this audit found — read it carefully.**
+**Three deployment options exist for TLS. Read this once, fully,
+before choosing one.**
 
 `infrastructure/nginx/prod.conf` has exactly one `server` block:
 `listen 80;` — plain HTTP. `docker-compose.prod.yml`'s `nginx` service
-publishes only `80:80`. **There is no TLS/SSL termination configured
-anywhere in this repository.** Nothing here generates or installs a
-certificate, and nothing here listens on 443.
+publishes only `80:80`. By itself, that file still gives you plain HTTP
+on port 80 only, unchanged since before P12.5 — this is deliberate, not
+an oversight: TLS termination is optional application-stack behavior,
+layered on top, not baked into the base production compose file (see
+"AWS direction" in `PRODUCTION_ARCHITECTURE.md` treating
+CloudFront/Cloudflare as an equally valid, operator-provisioned
+alternative).
 
-This is not a bug — the repo was built with the explicit expectation
-that TLS termination is an operator/infrastructure concern outside the
-application stack (consistent with "AWS direction" in
-`PRODUCTION_ARCHITECTURE.md` treating CloudFront/Cloudflare as
-operator-provisioned). But it means **you must do one of the following
-before going live**, and this repo does not do it for you:
-
-- **Option A — Cloudflare in front, "Flexible" or "Full" SSL mode.**
-  Cloudflare terminates TLS at its edge and proxies to your origin over
-  HTTP on port 80 — which is exactly what this Nginx config already
-  speaks. Simplest option given the current repo state; no code change
-  needed. ("Full (strict)" requires your origin to also present a valid
-  cert, which circles back to one of the options below.)
+- **Option A — Cloudflare in front, "Full" or "Full (strict)" SSL
+  mode.** Cloudflare terminates TLS at its edge and re-encrypts to your
+  origin. Use Option C below to give the origin a real certificate for
+  this (Cloudflare's "Full (strict)" requires one; "Full" tolerates a
+  self-signed one but Option C gives you a real one anyway, so there's
+  no reason to settle for self-signed). **Do not use "Flexible" mode**
+  once Option C is in place — Flexible talks plain HTTP to the origin,
+  and Option C's Nginx redirects plain HTTP to HTTPS, so the two
+  together loop forever. If you specifically want Flexible (TLS only at
+  Cloudflare's edge, never at the origin), skip Option C entirely and
+  deploy `docker-compose.prod.yml` alone — this Nginx already speaks
+  plain HTTP on port 80, exactly what Flexible mode expects.
 - **Option B — a TLS-terminating reverse proxy/load balancer in front
   of this stack** (a cloud load balancer, a separate Caddy/Traefik
   instance, etc.) that forwards plain HTTP to this Nginx container.
-- **Option C — add TLS directly to `infrastructure/nginx/prod.conf`**
-  (a `listen 443 ssl;` server block, a certificate — e.g. via
-  certbot/Let's Encrypt on the host, mounted into the nginx container).
-  **This requires an actual code/config change this repo does not yet
-  have** — do not deploy assuming it exists.
+  Deploy `docker-compose.prod.yml` alone, same as Flexible above — this
+  repo needs no TLS code path for this option.
+- **Option C — TLS terminated directly on this repo's own Nginx**,
+  via the optional `docker-compose.tls.yml` overlay
+  (`infrastructure/nginx/prod-tls.conf`) added in P12.5: a Let's
+  Encrypt certificate issued/renewed by a `certbot` sidecar container,
+  on port 443, with HTTP→HTTPS redirect on port 80. The one deployment
+  option that is this repo's own responsibility end-to-end rather than
+  an operator-supplied edge. See "Option C — bootstrap steps" below for
+  the exact commands; nothing here is simulated or aspirational — the
+  config was verified locally (nginx config test, a real TLS handshake,
+  and a real HTTP→HTTPS redirect against a self-signed certificate; see
+  the P12.5 PR description for exactly what was and wasn't verified)
+  against this repository's actual files, not invented.
+
+Options A and B need nothing from `docker-compose.tls.yml` at all —
+don't add it unless you're doing Option C. Never run more than one of
+these three at once (e.g. Option C's certbot overlay AND an external
+load balancer both trying to terminate TLS) — pick exactly one.
 
 Whichever option you pick, two things downstream depend on the browser
 actually seeing HTTPS:
 
 - `SESSION_SECURE_COOKIE` (`apps/api/.env`) **must be `true`** once the
   public-facing URL is HTTPS — the session cookie is then marked
-  `Secure` and refuses to be sent over plain HTTP. Setting this `true`
-  before HTTPS is actually working in front of the server will break
-  login entirely (the cookie won't be sent).
+  `Secure` and refuses to be sent over plain HTTP. **As of P12.5 this is
+  enforced at boot, not just documented**: `AppServiceProvider::register()`
+  throws a `RuntimeException` and refuses to boot at all if
+  `APP_ENV=production` and `SESSION_SECURE_COOKIE` is not `true` — the
+  same "fail loud at boot, not silently at login" pattern as the
+  `PAYMENT_GATEWAY=fake` guard (see §6). This means you cannot run
+  `APP_ENV=production` at all until HTTPS is genuinely in front of the
+  server through one of the three options above — there is no
+  "production but still plain HTTP for now" state anymore.
 - `APP_URL`/`FRONTEND_URL`/`SANCTUM_STATEFUL_DOMAINS`/`NEXT_PUBLIC_API_URL`
   (see §6) must all use `https://`/the HTTPS host once TLS is live — a
   mismatch here breaks Sanctum's stateful-domain CSRF check.
@@ -114,22 +138,97 @@ pointing your production domain at the server's public IP (or at
 Cloudflare, if using Option A). No specific DNS provider is assumed by
 this repo.
 
+### Option C — bootstrap steps
+
+Only relevant if you're terminating TLS on this repo's own Nginx.
+Requires a domain's DNS already pointing at this server (port 80
+reachable from the public internet — Let's Encrypt's HTTP-01 challenge
+needs that to validate ownership) before you start.
+
+```sh
+# 0. Set your real domain for this session — used below, never stored
+#    in any .env file (this repo does not invent or assume a domain).
+export TLS_DOMAIN=your-real-domain.example
+export TLS_CERTBOT_EMAIL=you@example.com   # certificate-expiry notices
+
+# 1. One-time dummy certificate, so Nginx has *something* to load at
+#    /etc/letsencrypt/live/raffleguru/ — it refuses to start at all
+#    with a `listen 443 ssl;` block pointing at a cert that doesn't
+#    exist yet, and the real cert (step 3) can't be issued until Nginx
+#    is already up to serve the HTTP-01 challenge. Classic chicken/egg,
+#    solved the standard way: a throwaway self-signed cert first.
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml run --rm \
+  --entrypoint "mkdir -p /etc/letsencrypt/live/raffleguru && \
+    openssl req -x509 -nodes -newkey rsa:2048 -days 1 \
+    -keyout /etc/letsencrypt/live/raffleguru/privkey.pem \
+    -out /etc/letsencrypt/live/raffleguru/fullchain.pem \
+    -subj '/CN=localhost'" \
+  certbot
+
+# 2. Start the full stack with the TLS overlay. Nginx comes up on the
+#    dummy cert from step 1; everything else (API/web/DB/Redis) is
+#    unaffected by any of this.
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml up -d
+
+# 3. Issue the real certificate via the HTTP-01 webroot challenge
+#    (served by the Nginx that's already running from step 2, at
+#    /.well-known/acme-challenge/ — see prod-tls.conf). --cert-name
+#    pins the on-disk path to "raffleguru" regardless of the real
+#    domain, which is what lets prod-tls.conf reference a fixed,
+#    domain-independent certificate path instead of needing templating.
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml run --rm \
+  --entrypoint "certbot certonly --webroot -w /var/www/certbot \
+    --cert-name raffleguru -d \$TLS_DOMAIN --email \$TLS_CERTBOT_EMAIL \
+    --agree-tos --no-eff-email --force-renewal" \
+  certbot
+
+# 4. Load the real certificate — a plain reload, no downtime.
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml exec nginx nginx -s reload
+
+# 5. Verify.
+curl -vI https://$TLS_DOMAIN/ 2>&1 | grep -i "< HTTP\|subject\|issuer"
+```
+
+**Renewal** is automatic from here: the `certbot` service in
+`docker-compose.tls.yml` runs `certbot renew` every 12 hours in a loop
+(a no-op until the certificate is within Let's Encrypt's ~30-day
+renewal window), and the `nginx` service reloads itself once a day —
+comfortably inside that window, so a renewed certificate is always
+picked up well before the old one expires. Confirm renewal is actually
+working with `docker compose -f docker-compose.prod.yml -f
+docker-compose.tls.yml exec certbot certbot certificates` (reports
+expiry) periodically, e.g. as part of §13's smoke test cadence — this
+has not been observed across a real 90-day cycle as part of this phase
+(no real domain/time to do so), so treat the mechanism as implemented
+and locally verified (config test, real TLS handshake, real redirect
+against a self-signed cert), not as "proven over a real renewal."
+
+**If you need to stop using Option C** (e.g. switching to Cloudflare):
+`docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml down`
+the overlay, then run `docker-compose.prod.yml` alone — Nginx goes back
+to plain HTTP on port 80 only, nothing else in the stack is affected.
+
 ## 3. Firewall requirements
 
 Not configured by this repo (no firewall rules are provisioned here).
 Operator-level guidance based on what `docker-compose.prod.yml` actually
 exposes:
 
-- **Must be reachable from the internet:** port 80 (and 443, once TLS
-  is added per §2) — the `nginx` service is the only one with a
-  published port in `docker-compose.prod.yml`.
+- **Must be reachable from the internet:** port 80 always (`nginx` is
+  the only service with a published port in `docker-compose.prod.yml`
+  on its own) — **plus port 443 if you're using Option C**
+  (`docker-compose.tls.yml`, see §2), which publishes it. Options A/B
+  need only 80 at this server; their TLS-terminating edge is the public
+  443 endpoint instead.
 - **Must NOT be reachable from the internet:** everything else. `mysql`
-  and `redis` publish no ports at all in the production compose file —
-  by construction, not by firewall rule, they are unreachable outside
-  the Docker network. If your hosting provider's default is "all ports
-  open," add a host-level firewall (ufw/iptables/security group) that
-  only allows 80/443 inbound, SSH for operator access, and nothing else
-  — this repo does not do that for you.
+  and `redis` publish no ports at all in the production compose file,
+  and `docker-compose.tls.yml`'s `certbot` service publishes none
+  either — by construction, not by firewall rule, none of them are
+  reachable outside the Docker network. If your hosting provider's
+  default is "all ports open," add a host-level firewall
+  (ufw/iptables/security group) that only allows 80 (+443 for Option C)
+  inbound, SSH for operator access, and nothing else — this repo does
+  not do that for you.
 
 ## 4. Repository checkout
 
@@ -215,7 +314,7 @@ and required behavior — not actual secret values.
 | `DB_HOST` | yes | no | Overridden to `mysql` by `docker-compose.prod.yml`'s `environment:` block regardless of this file | same |
 | `DB_DATABASE`/`DB_USERNAME`/`DB_PASSWORD` | yes | password is **secret** | Must match the root `.env` values | same |
 | `SESSION_DRIVER` | yes | no | `redis` | Laravel session |
-| `SESSION_SECURE_COOKIE` | yes | no | **`true`** once HTTPS is actually live in front (see §2) — `false` otherwise breaks nothing but is wrong once HTTPS exists | Session cookie |
+| `SESSION_SECURE_COOKIE` | yes | no | **`true`**, required — **enforced at boot as of P12.5**: `AppServiceProvider` throws and refuses to boot if `APP_ENV=production` and this isn't `true` (see §2) | Session cookie, `AppServiceProvider::register()` |
 | `SANCTUM_STATEFUL_DOMAINS` | yes | no | The exact browser-facing host(s), e.g. `yourdomain.com` (no protocol) | `config/sanctum.php` |
 | `QUEUE_CONNECTION` | yes | no | `redis` | Laravel queue |
 | `CACHE_STORE` | yes | no | `redis` | Laravel cache |
@@ -436,8 +535,13 @@ operator checklist, stated as such, not a claim of automation:
 - [ ] `docker compose -f docker-compose.prod.yml ps` on the *current*
       (pre-deploy) stack shows every service healthy, so you know you're
       not deploying on top of an already-broken system.
-- [ ] TLS certificate (if terminating TLS yourself per §2 Option C) is
-      valid and not close to expiry.
+- [ ] If using Option C (§2): TLS certificate is valid and not close to
+      expiry — `docker compose -f docker-compose.prod.yml -f
+      docker-compose.tls.yml exec certbot certbot certificates`.
+- [ ] `SESSION_SECURE_COOKIE=true` in `apps/api/.env` — also enforced at
+      boot (§2, §6) as of P12.5, so a production container that's
+      actually running already proves this, but check it before
+      deploying rather than finding out from a crash-looping container.
 - [ ] DNS resolves correctly to the target server/Cloudflare.
 
 ## 15. Rollback

@@ -121,6 +121,11 @@ class DocumentationValidationTest extends TestCase
         $this->assertFileExists("{$this->repoRoot}/infrastructure/nginx/prod.conf");
         $this->assertFileExists("{$this->repoRoot}/infrastructure/docker/php/Dockerfile");
         $this->assertFileExists("{$this->repoRoot}/infrastructure/docker/web/Dockerfile");
+
+        // P12.5 — the optional TLS overlay documented in
+        // PRODUCTION_DEPLOYMENT.md §2 Option C.
+        $this->assertFileExists("{$this->repoRoot}/docker-compose.tls.yml");
+        $this->assertFileExists("{$this->repoRoot}/infrastructure/nginx/prod-tls.conf");
     }
 
     public function test_documented_health_endpoints_are_actually_registered(): void

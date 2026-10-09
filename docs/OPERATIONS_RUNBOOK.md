@@ -126,6 +126,52 @@ table is the source of truth for gateway-reported state; `orders` is
 derived from it via `PaymentService`, never written to independently
 for payment outcomes.
 
+## TLS certificate operations (P12.5, Option C only)
+
+Only applies if you're using `docker-compose.tls.yml` (TLS terminated
+on this repo's own Nginx, see `PRODUCTION_DEPLOYMENT.md` §2 Option C).
+If you're using Cloudflare or an external load balancer (Options A/B),
+certificate operations happen entirely outside this repository — skip
+this section.
+
+**Routine check** (periodic, e.g. monthly — not automated/alerted on
+by anything in this repo):
+
+```sh
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml \
+  exec certbot certbot certificates
+```
+
+Reports the certificate's expiry date. Renewal itself is automatic
+(the `certbot` service renews on a 12-hour loop; `nginx` reloads daily
+to pick up a renewed certificate — see `PRODUCTION_DEPLOYMENT.md` §2)
+— this check is for confirming that automation is actually working,
+not for performing the renewal yourself.
+
+**If the certificate is unexpectedly close to expiry or renewal has
+stopped working:**
+
+```sh
+# Check the certbot container's own logs for renewal failures.
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml logs certbot
+
+# Force a renewal attempt immediately (bypasses the 30-day window
+# check `certbot renew` normally applies).
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml exec certbot \
+  certbot renew --cert-name raffleguru --force-renewal
+
+docker compose -f docker-compose.prod.yml -f docker-compose.tls.yml exec nginx nginx -s reload
+```
+
+The most common real-world cause of a stuck renewal: port 80 stopped
+being reachable from the public internet (DNS changed, a firewall rule
+tightened, Cloudflare proxying everything including the ACME challenge
+path) — Let's Encrypt's HTTP-01 challenge needs it. Confirm
+`curl -I http://<your-domain>/.well-known/acme-challenge/anything`
+returns a `404` from *this* Nginx (not a different host, not a
+Cloudflare error page) before assuming the certbot container itself is
+at fault.
+
 ## Competition / draw / winner operations
 
 Full designs:

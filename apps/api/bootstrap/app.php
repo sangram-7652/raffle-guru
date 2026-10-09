@@ -18,7 +18,23 @@ return Application::configure(basePath: dirname(__DIR__))
         // infrastructure/nginx), never directly — trust it so Laravel reads
         // the real client IP/scheme from X-Forwarded-* instead of seeing
         // every request as HTTP from Nginx's own address.
-        $middleware->trustProxies(at: '*');
+        //
+        // P12.5 — narrowed from the previous '*' (which trusted
+        // X-Forwarded-* from literally any peer, including, in
+        // principle, a request that reached php-fpm by some other path)
+        // to the RFC1918 private-network ranges Docker's own bridge
+        // networks always assign addresses from. Nginx is the only
+        // container with any published port in docker-compose.prod.yml
+        // (mysql/redis/api/queue/scheduler publish none at all — see
+        // that file) and is always reached on the compose network, so
+        // this is "trust the proxy that can actually reach us" without
+        // needing to know this deployment's specific subnet, which
+        // Compose assigns per-project and isn't fixed by this repo.
+        $middleware->trustProxies(at: [
+            '10.0.0.0/8',
+            '172.16.0.0/12',
+            '192.168.0.0/16',
+        ]);
 
         // Next.js and the API are served from the same Nginx origin (see
         // docs/PRODUCTION_ARCHITECTURE.md) — Sanctum's SPA mode lets the
