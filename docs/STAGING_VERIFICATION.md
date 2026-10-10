@@ -31,6 +31,61 @@ production database "just to save time."
       `production` value the guard checks — confirm this is actually
       true for your staging `APP_ENV` before relying on it.
 
+## 1a. TLS verification (P12.5)
+
+Do this before anything else that assumes HTTPS — the rest of this
+sequence depends on `SESSION_SECURE_COOKIE=true` working, which
+requires HTTPS already being genuinely live in front of staging. See
+[`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §2 for the three
+TLS options; whichever one staging uses, this section must pass
+against the *real* staging hostname, not `localhost` and not a
+self-signed certificate — a local self-signed test proves the Nginx
+config is syntactically correct (already done in P12.5's own PR) but
+proves nothing about a real certificate chain, a real DNS record, or a
+real browser's trust store.
+
+- [ ] DNS resolves the staging hostname to the expected target
+      (`dig <staging-domain>`).
+- [ ] `curl -vI https://<staging-domain>/` shows a certificate chain a
+      real browser would trust (not self-signed, not expired) —
+      capture the issuer and expiry date as evidence.
+- [ ] `curl -I http://<staging-domain>/` returns a single `301` to
+      `https://` — not a redirect loop, not a timeout.
+- [ ] If using Option C (this repo's own `docker-compose.tls.yml`):
+      `docker compose -f docker-compose.prod.yml -f
+      docker-compose.tls.yml exec certbot certbot certificates` shows a
+      real Let's Encrypt certificate (not the dummy bootstrap cert) for
+      the staging domain, issued by the real ACME flow — this is the
+      first time that flow runs against a real, publicly-resolvable
+      domain; P12.5 only verified it against a local self-signed
+      substitute.
+- [ ] Login/CSRF over HTTPS: register or log in as the staging test
+      customer and confirm the session cookie is sent with the
+      `Secure` attribute (browser devtools → Application → Cookies, or
+      `curl -v` and inspect the `Set-Cookie` header) and that
+      `GET /sanctum/csrf-cookie` + a subsequent authenticated POST both
+      succeed over `https://`.
+- [ ] API and admin routes both resolve over HTTPS:
+      `curl -I https://<staging-domain>/api/v1/health` and
+      `https://<staging-domain>/admin` both return successfully (not a
+      certificate error, not a connection refusal).
+- [ ] Trusted-proxy/client-IP check: trigger the login rate limiter
+      (`RateLimiter::for('login', ...)`, 5/min — see
+      `AppServiceProvider`) from two genuinely different client IPs (two
+      different networks, not two browser tabs on the same machine) and
+      confirm each is limited independently — this proves
+      `bootstrap/app.php`'s `trustProxies()` + Nginx's
+      `X-Forwarded-For` forwarding (P12.5) are resolving the REAL client
+      IP in front of a real reverse proxy, not just in the local test
+      suite's simulated requests.
+- [ ] **Record what was and wasn't tested here** — specifically, this
+      section does not by itself prove a renewal will succeed 60-90
+      days from now (Let's Encrypt certs are 90 days; renewal is
+      automatic per `docs/BACKUPS_DISASTER_RECOVERY.md`'s sibling
+      pattern in `OPERATIONS_RUNBOOK.md` "TLS certificate operations" —
+      but an actual renewal cycle completing successfully is a separate,
+      later observation, not something this one-time check can prove).
+
 ## 2. Database migration
 
 - [ ] `php artisan migrate --force` against the staging database
@@ -145,6 +200,59 @@ production database "just to save time."
       without `--confirm-production-overwrite` and a reason to actually
       want that.
 
+## 15a. Off-server backup verification (P12.6) — real provider, staging only
+
+**This is the single most important gap this sequence exists to
+close**: P12.6's own test suite verified the upload/download/retention
+logic against `adobe/s3mock` (a real S3 API server, but not a real
+cloud provider — see
+[`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md) "What
+was and wasn't verified"). Nothing has run against AWS S3,
+Cloudflare R2, DigitalOcean Spaces, or any other real provider yet.
+This section is that first real run — **staging credentials only,
+never production's bucket or keys**.
+
+- [ ] Provision a **dedicated staging bucket** with a **dedicated
+      staging credential** (never reuse a production bucket/credential,
+      even "temporarily" — see "Off-server backup (P12.6)"'s
+      least-privilege guidance) — `s3:PutObject`/`GetObject`/
+      `ListBucket`/`DeleteObject` scoped to that one bucket only, public
+      access fully blocked.
+- [ ] Set `BACKUP_OFFSITE_ENABLED=true` and the real
+      `BACKUP_OFFSITE_*` variables in staging's `apps/api/.env` only.
+- [ ] `php artisan backup:run` (or `backup:upload-offsite` against an
+      existing local backup) succeeds and its output includes
+      `Offsite upload verified:` — record the wall-clock duration.
+- [ ] Independently confirm the object exists in the real provider's
+      own console/CLI (not just this application's own report) —
+      correct bucket, correct key, a plausible size.
+- [ ] Deliberately corrupt a copy of the uploaded object (download it,
+      flip a byte, re-upload it over the same key via the provider's
+      own console/CLI) and confirm `backup:download-offsite` detects
+      the checksum mismatch and refuses it — this specific scenario
+      (a real provider silently returning altered bytes) cannot be
+      simulated against s3mock and has not been tested until this step
+      runs for real.
+- [ ] Seed a handful of deliberately old/unrelated objects in the same
+      bucket (same technique as `BackupOffsiteRetentionTest`) and run
+      `backup:prune-offsite` — confirm only the intended objects are
+      deleted and the single most recent backup survives regardless of
+      age.
+- [ ] `backup:download-offsite` into a **disposable staging-only**
+      scratch location, then `backup:verify` + `backup:restore
+      --database=<scratch>` against it — record the wall-clock
+      duration of download + verify + restore combined.
+- [ ] Confirm nothing above printed the real `BACKUP_OFFSITE_SECRET` to
+      the console or to any log line (`docker compose logs api
+      scheduler | grep -i backup` — the secret itself should never
+      appear, matching `BackupOffsiteService::sanitizedMessage()`'s
+      design).
+- [ ] Record: the measured upload duration, the measured
+      download+verify+restore duration, and the real gap between "data
+      as of the restored backup" and "now" — this is what turns P12.6's
+      documented-but-unverified RPO/RTO into a real, evidenced number
+      (see `BACKUPS_DISASTER_RECOVERY.md` "Recovery objectives").
+
 ## 16. Load test (write paths)
 
 This is the specific gap `LOAD_AND_CONCURRENCY.md` documented as
@@ -174,4 +282,9 @@ Record: staging environment identity, date, commit/tag tested, and the
 outcome of every section above (pass/fail/skipped-with-reason). A
 staging run that skips section 16 is still useful for correctness
 verification — just say so, don't imply load testing happened if it
-didn't.
+didn't. The same applies to 1a and 15a specifically: a staging run
+that skips real TLS or real off-server-provider verification has NOT
+closed those gaps — `docs/GO_LIVE_CHECKLIST.md` items J and N, and
+`docs/BACKUPS_DISASTER_RECOVERY.md`'s "What was and wasn't verified,"
+should keep saying so verbatim until a run of THIS document actually
+passes those two sections, not before.
