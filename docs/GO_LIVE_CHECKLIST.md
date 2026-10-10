@@ -160,14 +160,30 @@ specific (DNS, TLS, secrets) for every new environment you deploy to.
       "Verification") — without it, `backup:verify` fails loudly, which
       is correct behavior, but confirm it's set up before relying on
       verification passing
-- [ ] ⚠️ **OFF-SERVER DR: NOT YET IMPLEMENTED.** Backups are local to
-      the same Docker host as the live database. Losing the server
-      loses both. This is a real, open production infrastructure
-      requirement, not a theoretical one — see
-      `BACKUPS_DISASTER_RECOVERY.md` "Local backup vs. off-server
-      backup vs. disaster recovery." **Decide explicitly** whether
-      going live without this is acceptable for this deployment, rather
-      than discovering it during an actual server-loss incident.
+- [ ] 🔴 **Off-server backup (P12.6) — decide explicitly, don't leave
+      this implicit.** `BACKUP_OFFSITE_ENABLED` is `false` by default;
+      backups are local-only (same Docker host as the live database —
+      losing the server loses both) unless you deliberately turn this
+      on. See `BACKUPS_DISASTER_RECOVERY.md` "Off-server backup
+      (P12.6)" and "What was and wasn't verified" before enabling —
+      implemented and tested against a real S3 API server (adobe/s3mock),
+      **not yet verified against a real cloud provider or a
+      real disaster-recovery drill**.
+- [ ] ⚠️ If offsite is enabled: `BACKUP_OFFSITE_KEY`/
+      `BACKUP_OFFSITE_SECRET` are a DEDICATED credential (never reused
+      `AWS_*`), the bucket blocks all public access, and the first
+      `backup:run` after enabling actually reported
+      `Offsite upload verified:` — not just `Backup created:`.
+- [ ] ⚠️ **Full disaster-recovery drill: NOT YET PERFORMED, even once.**
+      Enabling off-server backup is necessary but not sufficient — the
+      end-to-end procedure (provision a new host, restore from the
+      offsite copy, redeploy) in `BACKUPS_DISASTER_RECOVERY.md`
+      "Disaster recovery procedure" has never been rehearsed against a
+      genuinely new host. **Decide explicitly** whether going live
+      without ever having rehearsed this is acceptable for this
+      deployment, rather than discovering a gap in the procedure during
+      an actual server-loss incident. See that document's "Operator
+      checklist for periodic restore drills."
 
 ## O. Monitoring
 

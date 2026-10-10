@@ -350,6 +350,32 @@ appearing.
    gap risk every day this goes unresolved; treat as higher priority
    than its "just infrastructure" framing might suggest.
 
+**P12.6, if `BACKUP_OFFSITE_ENABLED=true`:** `backup:run` can fail for
+the offsite half specifically while the local backup above still
+succeeded — its output distinguishes `Backup created:` (local, fine)
+from a missing `Offsite upload verified:` line / an `Offsite upload
+failed` error (the actual problem). Do NOT treat this the same as the
+local failure above:
+
+1. **First checks:** the error message from `backup:run`'s own output
+   (or `backup:upload-offsite` run by hand against the most recent
+   local backup, for the same error without retaking the backup) —
+   common causes are an expired/revoked `BACKUP_OFFSITE_KEY`/
+   `BACKUP_OFFSITE_SECRET`, the bucket deleted/renamed, or the
+   provider endpoint unreachable. See `OPERATIONS_RUNBOOK.md`
+   "Off-server backup operations" for the exact commands.
+2. **This is lower urgency than a local backup failure** (item M
+   above) IF local backups are still succeeding — you still have a
+   same-server recovery option. It becomes HIGH urgency the moment
+   `backup:prune-offsite` reports `newest_past_retention: true`
+   (surfaced as a loud warning, not hidden) — that means the single
+   remaining off-server copy is already old, and the server-loss
+   protection P12.6 exists for is no longer real until this is fixed.
+3. **Escalate if:** the endpoint is reachable (confirm with a plain
+   `curl` to `BACKUP_OFFSITE_ENDPOINT`) but authentication keeps
+   failing — likely a credential rotation that wasn't propagated to
+   `apps/api/.env`, not a provider-side outage.
+
 ## N. Disk full
 
 **Symptoms:** MySQL/writes failing, container restarts failing, `df -h`
@@ -430,3 +456,29 @@ escalation note).
    credential you have concrete reason to believe is compromised
    (Razorpay keys, `APP_KEY`, database passwords) through its proper
    channel once you understand the actual scope, not reflexively.
+
+## Q. Total server loss (P12.6)
+
+**Symptoms:** the server itself is unreachable/destroyed — not a
+service inside it failing, the whole host is gone (disk failure, the
+VM/droplet destroyed, the hosting account compromised).
+
+1. **This is a different category from every item above** — none of
+   them help here, because they all assume the server still exists.
+   Do not attempt a "restart the container" style fix.
+2. **Recovery depends entirely on whether off-server backup
+   (`BACKUP_OFFSITE_ENABLED=true`) was actually enabled before the
+   server was lost.** If it wasn't, there is no backup to recover from
+   — see `BACKUPS_DISASTER_RECOVERY.md` "Local backup vs. off-server
+   backup vs. disaster recovery".
+3. **If it was enabled:** follow
+   `BACKUPS_DISASTER_RECOVERY.md`'s "Disaster recovery procedure" in
+   full, start to finish — provision a replacement host, restore
+   secrets from the operator's own secret store, retrieve and verify
+   the backup, restore, redeploy, verify thoroughly, re-enable
+   scheduled jobs, and record the actual recovery time/data-loss
+   window.
+4. **Escalate immediately** — this is the highest-severity category in
+   this document by construction (total data-loss risk, not a
+   degraded service), and should involve more than one person from the
+   start, same as item P.

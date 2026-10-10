@@ -126,6 +126,48 @@ table is the source of truth for gateway-reported state; `orders` is
 derived from it via `PaymentService`, never written to independently
 for payment outcomes.
 
+## Off-server backup operations (P12.6, optional)
+
+Only applies if `BACKUP_OFFSITE_ENABLED=true` — see
+`BACKUPS_DISASTER_RECOVERY.md` "Off-server backup (P12.6)" for the full
+design. If offsite backup was never enabled, skip this section; local
+backup operations are unaffected either way.
+
+**Routine check** (periodic — not automated/alerted on by anything in
+this repo): confirm the most recent `backup:run` actually reported
+`Offsite upload verified:`, not just `Backup created:` — the two are
+reported separately on purpose (see "Off-server backup (P12.6)"), and
+only the second line means the off-server copy exists and was proven
+intact.
+
+```sh
+docker compose -f docker-compose.prod.yml logs scheduler | grep -A1 "Backup created:"
+```
+
+**If offsite upload has been failing**: `backup:prune-offsite` reports
+a loud warning (`newest_past_retention`) if the single most recent
+remote backup is already older than the retention window — that is a
+real operational problem (uploads have been failing for longer than
+`BACKUP_OFFSITE_RETENTION_DAYS`), not routine output. Check:
+
+```sh
+docker compose -f docker-compose.prod.yml exec api php artisan backup:upload-offsite
+```
+
+against the most recent local backup, and read the error message —
+common causes are an expired/revoked `BACKUP_OFFSITE_KEY`/
+`BACKUP_OFFSITE_SECRET`, the bucket being deleted or renamed, or the
+endpoint being unreachable (DNS, firewall, provider outage).
+
+**Manual retention cleanup**, outside the daily cycle:
+
+```sh
+docker compose -f docker-compose.prod.yml exec api php artisan backup:prune-offsite
+```
+
+Safe to run at any time — `BackupOffsiteRetentionService` never
+deletes the single most recent remote backup regardless of its age.
+
 ## TLS certificate operations (P12.5, Option C only)
 
 Only applies if you're using `docker-compose.tls.yml` (TLS terminated

@@ -257,6 +257,7 @@ A V1 production footprint, deliberately not Kubernetes/ECS at this stage:
 | Database | RDS for MySQL |
 | Cache/Queue | ElastiCache for Redis |
 | Media/uploads | S3 |
+| Off-server backup (P12.6) | A SEPARATE S3 bucket + dedicated IAM credential from the media bucket above — see `BACKUPS_DISASTER_RECOVERY.md` "Off-server backup (P12.6)" for why these must never share a bucket or credential |
 | CDN | CloudFront or Cloudflare in front of Nginx |
 | Container registry | ECR (or GitHub Container Registry) |
 | Secrets | AWS Secrets Manager / SSM Parameter Store, injected as container env vars — never baked into images |
@@ -308,8 +309,17 @@ verified during this phase's audit:
   this phase. See [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md)
   §2 for the full picture, including what remains to be confirmed on an
   actual go-live.
-- **No off-server backup / tested disaster recovery** — see
-  [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md).
+- **Off-server backup (P12.6)** — an optional `BACKUP_OFFSITE_ENABLED`
+  flag now exists: a dedicated S3-compatible bucket (AWS S3,
+  DigitalOcean Spaces, Cloudflare R2, etc.), uploaded and verified
+  (real download-and-rehash, not just an HTTP 200) after every
+  `backup:run`. Disabled by default; implemented and tested against a
+  real S3 API server (adobe/s3mock). **Not yet verified**: a real
+  cloud provider, or a full disaster-recovery drill against a
+  genuinely new host (the documented procedure has never been
+  rehearsed) — see
+  [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md)
+  "Off-server backup (P12.6)" and "What was and wasn't verified".
 - **No deployment automation** — every production operation is a
   manual, documented command (`PRODUCTION_DEPLOYMENT.md`).
 - No courier/shipping integration, no KYC provider, no automated

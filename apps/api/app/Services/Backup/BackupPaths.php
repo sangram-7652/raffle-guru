@@ -73,6 +73,32 @@ final class BackupPaths
     }
 
     /**
+     * The backup's own timestamp, parsed from its filename (the
+     * "Ymd_His" segment `filenameFor()` writes) rather than any
+     * filesystem metadata. Used by BackupOffsiteRetentionService
+     * (P12.6): a remote object's upload time/mtime can drift from when
+     * the backup was actually taken (a retry, a re-upload, clock skew
+     * between this app and the storage provider), but the filename
+     * itself never does — retention should age out backups by when the
+     * data was captured, not by when a copy of it happened to land
+     * somewhere. Returns null for a filename that doesn't match this
+     * app's own shape at all (isOwnedDumpFilename() should be checked
+     * first; this is a parse step, not a second validation of that).
+     */
+    public function timestampFromFilename(string $filename): ?CarbonImmutable
+    {
+        if (! preg_match('/_(\d{8})_(\d{6})(?:\.|$)/', $filename, $matches)) {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::createFromFormat('Ymd His', "{$matches[1]} {$matches[2]}");
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    /**
      * @return list<string> absolute paths of owned dump files in the
      *                      backup directory, lexicographically sorted
      *                      (which, given the Ymd_His timestamp, is also
