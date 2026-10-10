@@ -48,55 +48,57 @@ export type Winner = {
 const U = (id: string, w = 1200) =>
   `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=${w}&q=80`;
 
-export type HeroBannerSlide = {
-  id: string;
+export type HeroHighlight = {
   eyebrow: string;
-  title: string;
-  subtitle: string;
+  headline: string;
+  altPrizeLine: string;
+  ticketPrice: string;
   ctaLabel: string;
   ctaHref: string;
+  supportingLine: string;
   image: string;
-  /** Optional object-position override (Tailwind object-* classes) for slides whose source image needs a non-centered crop. */
-  imagePositionClassName?: string;
+  imageAlt: string;
 };
 
-export const heroBannerSlides: HeroBannerSlide[] = [
-  {
-    id: "b-car",
-    eyebrow: "This week's headline prize",
-    title: "Win a 718 Cayman GTS 4.0",
-    subtitle: "Or take £62,000 tax-free cash. Entries from £0.99 — draw live Sunday 9PM.",
-    ctaLabel: "Enter the car draw",
-    ctaHref: "/competitions",
-    image: "/hero/raffle-guru-hero-1.jpg",
-    imagePositionClassName: "object-[75%_50%] sm:object-[50%_80%]",
-  },
-  {
-    id: "b-cash",
-    eyebrow: "Midweek cash",
-    title: "£25,000 straight to your bank",
-    subtitle: "No strings, paid within 48 hours of the live draw. Entries from £0.79.",
-    ctaLabel: "Enter the cash draw",
-    ctaHref: "/competitions",
-    // Genuine Bank of England £5 notes — was a US tax-paperwork photo
-    // (IRS forms, American eagle) on a UK cash-prize slide.
-    image: U("1700047614820-0f32080db6f8", 1600),
-  },
-  {
-    id: "b-watch",
-    eyebrow: "Luxury line-up",
-    title: "Rolex Submariner Date",
-    subtitle: "Full set with box and papers, or £11,500 cash. Draw live Saturday 7PM.",
-    ctaLabel: "See luxury competitions",
-    ctaHref: "/competitions",
-    // Steel dive-watch macro (bezel/crown/bracelet), dial deliberately
-    // out of focus — was a generic white plastic smartwatch render.
-    // No brand name is legible anywhere in frame: a stand-in "luxury
-    // watch" shot, not a real Rolex product photo, so it never implies
-    // an official Rolex partnership.
-    image: U("1544689797-0347c6b7224c", 1600),
-  },
-];
+/**
+ * Single-prize homepage hero. Replaces the previous 3-slide carousel,
+ * whose lead slide was a stock "AI woman presenter" photo in front of
+ * an unrelated pile of cars/tech (public/hero/raffle-guru-hero-1.jpg,
+ * removed) — the thing this redesign was asked to get rid of. The
+ * other two carousel slides (cash, watch) are also dropped rather than
+ * kept as secondary slides: the brief asks for one focused prize, not
+ * competing promotional messages.
+ *
+ * The headline figures below (£62,000 cash alternative, 99p ticket
+ * price, Sunday 9PM draw, "limited entries") are carried over as-is
+ * from what this file already had on the old "b-car" slide — not
+ * newly invented for this change. They are still NOT backed by a live
+ * competition record: `/competitions` is real-API-backed (see
+ * @/data/competitions.ts), and no Porsche 718 Cayman GTS competition
+ * exists in that data. Treat these as prototype concept copy, not
+ * live facts, until a matching competition is actually published
+ * through the real API — flagged here rather than silently presented
+ * as verified.
+ *
+ * Image: a genuine Unsplash photo of a Porsche 718 Cayman (model
+ * family confirmed via the photo's own page). No "GTS" badge is
+ * visible on the car, so the specific GTS 4.0 trim isn't verifiable
+ * from the image alone — no free, confirmed GTS-badged photo could be
+ * found. Using the closest genuine match (same model family, correct
+ * body) rather than substituting an unrelated car (a 911, Panamera,
+ * etc. would be a materially different model).
+ */
+export const heroHighlight: HeroHighlight = {
+  eyebrow: "This week's headline prize",
+  headline: "Win this Porsche 718 Cayman GTS 4.0",
+  altPrizeLine: "Or take £62,000 tax-free cash",
+  ticketPrice: "Tickets just 99p",
+  ctaLabel: "Enter now — 99p",
+  ctaHref: "/competitions",
+  supportingLine: "Live draw Sunday 9PM  •  Limited entries  •  Cash alternative",
+  image: U("1592853625601-bb9d23da12fc", 1600),
+  imageAlt: "Porsche 718 Cayman, this week's competition prize car",
+};
 
 export const trustPoints = [
   { label: "Limited Entries", detail: "Every competition has a capped ticket count." },
