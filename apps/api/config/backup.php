@@ -134,4 +134,42 @@ return [
     */
     'verification_database_prefix' => env('BACKUP_VERIFY_DB_PREFIX', 'raffleguru_backup_verify_'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Off-server backup (P12.6)
+    |--------------------------------------------------------------------------
+    |
+    | Disabled by default — local backup behavior (above) is completely
+    | unaffected either way, and `backup:run` behaves exactly as it did
+    | before P12.6 until an operator deliberately opts in here. See
+    | docs/BACKUPS_DISASTER_RECOVERY.md "Off-server backup (P12.6)" for
+    | the full setup (bucket, least-privilege credentials, retention).
+    |
+    | 'disk' points at a dedicated filesystem disk (config/filesystems.php
+    | — NOT the generic 'AWS_*'-configured 's3' disk Laravel ships by
+    | default, which this project reserves for any future user/media
+    | upload feature) so backup credentials and media credentials are two
+    | separate blast radii, never one bucket/key pair doing both jobs.
+    |
+    */
+    'offsite' => [
+        'enabled' => (bool) env('BACKUP_OFFSITE_ENABLED', false),
+        'disk' => env('BACKUP_OFFSITE_DISK', 'backups'),
+
+        // A longer window than the local 14-day default is deliberate:
+        // off-server storage is the one copy that survives losing the
+        // server entirely, so keeping more history here costs object-
+        // storage pennies, not scarce local disk — see "Retention" in
+        // docs/BACKUPS_DISASTER_RECOVERY.md.
+        'retention_days' => (int) env('BACKUP_OFFSITE_RETENTION_DAYS', 30),
+
+        // How many attempts the upload-and-verify sequence (as a whole
+        // — not just the underlying HTTP request, which the AWS SDK
+        // already retries on its own per filesystems.php's 'retries'
+        // option) gets before backup:upload-offsite/backup:run gives up
+        // and reports a visible failure.
+        'upload_attempts' => (int) env('BACKUP_OFFSITE_UPLOAD_ATTEMPTS', 3),
+        'retry_delay_ms' => (int) env('BACKUP_OFFSITE_RETRY_DELAY_MS', 2000),
+    ],
+
 ];

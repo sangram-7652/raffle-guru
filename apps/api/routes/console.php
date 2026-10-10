@@ -53,6 +53,12 @@ Schedule::command('winners:reconcile')
 // next tick fires is skipped, not stacked; backup:run's own
 // partial-file-then-rename sequencing (DatabaseBackupService) is what
 // keeps an interrupted run from ever being mistaken for a successful one.
+//
+// P12.6 — when BACKUP_OFFSITE_ENABLED=true, this SAME invocation also
+// uploads the backup off-server and prunes remote retention
+// (RunDatabaseBackupCommand) — one scheduled entry, not two, so the
+// withoutOverlapping() mutex above already covers the offsite half too
+// without a second, independently-racing schedule entry.
 Schedule::command('backup:run')
     ->dailyAt('02:00')
     ->withoutOverlapping();

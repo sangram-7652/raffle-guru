@@ -1,9 +1,14 @@
-# RaffleGuru — Backups & Disaster Recovery (P12.2)
+# RaffleGuru — Backups & Disaster Recovery (P12.2, off-server P12.6)
 
-Status: local backup foundation, implemented and tested. Off-server
-storage is **not yet configured** — see "Local backup vs. off-server
-backup vs. disaster recovery" below for exactly what that means and what
-closing the gap requires.
+Status: local backup (P12.2) is implemented and tested. Off-server
+backup (P12.6) is implemented, **optional** (disabled by default,
+`BACKUP_OFFSITE_ENABLED=false`), and tested against a real S3-compatible
+MinIO instance — but **not yet verified against a real cloud provider
+or over a real network**, and no real disaster-recovery drill (restore
+onto a genuinely different host) has been performed. See "Off-server
+backup (P12.6)" and "What was and wasn't verified" below for exactly
+what that distinction means before relying on this for a real
+production launch.
 
 ## What is backed up, and what isn't
 
@@ -50,10 +55,32 @@ scheduler container
         │     written to BACKUP_PATH, a Docker named volume
         │     ("backup-data"), NOT the container's own filesystem
         │
-        └─ BackupRetentionService::prune()
-              deletes dumps (+ sidecars) older than BACKUP_RETENTION_DAYS
-              — never anything outside BACKUP_PATH, never anything not
-              matching this app's own filename shape
+        ├─ BackupRetentionService::prune()
+        │     deletes dumps (+ sidecars) older than BACKUP_RETENTION_DAYS
+        │     — never anything outside BACKUP_PATH, never anything not
+        │     matching this app's own filename shape
+        │
+        └─ (P12.6, only if BACKUP_OFFSITE_ENABLED=true) ──────────────┐
+                                                                       ▼
+                                                     BackupOffsiteService::upload()
+                                                       uploads the SAME dump + .meta.json
+                                                       to a dedicated S3-compatible bucket
+                                                       (config/filesystems.php's "backups"
+                                                       disk — AWS S3, DigitalOcean Spaces,
+                                                       Cloudflare R2, MinIO, ...), then
+                                                       downloads it straight back and
+                                                       re-hashes it to PROVE the upload is
+                                                       intact — never trusts the HTTP 200
+                                                       alone. A local-only success is never
+                                                       reported as an off-server success —
+                                                       see "Off-server backup (P12.6)".
+                                                               │
+                                                               ▼
+                                                 BackupOffsiteRetentionService::prune()
+                                                   same idea as local retention, with one
+                                                   extra guarantee: NEVER deletes the single
+                                                   most recent remote backup, even if it's
+                                                   past the retention window.
 ```
 
 Operator-facing commands (all under `app/Console/Commands/Backup/`,
@@ -61,10 +88,13 @@ service logic under `app/Services/Backup/`):
 
 | Command | Purpose |
 |---|---|
-| `backup:run` | Take a backup, then prune. What the scheduler calls. |
-| `backup:prune` | Retention cleanup on its own, outside the daily cycle. |
+| `backup:run` | Take a backup, prune locally, then (P12.6, if enabled) upload offsite and prune remotely. What the scheduler calls. |
+| `backup:prune` | Local retention cleanup on its own, outside the daily cycle. |
 | `backup:verify {file?}` | Prove a backup is restorable (see "Verification"). Defaults to the most recent backup. |
 | `backup:restore {file} --database=<target> [--force] [--confirm-production-overwrite]` | Manual, operator-driven restore (see "Restore procedure"). |
+| `backup:upload-offsite {file?}` (P12.6) | Upload a specific local backup offsite and verify it, without retaking it. Also what `backup:run` calls internally. |
+| `backup:download-offsite {file}` (P12.6) | Retrieve a backup from offsite storage into `BACKUP_PATH`, verified — step 3-4 of disaster recovery (see "Disaster recovery procedure"). `backup:verify`/`backup:restore` then take over unmodified. |
+| `backup:prune-offsite` (P12.6) | Offsite retention cleanup on its own. Never deletes the single most recent remote backup. |
 
 ## Why mariadb-dump, and the TLS/auth details
 
@@ -229,52 +259,357 @@ a risk:
   is untrusted input in the usual sense, but a last-resort guard against
   a copy-paste mistake producing something unexpected.
 
+## Off-server backup (P12.6)
+
+Disabled by default (`BACKUP_OFFSITE_ENABLED=false`) — local backup
+behavior (everything above) is completely unaffected either way, and
+`backup:run` behaves exactly as it did in P12.2 until an operator
+deliberately opts in here.
+
+### What it does
+
+When enabled, the SAME artifacts `backup:run` already produces locally
+(the `.sql.gz` dump + its `.meta.json` sidecar) are also uploaded to a
+dedicated object-storage bucket, immediately followed by a **real
+download-and-rehash verification** — never trusting the upload HTTP
+response alone, the same "prove it, don't assume it" posture
+`backup:verify` already takes with a real restore (see "Verification"
+above). A local-only success is never reported or logged as an
+off-server success: `backup:run`'s output has a distinct
+`Offsite upload verified: ...` line, a distinct `backup.offsite_upload.*`
+log event, and a failed offsite step makes the whole command exit
+non-zero **without undoing the local backup**, which already succeeded
+on its own.
+
+### Storage destination
+
+`config/filesystems.php`'s `backups` disk — a **dedicated** disk/
+credential pair, deliberately separate from the generic `s3` disk
+Laravel ships (reserved for any future user/media-upload feature). A
+compromised backup credential and a compromised media credential must
+stay two different blast radii, never share one bucket or one key.
+
+Works with any S3-compatible provider via `driver: s3` +
+`BACKUP_OFFSITE_ENDPOINT` (+ path-style addressing): AWS S3,
+DigitalOcean Spaces, Cloudflare R2, Backblaze B2, Wasabi, or MinIO for
+local/CI testing. No specific provider is assumed or required.
+
+### Configuration
+
+| Variable | Required | Secret | Default | Purpose |
+|---|---|---|---|---|
+| `BACKUP_OFFSITE_ENABLED` | no | no | `false` | Master switch. Everything below is irrelevant until this is `true`. |
+| `BACKUP_OFFSITE_KEY` | yes (if enabled) | **yes** | — | Access key for the DEDICATED backup bucket — never `AWS_ACCESS_KEY_ID`. |
+| `BACKUP_OFFSITE_SECRET` | yes (if enabled) | **yes** | — | Secret key, same dedicated credential. |
+| `BACKUP_OFFSITE_BUCKET` | yes (if enabled) | no | — | The dedicated backup bucket name. |
+| `BACKUP_OFFSITE_REGION` | no | no | `auto` | A real AWS region if using AWS S3 directly; `auto` is correct for Cloudflare R2. |
+| `BACKUP_OFFSITE_ENDPOINT` | yes for non-AWS providers | no | — | e.g. `https://<account>.r2.cloudflarestorage.com`, or `http://minio:9000` for the local/CI substitute. Leave unset for real AWS S3. |
+| `BACKUP_OFFSITE_USE_PATH_STYLE_ENDPOINT` | no | no | `true` | Most S3-compatible providers (and MinIO) need path-style; real AWS S3 generally doesn't. |
+| `BACKUP_OFFSITE_SSE_ALGORITHM` | no | no | `AES256` | Server-side encryption — see "Encryption" below. Set to an empty string only for a provider that rejects SSE without its own KMS configured (e.g. a bare MinIO test instance). |
+| `BACKUP_OFFSITE_RETENTION_DAYS` | no | no | `30` | Deliberately longer than the local 14-day default — see "Retention" below. |
+| `BACKUP_OFFSITE_UPLOAD_ATTEMPTS` | no | no | `3` | How many times the whole upload-and-verify sequence retries before giving up — see "Reliability" below. |
+| `BACKUP_OFFSITE_SDK_RETRIES` / `BACKUP_OFFSITE_CONNECT_TIMEOUT` / `BACKUP_OFFSITE_TIMEOUT` | no | no | `3` / `10s` / `120s` | Lower-level AWS SDK retry/timeout behavior for a single HTTP request, underneath the application-level retry above. |
+
+### Least-privilege bucket policy
+
+Operator-provisioned, not automated by this repo (same posture as every
+other piece of cloud infrastructure this project documents but doesn't
+provision — see "AWS direction" in
+[`PRODUCTION_ARCHITECTURE.md`](PRODUCTION_ARCHITECTURE.md)). The
+credential this app uses needs, at minimum: `s3:PutObject`,
+`s3:GetObject`, `s3:ListBucket`, and `s3:DeleteObject`, scoped to the
+one dedicated bucket only — never account-wide S3 access, never a
+credential shared with anything else. The bucket itself should have
+**all public access blocked** (this app never sets public ACLs or
+bucket policies, and never should) and, if the provider supports it, a
+lifecycle rule to **abort incomplete multipart uploads** after a few
+days — a crashed upload can otherwise leave unreferenced storage behind
+that this app's own retention logic (which only ever sees completed
+objects) can't clean up.
+
+### Reliability
+
+- **Retries**: the whole upload-and-verify sequence (not just a single
+  HTTP request — the AWS SDK itself already retries a request via
+  `BACKUP_OFFSITE_SDK_RETRIES`) retries up to `BACKUP_OFFSITE_UPLOAD_ATTEMPTS`
+  times, with a delay between attempts, before `BackupOffsiteException`
+  propagates as a visible failure. Every attempt re-checks reality from
+  scratch (existence, size) rather than trusting a previous attempt's
+  partial result.
+- **Idempotency**: re-running `backup:upload-offsite` for a backup
+  that's already present and the correct size skips re-uploading the
+  bytes, but still re-downloads and re-verifies the hash every time —
+  "already there" is never treated as "therefore still intact" without
+  re-checking. If the remote object is corrupted (same size, wrong
+  bytes), the next attempt detects the mismatch, deletes it, and
+  re-uploads the correct local bytes — a form of self-healing that
+  falls out of the same retry loop, not a separate "repair" code path.
+- **Atomicity**: a single `PutObject` either completes or the object
+  was never created — S3-compatible APIs don't expose a partially-
+  written object to a concurrent `GetObject`/`HeadObject`. The only
+  storage-cost risk from an interrupted upload is an abandoned
+  multipart upload, addressed by the lifecycle rule above, not by
+  application code.
+- **Download/restore**: `backup:download-offsite` writes to a
+  `.partial` file first, verifies its SHA-256 against the remote
+  `.meta.json`'s recorded hash, and only then atomically renames it
+  into `BACKUP_PATH` under its real name — the same
+  temp-then-atomic-rename pattern `DatabaseBackupService` already uses
+  for a freshly-taken local backup. A failed/mismatched download is
+  deleted, never left behind under a trusted-looking filename.
+
+### Retention
+
+`BACKUP_OFFSITE_RETENTION_DAYS` (default **30**, longer than local's 14
+— off-server storage is the copy that survives losing the server, so
+keeping more history costs object-storage pennies, not scarce local
+disk). `BackupOffsiteRetentionService::prune()`:
+
+- only ever considers objects matching this app's own naming shape
+  (reusing `BackupPaths::isOwnedDumpFilename()` — the identical guard
+  local retention uses) — never touches an unrelated object sharing the
+  bucket;
+- ages a backup by the **timestamp embedded in its own filename**, not
+  by when the provider recorded the object as uploaded — a retried or
+  late upload of an old backup must not look "fresh" to retention just
+  because it landed in the bucket recently;
+- **never deletes the single most recent remote backup, even if it's
+  already past the retention window.** This is the one rule local
+  retention doesn't need: a local backup is always about to be
+  refreshed again tomorrow on the same server, but if offsite uploads
+  have been silently failing for longer than the retention window, the
+  one remaining remote copy is the ONLY thing standing between "lost
+  data" and "a slow recovery" — pruning it away because it happens to
+  be old would make the off-server copy actively less safe than having
+  no retention policy at all. `backup:prune-offsite` surfaces this as an
+  explicit warning (`newest_past_retention`) rather than hiding it
+  inside a quiet "nothing to prune" message — treat that warning as an
+  operational incident, not routine output.
+- runs automatically after every successful `backup:upload-offsite` /
+  offsite-enabled `backup:run` — **only after** the new upload has been
+  verified, never before, so a newer backup is always confirmed good
+  before anything older is removed.
+
+### Encryption
+
+**Provider-side (server-side encryption, SSE) is applied by default**
+— `BACKUP_OFFSITE_SSE_ALGORITHM=AES256` is passed on every write (see
+`config/filesystems.php`'s `backups` disk `options`). What this
+actually protects against: a stolen/decommissioned physical disk at the
+storage provider's data center. What it does **not** protect against:
+anyone who already has valid API credentials for the bucket — SSE is
+transparent to any authenticated read, so a leaked `BACKUP_OFFSITE_KEY`/
+`BACKUP_OFFSITE_SECRET` still exposes plaintext data through the normal
+API. The real protection against *that* is the least-privilege,
+dedicated-credential bucket policy above, not encryption.
+
+**Application-side (client-side) encryption was deliberately NOT
+implemented.** Encrypting the dump before upload would mean this
+project becomes responsible for a NEW secret — the encryption key
+itself — with its own disaster-recovery problem: lose that key and
+every backup encrypted with it is unrecoverable regardless of how good
+the backup itself is, which is a strictly worse failure mode than "no
+encryption" for a project with no key-management infrastructure (a
+KMS-backed key, with its own access policy and rotation story) today.
+If this is ever added, design the key's own storage and recovery FIRST
+— and never store it in the same bucket, the same repository, or
+alongside the backups it encrypts — rather than retrofitting that after
+the fact. Not implemented here is a deliberate scope decision, not an
+oversight, matching this phase's own task boundaries.
+
+### Running the offsite tests locally
+
+The `#[Group('mysql')]` tests under `tests/Feature/Backup/Offsite/`
+need a real S3-compatible endpoint — never a mock — the same "prove it
+against the real thing" posture as the existing MySQL-concurrency
+tests needing a real MySQL server. One-time local setup (mirrors the
+existing one-time MySQL test-database setup documented on
+`TestCase::MYSQL_TEST_DATABASE`):
+
+```sh
+docker run -d --name raffleguru-minio-dev \
+  -p 9000:9000 \
+  -e MINIO_ROOT_USER=raffleguru_backup_test \
+  -e MINIO_ROOT_PASSWORD=raffleguru_backup_test_secret \
+  minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+
+docker run --rm --network host \
+  -e MC_HOST_local="http://raffleguru_backup_test:raffleguru_backup_test_secret@127.0.0.1:9000" \
+  minio/mc:RELEASE.2025-08-13T08-35-41Z mb --ignore-existing local/raffleguru-backups-test
+```
+
+`phpunit.xml`'s `BACKUP_OFFSITE_TEST_*` defaults already point at
+exactly this (port 9000, these same credentials, this same bucket
+name) — no further configuration needed. CI (`.github/workflows/ci.yml`'s
+`mysql` job) starts the identical container the same way, as a plain
+step rather than a `services:` entry, because GitHub Actions'
+`services:` block has no way to pass MinIO's required `server /data`
+command-line argument.
+
 ## Local backup vs. off-server backup vs. disaster recovery
 
-These are three different guarantees, and this phase only delivers the
-first:
+These are three different guarantees:
 
-1. **Local backup** (what P12.2 builds): protects against *data*
-   mistakes — a bad migration, an accidental delete, application-level
-   corruption — on a server that is otherwise fine. The backup lives on
-   `backup-data`, a Docker volume on the **same host** as
-   `mysql-data`.
-2. **Off-server backup** (not yet configured): protects against *this
-   specific server* being lost — disk failure, the VM/droplet being
-   destroyed, the hosting account being compromised. **Local backup
-   alone does not provide this** — if the server is gone, `backup-data`
-   is gone with it, no matter how good the retention policy is.
-3. **Disaster recovery**: the documented, rehearsed procedure to bring
-   the application back up on a *different* server using an off-server
-   backup. This requires (2) to exist first; it does not exist yet
-   either.
+1. **Local backup** (P12.2): protects against *data* mistakes — a bad
+   migration, an accidental delete, application-level corruption — on a
+   server that is otherwise fine. The backup lives on `backup-data`, a
+   Docker volume on the **same host** as `mysql-data`.
+2. **Off-server backup** (P12.6, optional — see above): protects
+   against *this specific server* being lost — disk failure, the
+   VM/droplet being destroyed, the hosting account being compromised.
+   **Local backup alone does not provide this.** Implemented and tested
+   against a real S3-compatible MinIO instance; **not yet verified
+   against a real cloud provider (AWS S3/R2/Spaces/etc.) over a real
+   network**, and not yet enabled in any real deployment (none exists
+   yet — see `PRODUCTION_ARCHITECTURE.md`).
+3. **Disaster recovery**: the documented procedure (see "Disaster
+   recovery procedure" below) to bring the application back up on a
+   *different* server using an off-server backup. Documented and its
+   individual steps tested (download → verify → restore, end-to-end,
+   against the real MinIO substitute and a real MySQL restore); **the
+   full procedure has never been rehearsed against an actual newly
+   provisioned host** — see "Recovery objectives" for what that means
+   for RTO specifically.
 
-**This phase deliberately does not add AWS S3/Cloudflare R2/etc.** — the
-architecture rule governing this phase was to build the provider-neutral
-local foundation first and document the real requirement, rather than
-wire up a specific cloud provider with no evidence it's the one this
-project will actually use (see the "AWS direction" section of
-[`PRODUCTION_ARCHITECTURE.md`](PRODUCTION_ARCHITECTURE.md) — still
-documentation-only, not provisioned).
+## Disaster recovery procedure
 
-**What closing this gap requires, when it's time:** a scheduled copy of
-`BACKUP_PATH`'s contents to object storage (S3 or equivalent) after each
-successful `backup:run` — the filename/metadata shape already in place
-(`{prefix}_{database}_{timestamp}.sql.gz` + `.meta.json`) is exactly what
-that sync step would need, so no re-architecture should be required, just
-an additional step appended to the existing pipeline.
+For when the application server itself (not just its data) is lost.
+Assumes off-server backup (above) was enabled and at least one upload
+succeeded before the server was lost — if it wasn't, there is nothing
+for this procedure to recover from; see "Dependencies that would
+prevent recovery" below.
 
-**RPO/RTO, honestly stated given the above:**
+1. **Provision a replacement host.** Any server meeting
+   [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §1's Docker
+   Engine + Compose v2 requirement. Not automated by this repo — same
+   "operator-provisioned infrastructure" posture as the original host.
+2. **Restore configuration and secrets.** `apps/api/.env`, the root
+   `.env`, `APP_KEY`, `RAZORPAY_*`, `BACKUP_OFFSITE_*`, TLS certificates
+   if using Option C (`docs/PRODUCTION_DEPLOYMENT.md` §2) — from
+   whatever secure secret store the operator keeps these in **outside**
+   this repository (this repo never stores or backs up secrets itself —
+   see "What is backed up, and what isn't" above). If that secret store
+   was ALSO only reachable through the lost server, recovery stops here
+   — see "Dependencies" below.
+3. **Retrieve the backup**: `docker compose -f docker-compose.prod.yml
+   exec api php artisan backup:download-offsite <filename>` (requires
+   `BACKUP_OFFSITE_*` already configured from step 2). Lists available
+   backups first if the exact filename isn't known — see
+   `backup:prune-offsite`'s output or the provider's own bucket listing.
+4. **Validate checksum and compression integrity**: `download-offsite`
+   already verified the SHA-256 against the remote `.meta.json` as part
+   of step 3 — run `backup:verify <filename>` next anyway (gzip
+   integrity + a real restore into a throwaway database, see
+   "Verification" above) before trusting it for the real restore in the
+   next step. Two independent checks, not one relied on twice.
+5. **Restore the database** using the existing guarded workflow —
+   `backup:restore <filename> --database=<target>` — see "Restore
+   procedure" above. Nothing about this step changes because the backup
+   arrived via offsite download rather than a local `backup:run`.
+6. **Deploy the application.** `git checkout` the commit/tag that was
+   actually running when the server was lost (not necessarily `main`'s
+   latest), build and start the stack per
+   [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §7/§10. Run
+   `php artisan migrate --force` **only if** `migrate:status` against
+   the just-restored database shows pending migrations — most disaster
+   recoveries restore a backup that's already fully migrated.
+7. **Verify thoroughly**, not just the health endpoint: `GET /up` and
+   `GET /api/v1/health/status` first, then exercise the actual
+   application — an admin can log in, the competition list loads, a
+   test registration/login works, and (without creating real financial
+   side effects) that order/payment/ticket-allocation/draw/winner/claim
+   data is visibly present and consistent with what the restored backup
+   should contain. See
+   [`PRODUCTION_SMOKE_TEST.md`](PRODUCTION_SMOKE_TEST.md) for the full
+   checklist — run it in full here, not just the "after a routine
+   deploy" subset.
+8. **Re-enable scheduled jobs and queue workers.** `docker compose
+   -f docker-compose.prod.yml up -d` already starts `queue`/`scheduler`
+   as long-running containers (see
+   [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §10) — confirm
+   both are actually running and not restart-looping before considering
+   the recovery complete, since a restored-but-not-processing
+   application will silently fall behind on ticket allocation/draws/
+   winners.
+9. **Record recovery time and data-loss window.** Wall-clock time from
+   "server lost" (or "recovery begun," if that's clearer) to step 7
+   passing, and the real gap between the restored backup's timestamp
+   and when the server was lost — this is the actual RPO/RTO for THIS
+   incident, not the aspirational numbers below. Feed it back into
+   "Recovery objectives" the next time this document is revisited.
 
-- **RPO (Recovery Point Objective): ~24 hours** — the interval between
-  daily backups. No point-in-time recovery; losing data since the last
-  2am backup is possible by design (binlog-based PITR is a real option
-  if this ever needs to tighten, not implemented here).
-- **RTO (Recovery Time Objective): not yet meaningfully defined** —
-  restoring onto the *same* server is fast (a `backup:restore` of this
-  schema's current size), but recovering from *losing the server* is
-  bounded by (2)/(3) above not existing yet, which this document is not
-  going to pretend otherwise about.
+**This procedure has not been rehearsed end-to-end against a genuinely
+new host** as part of this phase — see "What was and wasn't verified"
+below for exactly which pieces of it (steps 3-5 specifically) were
+exercised for real.
+
+## Recovery objectives
+
+- **RPO (Recovery Point Objective): ~24 hours**, unchanged from P12.2
+  and **not improved by P12.6** — off-server backup doesn't take
+  backups more often, it protects the SAME daily backup from being lost
+  along with the server. Losing data since the last 2am backup is
+  possible by design; binlog-based point-in-time recovery is a real
+  option if this ever needs to tighten, not implemented here.
+- **RTO (Recovery Time Objective): unverified.** Restoring onto the
+  *same* server is fast and routinely exercised (a `backup:restore` of
+  this schema's current size). Recovering onto a *different*, freshly
+  provisioned server has never been timed end-to-end — do not quote a
+  specific RTO number to anyone until "Disaster recovery procedure"
+  above has actually been run against a real replacement host and
+  timed, per step 9.
+
+### Dependencies that would prevent recovery
+
+None of these are backed up or protected by anything in this document
+— losing any one of them turns "follow the procedure above" into a much
+harder, possibly unrecoverable, problem:
+
+- **The operator's secret store itself** (wherever `APP_KEY`,
+  `BACKUP_OFFSITE_SECRET`, `RAZORPAY_KEY_SECRET`, etc. actually live) —
+  if that was only reachable through the lost server, or was never
+  actually independent of it, there is no recovery path this document
+  can describe.
+- **Off-server storage access** — a revoked/expired/lost
+  `BACKUP_OFFSITE_KEY`/`BACKUP_OFFSITE_SECRET`, or the bucket itself
+  being deleted (e.g. the same compromised cloud account that took the
+  server down also controlled the bucket — see "Off-server backup"
+  above for why a DEDICATED credential, not a shared one, at least
+  narrows this).
+- **Encryption keys** — not applicable today (application-side
+  encryption is not implemented, see "Encryption" above); if it ever
+  is, a lost key would belong on this list too.
+- **Payment-provider credentials** (`RAZORPAY_KEY_SECRET`/
+  `RAZORPAY_WEBHOOK_SECRET`) — without these, the restored application
+  boots (see the production guard in
+  [`PRODUCTION_DEPLOYMENT.md`](PRODUCTION_DEPLOYMENT.md) §6, which
+  refuses `PAYMENT_GATEWAY=fake` but has nothing to say about a simply
+  *missing* real secret) but cannot process new payments or verify new
+  webhooks until Razorpay's dashboard is used to re-establish them.
+
+### Operator checklist for periodic restore drills
+
+Not automated, not yet performed even once as of P12.6 — a checklist
+for the FIRST time this should actually happen, not a report that it
+already has:
+
+- [ ] Pick a non-production MySQL target (never the real `raffleguru`
+      database) and run `backup:download-offsite` + `backup:verify` +
+      `backup:restore --database=<throwaway>` against the most recent
+      real offsite backup.
+- [ ] Time every step from "decided to drill" to "restored database
+      verified functional" — this is the number that actually populates
+      "RTO" above, not a guess.
+- [ ] Confirm the restored data's newest row timestamps match the
+      expected backup age (proves the RIGHT backup was restored, not an
+      old one that happened to still exist).
+- [ ] If this drill reveals a step in "Disaster recovery procedure"
+      above that doesn't actually work as written, fix the document
+      (or the code) before the next drill, not after a real incident
+      finds the same gap.
+- [ ] Repeat on a schedule (quarterly is a reasonable starting cadence
+      for a project this size — not an enforced/automated reminder,
+      an operator calendar entry).
 
 ## Extending to file storage
 
@@ -316,8 +651,71 @@ never `storage/framework/*` (cache/views/sessions — reproducible) or
   `DatabaseBackupService`'s stderr handling is a defensive backstop
   against a future flag change ever putting a secret on stderr, given
   the password is never on the command line to begin with.
-- Encryption at rest is **not implemented** in this phase — the backup
-  directory's filesystem permissions are the only protection. If this is
-  ever added, it must use real key management (e.g. a KMS-backed key,
-  not a key committed to the repo or baked into the image) — explicitly
-  out of scope here rather than faked.
+- Local encryption at rest is **not implemented** — the backup
+  directory's filesystem permissions are the only local protection.
+  (P12.6's offsite copy DOES get provider-side SSE by default — see
+  "Encryption" under "Off-server backup (P12.6)" above — but that's a
+  property of the remote object, not the local file.)
+- **P12.6**: `BACKUP_OFFSITE_KEY`/`BACKUP_OFFSITE_SECRET` are a
+  DEDICATED credential, deliberately never `AWS_ACCESS_KEY_ID`/
+  `AWS_SECRET_ACCESS_KEY` (reserved for any future user/media-upload
+  feature) — a leaked backup credential and a leaked media credential
+  must stay two separate blast radii. Never logged: every exception
+  path in `BackupOffsiteService` sanitizes its message against the
+  configured secret before it reaches a log line or a console error
+  (see `sanitizedMessage()`) — defensive, the same posture as the local
+  `MYSQL_PWD` handling above, given AWS SigV4 itself never puts the raw
+  secret in a request in the first place.
+- **P12.6**: the offsite upload is verified by downloading the object
+  straight back and hashing it in a streaming loop — same "never
+  buffer a full plaintext dump in memory/temp space" posture as local
+  verify/restore above, just applied to the network round-trip instead
+  of the local gzip stream.
+
+## What was and wasn't verified (P12.6)
+
+Stated explicitly so nothing here is mistaken for more than it is:
+
+**Verified, against a real S3-compatible MinIO instance (never a
+mock), by this phase's automated test suite
+(`tests/Feature/Backup/Offsite/`) and run again as part of this
+report:**
+
+- Upload + real download-and-rehash verification succeeding
+- Upload idempotency (re-running for an already-uploaded file)
+- A remote object corrupted after upload being detected via checksum
+  mismatch — and, given more than one attempt, self-healing via retry
+- Retry-then-give-up behavior on a persistently unreachable endpoint,
+  and that the configured secret never appears in a resulting error
+  message
+- `backup:download-offsite` retrieving a backup, verifying it against
+  the remote `.meta.json`, and the **existing, completely unmodified**
+  `backup:verify` command successfully restoring that downloaded file
+  into a throwaway database (a real MySQL restore)
+- Retention: deleting only objects past the window, by filename
+  timestamp rather than upload time, never touching an unrelated
+  object in the same bucket, and never deleting the single most recent
+  object even when it's past the window
+- `backup:run` chaining the offsite upload when enabled, and the local
+  backup remaining fully intact when the offsite half is made to fail
+- The full pre-existing local backup/verify/restore/retention test
+  suite (P12.2) still passing unmodified, alongside everything above,
+  with zero new failures anywhere else in the application's test suite
+
+**NOT verified — do not claim otherwise:**
+
+- Any upload/download against a real cloud provider (AWS S3,
+  Cloudflare R2, DigitalOcean Spaces, etc.) — MinIO is a faithful
+  S3-API substitute for exercising this code's logic, but it is not
+  evidence about a specific cloud provider's actual network latency,
+  IAM behavior, or edge cases.
+- A real certificate/credential rotation, a real bucket lifecycle
+  policy, or a real multipart-upload-abort scenario
+- A real 30-day (or longer) retention cycle elapsing naturally
+- A real disaster-recovery drill against a genuinely new, separately
+  provisioned host — see "Disaster recovery procedure" and its
+  operator checklist above; this has never been performed, not even
+  once, as of this phase
+- Any real RTO number — see "Recovery objectives" above
+- Off-server backup enabled in any real deployment — none exists yet
+  (see [`PRODUCTION_ARCHITECTURE.md`](PRODUCTION_ARCHITECTURE.md))

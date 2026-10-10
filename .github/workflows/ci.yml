@@ -112,6 +112,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # P12.6 — off-server backup tests (#[Group('mysql')], same group
+      # as everything else in this job — see
+      # tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php)
+      # need a REAL S3-compatible endpoint, never a mock. MinIO is a
+      # plain `docker run` step, not a `services:` entry, because
+      # GitHub Actions' `services:` block has no way to override an
+      # image's CMD — and minio/minio's default CMD ("minio" with no
+      # arguments) just prints usage and exits; it needs the
+      # `server /data` subcommand to actually start, which only a
+      # regular step can supply. The exact tag (not "latest") matches
+      # what this phase was developed and verified against locally —
+      # see docs/BACKUPS_DISASTER_RECOVERY.md "Off-server backup
+      # (P12.6)" for the identical one-line command for local dev.
+      - name: Start MinIO (off-server backup test substitute)
+        run: |
+          docker run -d --name minio-ci \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=raffleguru_backup_test \
+            -e MINIO_ROOT_PASSWORD=raffleguru_backup_test_secret \
+            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:9000/minio/health/live && break
+            sleep 1
+          done
+
+      - name: Create MinIO test bucket
+        run: |
+          docker run --rm --network host \
+            -e MC_HOST_local="http://raffleguru_backup_test:raffleguru_backup_test_secret@127.0.0.1:9000" \
+            minio/mc:RELEASE.2025-08-13T08-35-41Z mb --ignore-existing local/raffleguru-backups-test
+
       - uses: shivammathur/setup-php@v2
         with:
           php-version: "8.5"

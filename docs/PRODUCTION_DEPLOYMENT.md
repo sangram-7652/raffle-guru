@@ -328,6 +328,10 @@ and required behavior — not actual secret values.
 | `SENTRY_SEND_DEFAULT_PII` | no | no | Leave default `false` — do not enable without a deliberate decision to send request/user data to Sentry | `config/sentry.php` |
 | `BACKUP_PATH` | yes | no | **Must** be set to the mounted volume path, `/var/backups/raffleguru` (matches the `backup-data` volume mount in `docker-compose.prod.yml`) — never left on the container's own ephemeral filesystem | `config/backup.php` |
 | `BACKUP_RETENTION_DAYS` | no | no | Default `14` — documented assumption, see `BACKUPS_DISASTER_RECOVERY.md` "Retention" | same |
+| `BACKUP_OFFSITE_ENABLED` | no | no | `false` by default — local backup is fully functional either way. See `BACKUPS_DISASTER_RECOVERY.md` "Off-server backup (P12.6)" for the full picture before enabling, including what hasn't been verified against a real cloud provider yet | `config/backup.php` |
+| `BACKUP_OFFSITE_KEY` / `BACKUP_OFFSITE_SECRET` | yes if offsite enabled | **yes** | A DEDICATED credential for the backup bucket only — never reuse `AWS_*` | `config/filesystems.php`'s `backups` disk |
+| `BACKUP_OFFSITE_BUCKET` / `BACKUP_OFFSITE_ENDPOINT` / `BACKUP_OFFSITE_REGION` | yes if offsite enabled (endpoint only for non-AWS providers) | no | Any S3-compatible provider — AWS S3, DigitalOcean Spaces, Cloudflare R2, etc. | same |
+| `BACKUP_OFFSITE_RETENTION_DAYS` | no | no | Default `30` | `config/backup.php` |
 
 **The `PAYMENT_GATEWAY=fake` production guard** — not just documentation,
 an enforced code path: `App\Providers\PaymentServiceProvider::register()`
@@ -529,6 +533,12 @@ operator checklist, stated as such, not a claim of automation:
       [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md)).
       A backup that was taken but never verified is not the same
       guarantee.
+- [ ] If `BACKUP_OFFSITE_ENABLED=true`: the most recent `backup:run`'s
+      output included `Offsite upload verified:`, not just
+      `Backup created:` — a local-only success is not the same
+      guarantee as an off-server one (see
+      [`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md)
+      "Off-server backup (P12.6)").
 - [ ] Sufficient disk space for the deploy (new image layers, a new
       backup, MySQL's own growth) — check with `df -h` on the host; no
       specific threshold is enforced by this repo.
@@ -602,14 +612,23 @@ Two sub-options, genuinely different:
 ### Full disaster recovery
 
 Only relevant if the *server itself* is lost, not just a bad deploy.
-**This repository's backups are local-only as of P12.2/P12.3** —
-`backup-data` lives on the same Docker host as `mysql-data`. If the
-server is gone, so is the backup. **There is currently no off-server
-copy and no tested disaster-recovery procedure for "the server no
-longer exists."** See
-[`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md) "Local
-backup vs. off-server backup vs. disaster recovery" — this is a real,
-open production requirement, not implemented, not simulated here.
+**As of P12.2/P12.3, backups were local-only** —
+`backup-data` lives on the same Docker host as `mysql-data`, so losing
+the server lost the backup too.
+
+**As of P12.6, an optional off-server copy exists** —
+`BACKUP_OFFSITE_ENABLED=true` uploads the same backup to a separate
+S3-compatible bucket, verified by a real download-and-rehash, not just
+a local backup. Disabled by default; if it was never enabled on the
+server that was just lost, the P12.2/P12.3 situation above still
+applies. See
+[`BACKUPS_DISASTER_RECOVERY.md`](BACKUPS_DISASTER_RECOVERY.md)
+"Off-server backup (P12.6)" and "Disaster recovery procedure" for the
+full workflow — and its "What was and wasn't verified" section before
+assuming more than has actually been tested: the offsite mechanism is
+verified against a real S3-compatible test instance, but the full
+recovery procedure has never been rehearsed against a genuinely new
+host, and no real cloud provider has been exercised yet.
 
 ### Post-rollback verification
 

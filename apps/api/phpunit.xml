@@ -36,5 +36,21 @@
         <env name="PULSE_ENABLED" value="false" force="true"/>
         <env name="TELESCOPE_ENABLED" value="false" force="true"/>
         <env name="NIGHTWATCH_ENABLED" value="false" force="true"/>
+
+        <!-- P12.6 — off-server backup tests (#[Group('mysql')], see
+             docs/BACKUPS_DISASTER_RECOVERY.md "Off-server backup
+             (P12.6)") run against a REAL S3-compatible MinIO instance,
+             never a mock. Deliberately NOT force="true": these are
+             local-dev-friendly defaults (a MinIO container started the
+             same way docs/BACKUPS_DISASTER_RECOVERY.md documents), and
+             CI (.github/workflows/ci.yml's "mysql" job) overrides them
+             with its own real process env vars pointing at its own
+             MinIO service container — exactly the same force-vs-real-
+             env pattern BACKUP_DUMP_BINARY/BACKUP_TLS_DISABLE_FLAG
+             already use for the mariadb-client-vs-Oracle-client split. -->
+        <env name="BACKUP_OFFSITE_TEST_ENDPOINT" value="http://127.0.0.1:9000"/>
+        <env name="BACKUP_OFFSITE_TEST_KEY" value="raffleguru_backup_test"/>
+        <env name="BACKUP_OFFSITE_TEST_SECRET" value="raffleguru_backup_test_secret"/>
+        <env name="BACKUP_OFFSITE_TEST_BUCKET" value="raffleguru-backups-test"/>
     </php>
 </phpunit>
