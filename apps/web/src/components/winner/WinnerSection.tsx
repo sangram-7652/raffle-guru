@@ -27,7 +27,11 @@ export default function WinnerSection() {
       </div>
 
       <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {winners.map((winner, i) => (
+        {/* Exactly 3 on the homepage, enforced here (not just by how
+            many entries happen to be in the data file) — the full list
+            lives on the dedicated /winners page via a different data
+            source (@/data/winners), not this one. */}
+        {winners.slice(0, 3).map((winner, i) => (
           <Reveal key={winner.id} delay={i * 70} className="h-full">
             <WinnerCard winner={winner} />
           </Reveal>
