@@ -68,12 +68,14 @@ return [
         // media credential are two different blast radii, never one.
         //
         // 'driver' => 's3' works against ANY S3-compatible API, not just
-        // AWS — DigitalOcean Spaces, Cloudflare R2, Backblaze B2, MinIO
-        // (this project's local/CI test substitute), Wasabi, etc. — by
-        // setting BACKUP_OFFSITE_ENDPOINT (+ path-style for providers
-        // that need it). BACKUP_OFFSITE_REGION defaults to "auto",
-        // which is what Cloudflare R2 expects; set a real AWS region if
-        // using AWS S3 directly.
+        // AWS — DigitalOcean Spaces, Cloudflare R2, Backblaze B2,
+        // Wasabi, etc. (this project's local/CI test substitute is
+        // adobe/s3mock — a real S3 API server, see
+        // tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php)
+        // — by setting BACKUP_OFFSITE_ENDPOINT (+ path-style for
+        // providers that need it). BACKUP_OFFSITE_REGION defaults to
+        // "auto", which is what Cloudflare R2 expects; set a real AWS
+        // region if using AWS S3 directly.
         //
         // 'throw' => true (unlike the stock disks above, which default
         // to false) is deliberate: a backup upload silently returning
@@ -102,11 +104,14 @@ return [
             'report' => false,
             // array_filter drops this entirely when
             // BACKUP_OFFSITE_SSE_ALGORITHM is explicitly set to an
-            // empty string — needed for a MinIO test/dev substitute
-            // with no KMS backend configured, which rejects
-            // ServerSideEncryption with "NotImplemented" otherwise.
-            // Real providers (AWS S3, DigitalOcean Spaces, Cloudflare
-            // R2) support plain SSE-S3 (AES256) with no KMS required,
+            // empty string — an escape hatch for the rare S3-compatible
+            // provider that rejects ServerSideEncryption outright (e.g.
+            // a bare MinIO instance with no KMS backend configured,
+            // which errors "NotImplemented" — not a concern for this
+            // project's own adobe/s3mock test substitute, confirmed by
+            // hand to accept it with no extra configuration). Real
+            // providers (AWS S3, DigitalOcean Spaces, Cloudflare R2)
+            // support plain SSE-S3 (AES256) with no KMS required,
             // so production should leave this at its default.
             'options' => array_filter([
                 'ServerSideEncryption' => env('BACKUP_OFFSITE_SSE_ALGORITHM', 'AES256'),

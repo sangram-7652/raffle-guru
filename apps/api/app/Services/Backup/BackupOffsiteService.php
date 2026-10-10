@@ -17,8 +17,9 @@ use Illuminate\Support\Facades\Storage;
  * Laravel's Filesystem contract against whichever disk
  * config('backup.offsite.disk') names (config/filesystems.php's
  * 'backups' disk, any S3-compatible endpoint — AWS S3, DigitalOcean
- * Spaces, Cloudflare R2, MinIO for local/CI testing, etc.) — nothing
- * here is AWS-specific.
+ * Spaces, Cloudflare R2, etc. — adobe/s3mock for local/CI testing,
+ * see tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php)
+ * — nothing here is AWS-specific.
  *
  * A successful local backup is never mistaken for a successful
  * off-server one: this class is never called implicitly by anything

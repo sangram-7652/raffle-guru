@@ -115,33 +115,35 @@ jobs:
       # P12.6 — off-server backup tests (#[Group('mysql')], same group
       # as everything else in this job — see
       # tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php)
-      # need a REAL S3-compatible endpoint, never a mock. MinIO is a
-      # plain `docker run` step, not a `services:` entry, because
-      # GitHub Actions' `services:` block has no way to override an
-      # image's CMD — and minio/minio's default CMD ("minio" with no
-      # arguments) just prints usage and exits; it needs the
-      # `server /data` subcommand to actually start, which only a
-      # regular step can supply. The exact tag (not "latest") matches
-      # what this phase was developed and verified against locally —
-      # see docs/BACKUPS_DISASTER_RECOVERY.md "Off-server backup
-      # (P12.6)" for the identical one-line command for local dev.
-      - name: Start MinIO (off-server backup test substitute)
+      # need a real S3 API server, never a PHP-level mock of this
+      # project's own code. adobe/s3mock is a purpose-built S3 mock
+      # SERVER — a real HTTP server speaking the real S3 REST API — not
+      # MinIO: MinIO's Docker images were removed from both Docker Hub
+      # and quay.io in September 2026 and the upstream project itself
+      # was archived, confirmed by hand while building this phase, not
+      # assumed (the "mysql" job's first run with this workflow failed
+      # with "pull access denied for minio/minio" for exactly this
+      # reason). s3mock is a plain `docker run` step, not a
+      # `services:` entry, so the "Create test bucket" step below can
+      # run after confirming the server actually answers, and because
+      # s3mock needs no command-line arguments a `services:` entry
+      # could fail to express anyway. See
+      # docs/BACKUPS_DISASTER_RECOVERY.md "Off-server backup (P12.6)"
+      # for the identical commands for local dev, and that same
+      # section for s3mock's one real limitation this suite works
+      # around (it never validates credentials).
+      - name: Start S3 mock (off-server backup test substitute)
         run: |
-          docker run -d --name minio-ci \
-            -p 9000:9000 \
-            -e MINIO_ROOT_USER=raffleguru_backup_test \
-            -e MINIO_ROOT_PASSWORD=raffleguru_backup_test_secret \
-            minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          docker run -d --name s3mock-ci \
+            -p 9090:9090 \
+            adobe/s3mock:5.2.3
           for i in $(seq 1 30); do
-            curl -fsS http://127.0.0.1:9000/minio/health/live && break
+            curl -fsS http://127.0.0.1:9090/ && break
             sleep 1
           done
 
-      - name: Create MinIO test bucket
-        run: |
-          docker run --rm --network host \
-            -e MC_HOST_local="http://raffleguru_backup_test:raffleguru_backup_test_secret@127.0.0.1:9000" \
-            minio/mc:RELEASE.2025-08-13T08-35-41Z mb --ignore-existing local/raffleguru-backups-test
+      - name: Create S3 mock test bucket
+        run: curl -fsS -X PUT http://127.0.0.1:9090/raffleguru-backups-test
 
       - uses: shivammathur/setup-php@v2
         with:

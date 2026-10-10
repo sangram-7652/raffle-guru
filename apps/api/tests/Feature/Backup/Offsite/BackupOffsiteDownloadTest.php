@@ -15,8 +15,8 @@ use Tests\TestCase;
 /**
  * P12.6 — BackupOffsiteService::download(), step 3-4 of the disaster
  * recovery procedure (docs/BACKUPS_DISASTER_RECOVERY.md "Disaster
- * recovery procedure"). #[Group('mysql')]: needs the real MinIO
- * instance — see
+ * recovery procedure"). #[Group('mysql')]: needs that same real S3 API
+ * server (adobe/s3mock) — see
  * tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php. The
  * last test here also proves the download integrates with the EXISTING,
  * completely unmodified backup:verify command — a real MySQL restore —

@@ -314,7 +314,7 @@ verified during this phase's audit:
   DigitalOcean Spaces, Cloudflare R2, etc.), uploaded and verified
   (real download-and-rehash, not just an HTTP 200) after every
   `backup:run`. Disabled by default; implemented and tested against a
-  real S3-compatible MinIO instance. **Not yet verified**: a real
+  real S3 API server (adobe/s3mock). **Not yet verified**: a real
   cloud provider, or a full disaster-recovery drill against a
   genuinely new host (the documented procedure has never been
   rehearsed) — see

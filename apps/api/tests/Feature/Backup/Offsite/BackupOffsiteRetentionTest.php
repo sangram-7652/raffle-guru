@@ -11,12 +11,14 @@ use Tests\Feature\Backup\Concerns\ConfiguresOffsiteTestStorage;
 use Tests\TestCase;
 
 /**
- * P12.6 — BackupOffsiteRetentionService against a REAL MinIO instance.
+ * P12.6 — BackupOffsiteRetentionService against a real S3 API server
+ * (adobe/s3mock, not a mock of this project's own code — see
+ * tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php).
  * Mirrors BackupRetentionServiceTest's (P12.2, local) scenarios, plus
  * the one guarantee that's unique to the offsite case: the single most
  * recent remote backup is never deleted, even when it's past the
  * retention window — see that service's docblock for why.
- * #[Group('mysql')]: needs MinIO — see
+ * #[Group('mysql')]: needs that same S3 mock server — see
  * tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php.
  */
 #[Group('mysql')]
@@ -96,7 +98,7 @@ class BackupOffsiteRetentionTest extends TestCase
     {
         $now = CarbonImmutable::create(2026, 3, 15);
 
-        // Uploaded "now" (MinIO's own LastModified will be today), but
+        // Uploaded "now" (the server's own LastModified will be today), but
         // the filename's embedded timestamp says this backup was
         // actually taken a year ago — retention must honor the
         // filename, not when the bytes happened to land in the bucket

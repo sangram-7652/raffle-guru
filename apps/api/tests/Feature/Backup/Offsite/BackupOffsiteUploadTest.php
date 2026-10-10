@@ -13,11 +13,15 @@ use Tests\Feature\Backup\Concerns\ConfiguresOffsiteTestStorage;
 use Tests\TestCase;
 
 /**
- * P12.6 — BackupOffsiteService::upload() against a REAL S3-compatible
- * MinIO instance, never a mock of the filesystem contract — same "prove
+ * P12.6 — BackupOffsiteService::upload() against a real S3 API server
+ * (adobe/s3mock — a real HTTP server speaking the real S3 REST API,
+ * not a PHP-level mock of Laravel's filesystem contract) — same "prove
  * it, don't assume it" posture as backup:verify's real restore (P12.2).
- * #[Group('mysql')]: needs the MinIO service CI starts alongside its
- * real MySQL server for the "mysql" job — see
+ * One real gap this substitute can't exercise — credential rejection,
+ * since s3mock never validates auth at all — is called out at the one
+ * test method below where it would otherwise have been.
+ * #[Group('mysql')]: needs that same S3 mock server, started alongside
+ * the real MySQL server for the "mysql" job — see
  * tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php and
  * .github/workflows/ci.yml.
  */
@@ -194,7 +198,7 @@ class BackupOffsiteUploadTest extends TestCase
      * Points the 'backups' disk at an unreachable endpoint, forgetting
      * FilesystemManager's cached resolution (setUp()'s
      * cleanOffsiteTestBucket() already resolved 'backups' once against
-     * the real MinIO endpoint, so without forgetting it a later config
+     * the real s3mock endpoint, so without forgetting it a later config
      * change would have no effect on the cached instance).
      */
     private function breakOffsiteEndpoint(): void
@@ -215,31 +219,20 @@ class BackupOffsiteUploadTest extends TestCase
         $this->configureOffsiteTestStorage();
     }
 
-    /**
-     * Distinct from an unreachable endpoint: the network/server is
-     * fine, but the credential itself is wrong — a different failure
-     * mode (authentication, not connectivity) that must fail just as
-     * cleanly.
-     */
-    public function test_fails_cleanly_when_credentials_are_missing_or_invalid(): void
-    {
-        Config::set('backup.offsite.upload_attempts', 1);
-        Config::set('filesystems.disks.backups.key', 'not-a-real-key');
-        Config::set('filesystems.disks.backups.secret', 'not-a-real-secret');
-        Storage::forgetDisk('backups');
-
-        $filename = 'raffleguru_raffleguru_testing_20260301_020000.sql.gz';
-        $this->createLocalBackup($filename);
-
-        try {
-            app(BackupOffsiteService::class)->upload($filename);
-            $this->fail('Expected BackupOffsiteException was not thrown.');
-        } catch (BackupOffsiteException $e) {
-            $this->assertStringNotContainsString('not-a-real-secret', $e->getMessage());
-        } finally {
-            $this->restoreOffsiteEndpoint();
-        }
-    }
+    // A "wrong credentials" test deliberately does not exist here: the
+    // S3 mock this suite runs against (see
+    // tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php)
+    // never validates signatures/credentials at all — by design, not a
+    // gap this project could configure around (confirmed against its
+    // own documentation, which tells callers to "supply any dummy
+    // credentials"). Credential REJECTION is the storage provider's
+    // own behavior, not application code this project owns; what this
+    // project IS responsible for — failing cleanly and never leaking
+    // the configured secret into an error message when a storage call
+    // fails for ANY reason — is exercised by the unreachable-endpoint
+    // test below instead, which exercises the identical
+    // wrapStorageException()/sanitizedMessage() code path a real
+    // authentication failure would also go through.
 
     public function test_fails_cleanly_and_does_not_leak_the_secret_when_remote_storage_is_unreachable(): void
     {

@@ -14,7 +14,7 @@ use Tests\TestCase;
  * tests/Feature/Backup/DatabaseBackupCommandTest.php (P12.2), which
  * never enables offsite at all and proves the pre-P12.6 behavior is
  * completely unchanged when it's off. #[Group('mysql')]: needs a real
- * MySQL dump AND MinIO — see
+ * MySQL dump AND a real S3 API server (adobe/s3mock) — see
  * tests/Feature/Backup/Concerns/ConfiguresOffsiteTestStorage.php.
  */
 #[Group('mysql')]

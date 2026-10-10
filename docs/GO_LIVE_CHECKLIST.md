@@ -166,8 +166,8 @@ specific (DNS, TLS, secrets) for every new environment you deploy to.
       losing the server loses both) unless you deliberately turn this
       on. See `BACKUPS_DISASTER_RECOVERY.md` "Off-server backup
       (P12.6)" and "What was and wasn't verified" before enabling —
-      implemented and tested against a real S3-compatible MinIO
-      instance, **not yet verified against a real cloud provider or a
+      implemented and tested against a real S3 API server (adobe/s3mock),
+      **not yet verified against a real cloud provider or a
       real disaster-recovery drill**.
 - [ ] ⚠️ If offsite is enabled: `BACKUP_OFFSITE_KEY`/
       `BACKUP_OFFSITE_SECRET` are a DEDICATED credential (never reused

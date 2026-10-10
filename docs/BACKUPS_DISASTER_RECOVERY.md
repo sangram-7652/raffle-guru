@@ -2,13 +2,13 @@
 
 Status: local backup (P12.2) is implemented and tested. Off-server
 backup (P12.6) is implemented, **optional** (disabled by default,
-`BACKUP_OFFSITE_ENABLED=false`), and tested against a real S3-compatible
-MinIO instance — but **not yet verified against a real cloud provider
-or over a real network**, and no real disaster-recovery drill (restore
-onto a genuinely different host) has been performed. See "Off-server
-backup (P12.6)" and "What was and wasn't verified" below for exactly
-what that distinction means before relying on this for a real
-production launch.
+`BACKUP_OFFSITE_ENABLED=false`), and tested against a real S3 API
+server (adobe/s3mock) — but **not yet verified against a real cloud
+provider or over a real network**, and no real disaster-recovery drill
+(restore onto a genuinely different host) has been performed. See
+"Off-server backup (P12.6)" and "What was and wasn't verified" below
+for exactly what that distinction means before relying on this for a
+real production launch.
 
 ## What is backed up, and what isn't
 
@@ -67,7 +67,7 @@ scheduler container
                                                        to a dedicated S3-compatible bucket
                                                        (config/filesystems.php's "backups"
                                                        disk — AWS S3, DigitalOcean Spaces,
-                                                       Cloudflare R2, MinIO, ...), then
+                                                       Cloudflare R2, ...), then
                                                        downloads it straight back and
                                                        re-hashes it to PROVE the upload is
                                                        intact — never trusts the HTTP 200
@@ -291,8 +291,9 @@ stay two different blast radii, never share one bucket or one key.
 
 Works with any S3-compatible provider via `driver: s3` +
 `BACKUP_OFFSITE_ENDPOINT` (+ path-style addressing): AWS S3,
-DigitalOcean Spaces, Cloudflare R2, Backblaze B2, Wasabi, or MinIO for
-local/CI testing. No specific provider is assumed or required.
+DigitalOcean Spaces, Cloudflare R2, Backblaze B2, Wasabi, or
+adobe/s3mock for local/CI testing. No specific provider is assumed or
+required.
 
 ### Configuration
 
@@ -303,9 +304,9 @@ local/CI testing. No specific provider is assumed or required.
 | `BACKUP_OFFSITE_SECRET` | yes (if enabled) | **yes** | — | Secret key, same dedicated credential. |
 | `BACKUP_OFFSITE_BUCKET` | yes (if enabled) | no | — | The dedicated backup bucket name. |
 | `BACKUP_OFFSITE_REGION` | no | no | `auto` | A real AWS region if using AWS S3 directly; `auto` is correct for Cloudflare R2. |
-| `BACKUP_OFFSITE_ENDPOINT` | yes for non-AWS providers | no | — | e.g. `https://<account>.r2.cloudflarestorage.com`, or `http://minio:9000` for the local/CI substitute. Leave unset for real AWS S3. |
-| `BACKUP_OFFSITE_USE_PATH_STYLE_ENDPOINT` | no | no | `true` | Most S3-compatible providers (and MinIO) need path-style; real AWS S3 generally doesn't. |
-| `BACKUP_OFFSITE_SSE_ALGORITHM` | no | no | `AES256` | Server-side encryption — see "Encryption" below. Set to an empty string only for a provider that rejects SSE without its own KMS configured (e.g. a bare MinIO test instance). |
+| `BACKUP_OFFSITE_ENDPOINT` | yes for non-AWS providers | no | — | e.g. `https://<account>.r2.cloudflarestorage.com`, or `http://127.0.0.1:9090` for the local/CI substitute. Leave unset for real AWS S3. |
+| `BACKUP_OFFSITE_USE_PATH_STYLE_ENDPOINT` | no | no | `true` | Most S3-compatible providers need path-style; real AWS S3 generally doesn't. |
+| `BACKUP_OFFSITE_SSE_ALGORITHM` | no | no | `AES256` | Server-side encryption — see "Encryption" below. Set to an empty string only for a provider that rejects SSE without its own KMS configured (e.g. a bare MinIO instance — not a concern for this project's own adobe/s3mock test substitute, which accepts it). |
 | `BACKUP_OFFSITE_RETENTION_DAYS` | no | no | `30` | Deliberately longer than the local 14-day default — see "Retention" below. |
 | `BACKUP_OFFSITE_UPLOAD_ATTEMPTS` | no | no | `3` | How many times the whole upload-and-verify sequence retries before giving up — see "Reliability" below. |
 | `BACKUP_OFFSITE_SDK_RETRIES` / `BACKUP_OFFSITE_CONNECT_TIMEOUT` / `BACKUP_OFFSITE_TIMEOUT` | no | no | `3` / `10s` / `120s` | Lower-level AWS SDK retry/timeout behavior for a single HTTP request, underneath the application-level retry above. |
@@ -420,31 +421,44 @@ oversight, matching this phase's own task boundaries.
 ### Running the offsite tests locally
 
 The `#[Group('mysql')]` tests under `tests/Feature/Backup/Offsite/`
-need a real S3-compatible endpoint — never a mock — the same "prove it
-against the real thing" posture as the existing MySQL-concurrency
-tests needing a real MySQL server. One-time local setup (mirrors the
-existing one-time MySQL test-database setup documented on
-`TestCase::MYSQL_TEST_DATABASE`):
+need a real S3 API server — never a PHP-level mock of this project's
+own code — the same "prove it against the real thing" posture as the
+existing MySQL-concurrency tests needing a real MySQL server.
+
+**Why adobe/s3mock, not MinIO**: MinIO was this phase's original
+choice, and still works as a drop-in replacement if that ever changes
+back — this project's code only talks to Laravel's generic Filesystem
+contract, never anything MinIO-specific. It was swapped out because
+MinIO's own Docker images were removed from both Docker Hub and
+quay.io in September 2026 and the upstream project itself was
+archived, confirmed by hand while building this phase (this repo's own
+CI failed with "pull access denied for minio/minio" before the switch)
+— not a preference, a necessity. adobe/s3mock is a real HTTP server
+implementing the real S3 REST API (every test makes a genuine network
+call through the real AWS SDK), with one honest limitation: **it never
+validates credentials at all**, by its own documented design — see
+`BackupOffsiteUploadTest`'s comment on the one test scenario this
+means can't be exercised against it.
+
+One-time local setup (mirrors the existing one-time MySQL
+test-database setup documented on `TestCase::MYSQL_TEST_DATABASE`):
 
 ```sh
-docker run -d --name raffleguru-minio-dev \
-  -p 9000:9000 \
-  -e MINIO_ROOT_USER=raffleguru_backup_test \
-  -e MINIO_ROOT_PASSWORD=raffleguru_backup_test_secret \
-  minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+docker run -d --name raffleguru-s3mock-dev \
+  -p 9090:9090 \
+  adobe/s3mock:5.2.3
 
-docker run --rm --network host \
-  -e MC_HOST_local="http://raffleguru_backup_test:raffleguru_backup_test_secret@127.0.0.1:9000" \
-  minio/mc:RELEASE.2025-08-13T08-35-41Z mb --ignore-existing local/raffleguru-backups-test
+curl -X PUT http://127.0.0.1:9090/raffleguru-backups-test
 ```
 
 `phpunit.xml`'s `BACKUP_OFFSITE_TEST_*` defaults already point at
-exactly this (port 9000, these same credentials, this same bucket
-name) — no further configuration needed. CI (`.github/workflows/ci.yml`'s
-`mysql` job) starts the identical container the same way, as a plain
-step rather than a `services:` entry, because GitHub Actions'
-`services:` block has no way to pass MinIO's required `server /data`
-command-line argument.
+exactly this (port 9090, this same bucket name — s3mock ignores
+whatever access key/secret you send it, so the credential values don't
+matter) — no further configuration needed. CI
+(`.github/workflows/ci.yml`'s `mysql` job) starts the identical
+container the same way, as a plain step rather than a `services:`
+entry, so the bucket-creation step can run only after confirming the
+server actually answers.
 
 ## Local backup vs. off-server backup vs. disaster recovery
 
@@ -458,7 +472,7 @@ These are three different guarantees:
    against *this specific server* being lost — disk failure, the
    VM/droplet being destroyed, the hosting account being compromised.
    **Local backup alone does not provide this.** Implemented and tested
-   against a real S3-compatible MinIO instance; **not yet verified
+   against a real S3 API server (adobe/s3mock); **not yet verified
    against a real cloud provider (AWS S3/R2/Spaces/etc.) over a real
    network**, and not yet enabled in any real deployment (none exists
    yet — see `PRODUCTION_ARCHITECTURE.md`).
@@ -466,7 +480,7 @@ These are three different guarantees:
    recovery procedure" below) to bring the application back up on a
    *different* server using an off-server backup. Documented and its
    individual steps tested (download → verify → restore, end-to-end,
-   against the real MinIO substitute and a real MySQL restore); **the
+   against the real S3 mock substitute and a real MySQL restore); **the
    full procedure has never been rehearsed against an actual newly
    provisioned host** — see "Recovery objectives" for what that means
    for RTO specifically.
@@ -676,10 +690,12 @@ never `storage/framework/*` (cache/views/sessions — reproducible) or
 
 Stated explicitly so nothing here is mistaken for more than it is:
 
-**Verified, against a real S3-compatible MinIO instance (never a
-mock), by this phase's automated test suite
-(`tests/Feature/Backup/Offsite/`) and run again as part of this
-report:**
+**Verified, against adobe/s3mock — a real HTTP server implementing the
+real S3 REST API, exercising the real AWS SDK and this project's real
+`league/flysystem-aws-s3-v3` adapter code (never a PHP-level stub of
+this project's own `BackupOffsiteService`) — by this phase's automated
+test suite (`tests/Feature/Backup/Offsite/`) and run again as part of
+this report:**
 
 - Upload + real download-and-rehash verification succeeding
 - Upload idempotency (re-running for an already-uploaded file)
@@ -705,10 +721,18 @@ report:**
 **NOT verified — do not claim otherwise:**
 
 - Any upload/download against a real cloud provider (AWS S3,
-  Cloudflare R2, DigitalOcean Spaces, etc.) — MinIO is a faithful
-  S3-API substitute for exercising this code's logic, but it is not
-  evidence about a specific cloud provider's actual network latency,
-  IAM behavior, or edge cases.
+  Cloudflare R2, DigitalOcean Spaces, etc.) — adobe/s3mock exercises
+  this code's actual network/SDK/adapter logic faithfully, but it is
+  not evidence about a specific cloud provider's actual network
+  latency, IAM behavior, or edge cases.
+- **Credential rejection specifically** — adobe/s3mock never validates
+  access keys/secrets at all, by its own documented design (it tells
+  callers to "supply any dummy credentials"). This project's code path
+  for a storage failure (clean error, no secret in the message) is
+  verified against an unreachable endpoint instead, which goes through
+  the identical exception-handling code — but whether a REAL
+  provider's `AccessDenied`/`InvalidAccessKeyId` response surfaces the
+  same way has not been exercised.
 - A real certificate/credential rotation, a real bucket lifecycle
   policy, or a real multipart-upload-abort scenario
 - A real 30-day (or longer) retention cycle elapsing naturally
