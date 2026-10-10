@@ -70,7 +70,9 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     subtitle: "No strings, paid within 48 hours of the live draw. Entries from £0.79.",
     ctaLabel: "Enter the cash draw",
     ctaHref: "/competitions",
-    image: U("1554224155-6726b3ff858f", 1600),
+    // Genuine Bank of England £5 notes — was a US tax-paperwork photo
+    // (IRS forms, American eagle) on a UK cash-prize slide.
+    image: U("1700047614820-0f32080db6f8", 1600),
   },
   {
     id: "b-watch",
@@ -79,7 +81,12 @@ export const heroBannerSlides: HeroBannerSlide[] = [
     subtitle: "Full set with box and papers, or £11,500 cash. Draw live Saturday 7PM.",
     ctaLabel: "See luxury competitions",
     ctaHref: "/competitions",
-    image: U("1523275335684-37898b6baf30", 1600),
+    // Steel dive-watch macro (bezel/crown/bracelet), dial deliberately
+    // out of focus — was a generic white plastic smartwatch render.
+    // No brand name is legible anywhere in frame: a stand-in "luxury
+    // watch" shot, not a real Rolex product photo, so it never implies
+    // an official Rolex partnership.
+    image: U("1544689797-0347c6b7224c", 1600),
   },
 ];
 
@@ -101,13 +108,33 @@ export const categories: Category[] = [
     id: "cash",
     name: "Cash",
     tagline: "Tax-free, straight to your account.",
-    image: U("1554224155-6726b3ff858f"),
+    // Genuine Bank of England notes — was the same US tax-paperwork
+    // photo as the "b-cash" hero slide. A DIFFERENT (brighter) GBP
+    // photo than that slide uses, deliberately: CategoryCard always
+    // overlays a strong dark gradient
+    // (`bg-gradient-to-t from-ink via-ink/50 to-ink/5`, see that
+    // component) across the full tile for text legibility, which
+    // swallowed the hero slide's black-background note photo entirely
+    // at this smaller size — confirmed by hand against the real
+    // rendered page, not assumed. This one keeps full contrast under
+    // that overlay.
+    image: U("1607166602071-847b7d110781"),
   },
   {
     id: "luxury",
     name: "Luxury",
     tagline: "Watches, jewellery and icons.",
-    image: U("1523275335684-37898b6baf30"),
+    // Steel watch on a bright background — was the same generic white
+    // plastic smartwatch as the "b-watch" hero slide. A DIFFERENT
+    // (brighter) watch photo than that slide uses, for the same
+    // dark-gradient-visibility reason as the "cash" tile above: the
+    // hero slide's moody black-and-white macro shot (which looks great
+    // in the hero, see that entry) disappeared entirely under
+    // CategoryCard's overlay. A small "SEKONDA" label is visible on
+    // the dial on close inspection — a real but unrelated, non-luxury
+    // watch brand, not a Rolex product photo, so this still never
+    // implies an official Rolex partnership.
+    image: U("1606387318469-bada9b642157"),
   },
   {
     id: "tech",
