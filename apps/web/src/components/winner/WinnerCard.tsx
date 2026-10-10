@@ -9,23 +9,52 @@ export type WinnerCardData = {
   prize: string;
   competition: string;
   ticket: string;
-  photo: string;
+  /**
+   * No photo claims to depict this specific person without one — see
+   * the initials fallback below. Never fill this with a stock/"random
+   * person" photo as a stand-in; that's a real person's likeness
+   * attached to someone else's identity and winning claim.
+   */
+  photo?: string;
   /** ISO draw date — shown when provided */
   drawDate?: string;
   quote?: string;
 };
 
+/** First letter of the name + first letter of the location — both
+ * already-displayed fields, nothing invented — e.g. "James" from
+ * "Leeds" -> "JL". */
+function initialsFor(winner: Pick<WinnerCardData, "name" | "location">): string {
+  const first = winner.name.trim().charAt(0);
+  const second = winner.location.trim().charAt(0);
+  return `${first}${second}`.toUpperCase();
+}
+
 export default function WinnerCard({ winner }: { winner: WinnerCardData }) {
+  const altText = `${winner.name} from ${winner.location}`;
+
   return (
     <figure className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-card card-shadow">
       <div className="relative">
-        <ImageFrame
-          src={winner.photo}
-          alt={`${winner.name} from ${winner.location}`}
-          ratio="5/4"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          imgClassName="transition-transform duration-500 group-hover:scale-105"
-        />
+        {winner.photo ? (
+          <ImageFrame
+            src={winner.photo}
+            alt={altText}
+            ratio="5/4"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            imgClassName="transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <div
+            role="img"
+            aria-label={altText}
+            className="brand-gradient grid aspect-[5/4] w-full place-items-center"
+          >
+            <span className="font-display text-4xl font-extrabold tracking-wide text-ink/80">
+              {initialsFor(winner)}
+            </span>
+          </div>
+        )}
         <Badge tone="winner" icon className="absolute left-3 top-3">
           Winner
         </Badge>

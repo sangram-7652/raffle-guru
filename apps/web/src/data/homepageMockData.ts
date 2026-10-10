@@ -34,7 +34,15 @@ export type Winner = {
   prize: string;
   competition: string;
   ticket: string;
-  photo: string;
+  /**
+   * No authentic, authorized winner photos exist for this prototype's
+   * sample data — deliberately omitted rather than filled with a stock
+   * "random person" photo standing in for someone who didn't win
+   * anything (see WinnerCard, which falls back to an initials badge
+   * when this is absent). Only set this to a real URL once there is an
+   * actual photo this specific winner consented to publish.
+   */
+  photo?: string;
 };
 
 const U = (id: string, w = 1200) =>
@@ -164,13 +172,19 @@ export const whyChooseUs: Feature[] = [
   { title: "Real Winners", copy: "Genuine winner stories, real names, real tickets, every single week.", icon: "trophy" },
 ];
 
+/**
+ * Exactly 3 — the homepage shows a deliberately short, high-trust
+ * sample, not every mock winner going (WinnerSection also enforces
+ * this with its own `.slice(0, 3)`, so this array could technically
+ * hold more without breaking that guarantee — kept at exactly 3 anyway
+ * so there's only one place that determines what actually renders).
+ * The full, longer sample list lives separately at
+ * `@/data/winners` for the dedicated `/winners` page.
+ */
 export const winners: Winner[] = [
-  { id: "w1", name: "James", location: "Leeds", prize: "Won a BMW M4", competition: "BMW M4 Competition", ticket: "#18429", photo: "https://i.pravatar.cc/240?img=12" },
-  { id: "w2", name: "Priya", location: "Birmingham", prize: "Won £25,000 Cash", competition: "£25k Tax-Free Cash", ticket: "#04211", photo: "https://i.pravatar.cc/240?img=45" },
-  { id: "w3", name: "Callum", location: "Glasgow", prize: "Won a Rolex Submariner", competition: "Rolex Submariner Date", ticket: "#27760", photo: "https://i.pravatar.cc/240?img=33" },
-  { id: "w4", name: "Sophie", location: "Bristol", prize: "Won a Tech Bundle", competition: "Luxury Tech Bundle", ticket: "#11902", photo: "https://i.pravatar.cc/240?img=47" },
-  { id: "w5", name: "Marcus", location: "London", prize: "Won £10,000 Cash", competition: "£10k Midweek Cash", ticket: "#65014", photo: "https://i.pravatar.cc/240?img=15" },
-  { id: "w6", name: "Hannah", location: "Cardiff", prize: "Won a Ducati Panigale", competition: "Ducati Panigale V2", ticket: "#38845", photo: "https://i.pravatar.cc/240?img=44" },
+  { id: "w1", name: "James", location: "Leeds", prize: "Won a BMW M4", competition: "BMW M4 Competition", ticket: "#18429" },
+  { id: "w2", name: "Priya", location: "Birmingham", prize: "Won £25,000 Cash", competition: "£25k Tax-Free Cash", ticket: "#04211" },
+  { id: "w3", name: "Callum", location: "Glasgow", prize: "Won a Rolex Submariner", competition: "Rolex Submariner Date", ticket: "#27760" },
 ];
 
 export type Review = {
