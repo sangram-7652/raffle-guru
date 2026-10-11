@@ -198,7 +198,8 @@ behavior.
 | `/cart` | Yes | Basket |
 | `/checkout` | Yes | Place order + pay |
 | `/order/success` | Yes | Post-payment confirmation |
-| `/account` | Yes | Account home, recent orders |
+| `/account` | Yes | Account overview: entry, ticket, draw and win counts, active competitions, upcoming draws, account status, recent orders |
+| `/account/details` | Yes | Name, email and verification status; resend verification email |
 | `/account/entries` | Yes | Ticket numbers |
 | `/account/winner` | Yes | Win status + claim |
 | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/verify-email` | No | Auth |
