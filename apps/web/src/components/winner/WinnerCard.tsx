@@ -23,7 +23,8 @@ export type WinnerCardData = {
 
 /** First letter of the name + first letter of the location — both
  * already-displayed fields, nothing invented — e.g. "James" from
- * "Leeds" -> "JL". */
+ * "Leeds" -> "JL". Falls back to the name initial alone when no
+ * location is set. */
 function initialsFor(winner: Pick<WinnerCardData, "name" | "location">): string {
   const first = winner.name.trim().charAt(0);
   const second = winner.location.trim().charAt(0);
@@ -31,7 +32,9 @@ function initialsFor(winner: Pick<WinnerCardData, "name" | "location">): string 
 }
 
 export default function WinnerCard({ winner }: { winner: WinnerCardData }) {
-  const altText = `${winner.name} from ${winner.location}`;
+  const altText = winner.location
+    ? `${winner.name} from ${winner.location}`
+    : winner.name;
 
   return (
     <figure className="group relative flex h-full flex-col overflow-hidden rounded-card border border-line bg-card card-shadow">
@@ -68,9 +71,11 @@ export default function WinnerCard({ winner }: { winner: WinnerCardData }) {
       <figcaption className="flex flex-1 flex-col p-5">
         <p className="font-display text-lg font-extrabold tracking-tight text-heading">
           {winner.name}
-          <span className="ml-2 text-xs font-medium text-muted">
-            {winner.location}
-          </span>
+          {winner.location && (
+            <span className="ml-2 text-xs font-medium text-muted">
+              {winner.location}
+            </span>
+          )}
         </p>
         <p className="mt-1 text-sm font-semibold text-gold-700">{winner.prize}</p>
         <p className="mt-0.5 text-xs text-muted">{winner.competition}</p>

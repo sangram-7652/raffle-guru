@@ -184,9 +184,9 @@ export const whyChooseUs: Feature[] = [
  * `@/data/winners` for the dedicated `/winners` page.
  */
 export const winners: Winner[] = [
-  { id: "w1", name: "James", location: "Leeds", prize: "Won a BMW M4", competition: "BMW M4 Competition", ticket: "#18429", photo: "/images/winners/james-rolex.jpeg" },
-  { id: "w2", name: "Priya", location: "Birmingham", prize: "Won £25,000 Cash", competition: "£25k Tax-Free Cash", ticket: "#04211", photo: "/images/winners/priya-iphone-unboxing.png" },
-  { id: "w3", name: "Callum", location: "Glasgow", prize: "Won a Rolex Submariner", competition: "Rolex Submariner Date", ticket: "#27760", photo: "/images/winners/callum-rolex.png" },
+  { id: "w1", name: "James", location: "", prize: "Won a BMW M4", competition: "BMW M4 Competition", ticket: "#18429", photo: "/images/winners/dream-car-giveaway-winner.png" },
+  { id: "w2", name: "Adele", location: "", prize: "Won an iPhone", competition: "iPhone Giveaway", ticket: "#04211", photo: "/images/winners/priya-iphone-unboxing.png" },
+  { id: "w3", name: "Callum", location: "", prize: "Won a Rolex Submariner", competition: "Rolex Submariner Date", ticket: "#27760", photo: "/images/winners/callum-rolex.png" },
 ];
 
 export type Review = {
