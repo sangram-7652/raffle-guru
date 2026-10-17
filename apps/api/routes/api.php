@@ -162,7 +162,7 @@ Route::prefix('v1')->group(function () {
         // VerifyEmail notification hardcodes that name when building the
         // signed URL, so it can't be prefixed/changed.
         Route::get('email/verify/{id}/{hash}', VerifyEmailController::class)
-            ->middleware(['auth:sanctum', 'signed', 'throttle:6,1'])
+            ->middleware(['web', 'auth', 'signed', 'throttle:6,1'])
             ->name('verification.verify');
 
         // -- Protected --
