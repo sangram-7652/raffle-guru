@@ -153,6 +153,11 @@ services:
       context: ./apps/web
       dockerfile: ../../infrastructure/docker/web/Dockerfile
       target: prod
+      # NEXT_PUBLIC_API_URL must reach `next build` itself (see the
+      # Dockerfile) — the `environment:` entry below only sets it at
+      # container runtime, which client-bundled code never re-reads.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
     restart: unless-stopped
     environment:
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}

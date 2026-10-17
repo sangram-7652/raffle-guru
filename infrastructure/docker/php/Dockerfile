@@ -71,6 +71,18 @@ CMD ["sh", "-c", "php artisan filament:assets --ansi && cd public && php -S 0.0.
 
 # ---- prod: php-fpm behind Nginx, immutable image (no bind mount) ----
 FROM base AS prod
+# `base`'s chown targets appuser (UID 1000) for dev's bind-mount convenience,
+# but php-fpm's own pool config (unmodified here) still runs workers as the
+# image's stock www-data — so without this, Laravel can never write compiled
+# views, the route/config cache, or its log file here, and that failure is
+# itself silent (see the log_errors fix below), surfacing only as a bare 500.
+RUN chown -R www-data:www-data storage bootstrap/cache
+# Activates php.ini-production (log_errors=On, display_errors=Off) — this
+# image ships with no php.ini loaded at all otherwise, so a fatal PHP error
+# below Laravel's own exception handler (like the write failure above) has
+# nowhere to go. dev is left on PHP's built-in defaults (errors to STDOUT)
+# since nothing here should change local iteration behavior.
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 EXPOSE 9000
 CMD ["php-fpm"]
 
