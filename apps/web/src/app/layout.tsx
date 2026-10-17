@@ -26,6 +26,10 @@ export const metadata: Metadata = {
   },
   description:
     "RaffleGuru is a premium UK competition platform. Discover incredible prizes, exciting competitions and your chance to win something extraordinary.",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
