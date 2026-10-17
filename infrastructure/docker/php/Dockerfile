@@ -36,6 +36,8 @@ COPY apps/api/composer.json apps/api/composer.lock ./
 RUN composer install --no-dev --no-scripts --no-autoloader --no-interaction --prefer-dist
 
 COPY apps/api .
+# Laravel boots during image build; keep production cookie security enabled.
+ENV APP_ENV=production SESSION_SECURE_COOKIE=true
 RUN composer dump-autoload --optimize --no-dev \
     && php artisan package:discover --ansi \
     && php artisan filament:assets --ansi
