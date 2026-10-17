@@ -95,6 +95,17 @@ class AppServiceProvider extends ServiceProvider
         RateLimiter::for('reset-password', fn ($request) => Limit::perMinute(5)->by($request->ip()));
         RateLimiter::for('verification-notification', fn ($request) => Limit::perMinute(3)->by($request->user()?->id ?: $request->ip()));
 
+        // Public, unauthenticated footer signup — same shape as 'register'
+        // (perMinute by IP): bounds scripted sign-up spam without needing
+        // a per-email key, since repeat submissions of the same address
+        // are already a harmless no-op (see NewsletterSubscriptionController).
+        RateLimiter::for('newsletter', fn ($request) => Limit::perMinute(5)->by($request->ip()));
+
+        // Authenticated — keyed by user id, not IP, since the whole
+        // point is one claim per account; a shared office/NAT IP must
+        // never throttle a different legitimate user's first attempt.
+        RateLimiter::for('promotion-claim', fn ($request) => Limit::perMinute(10)->by($request->user()?->id ?: $request->ip()));
+
         // P12.3 — the one unauthenticated, public POST endpoint in this
         // whole API (see docs/PAYMENTS_DESIGN_P6.md "Webhook flow");
         // authenticity comes entirely from the signature check inside

@@ -3,7 +3,7 @@ import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "@/components/cart/CartContext";
 import { AuthProvider } from "@/lib/auth/AuthContext";
-import { Header, Footer } from "@/components/layout";
+import { Header, Footer, NewsletterSignup } from "@/components/layout";
 import AnnouncementBar from "@/components/sections/AnnouncementBar";
 
 const sora = Sora({
@@ -48,6 +48,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <main id="main" className="flex-1">
               {children}
             </main>
+            <NewsletterSignup />
             <Footer />
           </CartProvider>
         </AuthProvider>

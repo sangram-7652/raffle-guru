@@ -49,6 +49,26 @@ services:
       timeout: 5s
       retries: 10
 
+  mailpit:
+    # SMTP catch-all for local dev — no credentials, no real delivery,
+    # no internet access required. Lets `php artisan serve`-free Docker
+    # dev actually SEE outgoing mail (verification/password-reset links)
+    # in a web UI instead of only in storage/logs/laravel.log. Dev-only:
+    # never referenced by docker-compose.prod.yml.
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${MAILPIT_SMTP_FORWARD_PORT:-1125}:1025"
+      # 8025 is Mailpit's own default and collides with other projects'
+      # Mailpit containers on this machine — 8026, non-default, per this
+      # file's own port-numbering convention (see the top-of-file note).
+      - "127.0.0.1:${MAILPIT_UI_FORWARD_PORT:-8026}:8025"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8025/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   api:
     build:
       context: .
@@ -62,6 +82,15 @@ services:
       DB_PORT: 3306
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      # Overrides apps/api/.env's MAIL_* (which stays log-only — the
+      # honest default for anyone running outside this Docker stack,
+      # e.g. `php artisan serve` directly). Inside this stack, route
+      # real-looking SMTP traffic to the mailpit service above instead
+      # — same "compose overrides .env for container-network addresses"
+      # pattern already used for DB_HOST/REDIS_HOST here.
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
       # The web dev container is also published directly on 127.0.0.1:3100
       # and calls this API cross-origin (NEXT_PUBLIC_API_URL points at Nginx
       # on 8080). Explicit list, dev only — production uses docker-compose.prod.yml.
@@ -74,6 +103,8 @@ services:
       mysql:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mailpit:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/up"]

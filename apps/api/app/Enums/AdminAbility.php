@@ -56,6 +56,9 @@ enum AdminAbility: string
 
     case CustomerView = 'customer.view';
 
+    case PromotionView = 'promotion.view';
+    case PromotionManage = 'promotion.manage';
+
     case AdminView = 'admin.view';
     case AdminManage = 'admin.manage';
 

@@ -134,17 +134,9 @@ export const categories: Category[] = [
     id: "luxury",
     name: "Luxury",
     tagline: "Watches, jewellery and icons.",
-    // Steel watch on a bright background — was the same generic white
-    // plastic smartwatch as the "b-watch" hero slide. A DIFFERENT
-    // (brighter) watch photo than that slide uses, for the same
-    // dark-gradient-visibility reason as the "cash" tile above: the
-    // hero slide's moody black-and-white macro shot (which looks great
-    // in the hero, see that entry) disappeared entirely under
-    // CategoryCard's overlay. A small "SEKONDA" label is visible on
-    // the dial on close inspection — a real but unrelated, non-luxury
-    // watch brand, not a Rolex product photo, so this still never
-    // implies an official Rolex partnership.
-    image: U("1606387318469-bada9b642157"),
+    // Local designer shopping-bag display photo (public/images),
+    // replacing the previous Unsplash watch close-up.
+    image: "/images/luxury-shopping-bags.png",
   },
   {
     id: "tech",
@@ -185,7 +177,7 @@ export const whyChooseUs: Feature[] = [
  */
 export const winners: Winner[] = [
   { id: "w1", name: "James", location: "", prize: "Won a BMW M4", competition: "BMW M4 Competition", ticket: "#18429", photo: "/images/winners/dream-car-giveaway-winner.png" },
-  { id: "w2", name: "Adele", location: "", prize: "Won an iPhone", competition: "iPhone Giveaway", ticket: "#04211", photo: "/images/winners/priya-iphone-unboxing.png" },
+  { id: "w2", name: "Adele", location: "", prize: "Won Apple Giveaway", competition: "Tech bundle giveaway", ticket: "#04211", photo: "/images/winners/priya-iphone-unboxing.png" },
   { id: "w3", name: "Callum", location: "", prize: "Won a Rolex Submariner", competition: "Rolex Submariner Date", ticket: "#27760", photo: "/images/winners/callum-rolex.png" },
 ];
 

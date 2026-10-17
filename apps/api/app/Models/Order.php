@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\OrderSource;
 use App\Enums\OrderStatus;
 use Database\Factories\OrderFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-#[Fillable(['user_id', 'reference', 'status', 'currency', 'subtotal', 'total'])]
+#[Fillable(['user_id', 'reference', 'status', 'source', 'currency', 'subtotal', 'total'])]
 class Order extends Model
 {
     /** @use HasFactory<OrderFactory> */
@@ -25,7 +26,18 @@ class Order extends Model
     {
         return [
             'status' => OrderStatus::class,
+            'source' => OrderSource::class,
         ];
+    }
+
+    /**
+     * True only for a free promotional order created by
+     * PromotionClaimService — never a payment/refund signal. See
+     * docs/EMAIL_CAPTURE.md.
+     */
+    public function isPromotional(): bool
+    {
+        return $this->source === OrderSource::Promotional;
     }
 
     /**

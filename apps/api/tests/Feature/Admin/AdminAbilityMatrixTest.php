@@ -59,6 +59,10 @@ class AdminAbilityMatrixTest extends TestCase
             AdminAbility::FulfilmentAdvance,
             AdminAbility::FulfilmentAssignPrize,
             AdminAbility::CustomerView,
+            // Promotion.view only, not .manage — see
+            // docs/EMAIL_CAPTURE.md "Which admin role(s) should be
+            // able to create/enable/disable a promotion...".
+            AdminAbility::PromotionView,
         ];
 
         $expectations = [];
@@ -116,6 +120,7 @@ class AdminAbilityMatrixTest extends TestCase
         $this->assertFalse($operations->hasAbility(AdminAbility::AdminManage));
         $this->assertFalse($operations->hasAbility(AdminAbility::AuditView));
         $this->assertFalse($operations->hasAbility(AdminAbility::CompetitionDelete));
+        $this->assertFalse($operations->hasAbility(AdminAbility::PromotionManage));
     }
 
     public function test_role_abilities_are_fixed_enum_lists_not_role_flags(): void

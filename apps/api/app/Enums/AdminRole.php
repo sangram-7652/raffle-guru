@@ -74,6 +74,14 @@ enum AdminRole: string
                 AdminAbility::FulfilmentAssignPrize,
 
                 AdminAbility::CustomerView,
+
+                // View-only — see AdminAbility::PromotionManage. Awarding
+                // free tickets has direct cost/fraud exposure that
+                // ordinary competition editing doesn't, so creating,
+                // enabling/disabling, or re-sizing a promotion is kept
+                // Super Admin-only; Operations can still see live
+                // capacity/claims to answer a support query.
+                AdminAbility::PromotionView,
             ],
         };
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Account\PromotionClaimController;
 use App\Http\Controllers\Api\V1\Account\WinnerClaimController;
 use App\Http\Controllers\Api\V1\Account\WinnerController;
 use App\Http\Controllers\Api\V1\Auth\AuthenticatedSessionController;
@@ -13,9 +14,11 @@ use App\Http\Controllers\Api\V1\CartController;
 use App\Http\Controllers\Api\V1\CompetitionController;
 use App\Http\Controllers\Api\V1\EntryController;
 use App\Http\Controllers\Api\V1\HealthController;
+use App\Http\Controllers\Api\V1\NewsletterSubscriptionController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\PaymentController;
 use App\Http\Controllers\Api\V1\PaymentWebhookController;
+use App\Http\Controllers\Api\V1\PromotionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -38,6 +41,20 @@ Route::prefix('v1')->group(function () {
     // architecture yet to gate them on (see docs/COMPETITIONS_API.md).
     Route::get('competitions', [CompetitionController::class, 'index']);
     Route::get('competitions/{slug}', [CompetitionController::class, 'show']);
+
+    // Footer email capture — public, unauthenticated, no session/ticket
+    // side effects. See docs/EMAIL_CAPTURE.md for scope (subscription
+    // only — no free-ticket grant).
+    Route::post('newsletter/subscribe', [NewsletterSubscriptionController::class, 'store'])
+        ->middleware('throttle:newsletter');
+    Route::get('newsletter/unsubscribe/{token}', [NewsletterSubscriptionController::class, 'unsubscribe'])
+        ->middleware('throttle:newsletter');
+
+    // Public read of a promotion's current open/closed state — lets a
+    // logged-out visitor see the offer is running before being asked
+    // to log in. Claiming itself is authenticated, below. See
+    // docs/EMAIL_CAPTURE.md "Option 1 proposal".
+    Route::get('promotions/{slug}', [PromotionController::class, 'show']);
 
     // Cart & orders — every route requires authentication (no guest cart,
     // see docs/SCHEMA_DESIGN_P5.md), and is scoped to the caller only.
@@ -76,6 +93,17 @@ Route::prefix('v1')->group(function () {
             Route::get('winners/{winner}/claim', [WinnerClaimController::class, 'show']);
             Route::post('winners/{winner}/claim', [WinnerClaimController::class, 'store']);
         });
+
+        // Free-ticket promotion claim — requires a verified email, not
+        // just an authenticated session (see docs/EMAIL_CAPTURE.md "Is
+        // a verified, authenticated account mandatory to claim?"). The
+        // authenticated user is always the claimant; nothing about
+        // identity is ever read from the request body.
+        Route::middleware('verified')->prefix('account')->group(function () {
+            Route::get('promotions/{slug}/claim', [PromotionClaimController::class, 'show']);
+            Route::post('promotions/{slug}/claim', [PromotionClaimController::class, 'store'])
+                ->middleware('throttle:promotion-claim');
+        });
     });
 
     // Gateway → server. Deliberately outside auth:sanctum — the gateway
@@ -102,9 +130,34 @@ Route::prefix('v1')->group(function () {
         Route::post('reset-password', [NewPasswordController::class, 'store'])
             ->middleware('throttle:reset-password');
 
-        // Reached directly by the browser from the email link, so it needs
-        // the caller to already be logged in (same browser that registered)
-        // — 'signed' validates the URL hasn't been tampered with/expired.
+        // Reached directly by the browser from the email link (a plain
+        // top-level navigation — from an email client, or pasted into the
+        // address bar), so it needs the caller to already be logged in
+        // (same browser that registered) — 'signed' validates the URL
+        // hasn't been tampered with/expired.
+        //
+        // Deliberately 'web' + 'auth' here, NOT 'auth:sanctum'. Every
+        // other route in this file relies on statefulApi()'s *conditional*
+        // session bootstrap (bootstrap/app.php), which Sanctum's
+        // EnsureFrontendRequestsAreStateful::fromFrontend() only enables
+        // when the request's Referer/Origin matches SANCTUM_STATEFUL_
+        // DOMAINS (see vendor/laravel/sanctum). A top-level navigation from
+        // an email link/client (or a pasted URL) essentially never carries
+        // a matching Referer/Origin — often none at all — so that
+        // conditional session never started, the cookie was never read,
+        // and 'auth:sanctum' reported "Unauthenticated" even for a
+        // genuinely logged-in browser (confirmed empirically: the exact
+        // same valid session cookie succeeds iff the Referer happens to
+        // match, fails otherwise — the bug was never about whether the
+        // user was logged in). The plain 'web' middleware group starts
+        // the session unconditionally, exactly like a classic Laravel app
+        // — correct for a route whose nature is "direct navigation",
+        // never an XHR/fetch from the SPA. 'auth' resolves to the 'web'
+        // guard (config('auth.defaults.guard')), the same guard every
+        // login already authenticates against (AuthenticatedSessionController
+        // uses Auth::attempt(), not a separate Sanctum guard) — so this
+        // is not a new/different authentication mechanism, just the
+        // right middleware to actually reach it for this one route.
         // Route name is exactly "verification.verify": Laravel's own
         // VerifyEmail notification hardcodes that name when building the
         // signed URL, so it can't be prefixed/changed.
